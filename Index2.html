@@ -3,58 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSL - Onboarding Aziendale (SBT)</title>
+    <title>THRON - SSL Onboarding</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        body { font-family: 'Courier New', monospace; background: #0f0f0f; color: #00ff00; padding: 20px; }
-        .container { max-width: 500px; margin: auto; border: 1px solid #00ff00; padding: 20px; box-shadow: 0 0 15px #00ff00; }
-        h2 { text-align: center; border-bottom: 1px solid #00ff00; padding-bottom: 10px; margin-bottom: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #050505; color: #00cccc; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background-color: #0a0a0a; border: 1px solid #00cccc; box-shadow: 0 0 20px rgba(0, 204, 204, 0.2); padding: 20px; border-radius: 8px; }
         
-        input, button { width: 100%; padding: 12px; margin: 10px 0; background: #1a1a1a; border: 1px solid #00ff00; color: #00ff00; box-sizing: border-box; font-size: 16px; }
-        button { cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
-        button:hover { background: #00ff00; color: #000; }
+        /* Stile Titoli */
+        h2 { text-align: center; color: #fff; font-size: 1.2em; font-weight: 300; letter-spacing: 2px; text-shadow: 0 0 10px #00cccc; border-bottom: 1px solid #00cccc; padding-bottom: 15px; margin-bottom: 25px; }
+        
+        input, button { width: 100%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #00cccc; color: #00ffff; box-sizing: border-box; font-size: 16px; border-radius: 4px; }
+        input::placeholder { color: #006666; }
+        button { cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; color: #050505; background: #00cccc; }
+        button:hover { background: #00ffff; box-shadow: 0 0 15px #00cccc; }
         
         /* Bottoni Login Istituzionali */
         #btnSpid { background: #0066cc; color: white; border: 1px solid #0066cc; }
-        #btnSpid:hover { background: #004c99; border-color: #fff; }
+        #btnSpid:hover { background: #004c99; border-color: #fff; box-shadow: 0 0 10px #0066cc; }
         #btnCie { background: #008080; color: white; border: 1px solid #008080; }
-        #btnCie:hover { background: #006666; border-color: #fff; }
+        #btnCie:hover { background: #006666; border-color: #fff; box-shadow: 0 0 10px #008080; }
         
         /* Bottone Polygon */
         #btnMint { background: #8247e5; color: white; border: 1px solid #fff; display: none; }
-        #btnMint:hover { background: #6b38c2; }
+        #btnMint:hover { background: #6b38c2; box-shadow: 0 0 15px #8247e5; }
         
-        #video { width: 100%; border: 1px solid #444; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; display: none; }
-        #log { font-size: 12px; height: 150px; overflow-y: auto; border: 1px solid #333; padding: 10px; background: #050505; margin-top: 15px; }
+        #video { width: 100%; border: 1px solid #00cccc; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; display: none; }
+        #log { font-family: 'Courier New', monospace; font-size: 12px; height: 150px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
         
         /* Riquadri */
-        .address-box { background: #003300; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00ff00; }
-        .token-box { background: #330000; border-color: #ff0000; }
-        .alert-box { background: #660000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px; }
+        .address-box { background: #001a1a; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00cccc; font-family: 'Courier New', monospace; color: #fff; }
+        .token-box { background: #002222; border-color: #00ffff; }
+        .alert-box { background: #330000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>SSL - CREAZIONE IDENTITÀ AZIENDALE</h2>
+    
+    <div style="text-align: center; margin-bottom: 25px;">
+        <span style="font-size: 2.8em; font-weight: 900; letter-spacing: -2px; color: #fff; text-shadow: 0 0 10px #00ffff, 0 0 20px #00cccc; display: inline-block;">
+            THRON
+        </span>
+        <br>
+        <span style="font-size: 0.8em; font-weight: 300; letter-spacing: 4px; color: #ccffff; text-shadow: 0 0 5px #00cccc;">
+            SMART SHEER LOGISTIC
+        </span>
+    </div>
+
+    <h2>ONBOARDING ISTITUZIONALE</h2>
     
     <div id="step1-login">
-        <p style="text-align: center; font-size: 14px; color: #aaa;">Seleziona il metodo di autenticazione per l'Amministratore Delegato:</p>
+        <p style="text-align: center; font-size: 14px; color: #88bbbb;">Seleziona il metodo di autenticazione per l'Amministratore Delegato:</p>
         <button id="btnSpid" onclick="simulateLogin('SPID')">🔐 ACCEDI CON SPID</button>
         <button id="btnCie" onclick="simulateLogin('CIE')">💳 ACCEDI CON CIE 3.0</button>
     </div>
 
     <div id="step2-onboarding" class="hidden">
-        <p style="text-align: center; color: #00ff00; font-weight: bold;" id="welcomeMsg"></p>
+        <p style="text-align: center; color: #00ffff; font-weight: bold;" id="welcomeMsg"></p>
         
-        <input type="text" id="cf" placeholder="CODICE FISCALE AD" readonly style="color: #888; background: #111;">
+        <input type="text" id="cf" placeholder="CODICE FISCALE AD" readonly style="color: #669999; background: #0a0a0a;">
         <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA (11 cifre)">
-        <input type="password" id="salt" placeholder="SECRET SALT (Recovery)">
+        <input type="password" id="salt" placeholder="SECRET SALT (Recovery Key)">
 
         <video id="video" autoplay playsinline></video>
         
-        <button id="btnGenera" onclick="generateSBT()">CREA SOULBOUND TOKEN (SBT)</button>
+        <button id="btnGenera" onclick="generateSBT()">CREA IDENTITÀ BLOCKCHAIN</button>
         <button id="btnMint" onclick="mintOnPolygon()">MINTA SU POLYGON TESTNET</button>
     </div>
 
@@ -99,11 +113,9 @@
         log("> Lettura dati anagrafici...");
         await sleep(1000);
         
-        // Nascondi Step 1, Mostra Step 2
         document.getElementById('step1-login').classList.add('hidden');
         document.getElementById('step2-onboarding').classList.remove('hidden');
         
-        // Compila automaticamente il CF
         const fintoCF = "RSSMRA80A01H501U";
         document.getElementById('cf').value = fintoCF;
         document.getElementById('welcomeMsg').innerText = `Autenticato via ${method}`;
@@ -116,101 +128,10 @@
         const cf = document.getElementById('cf').value.trim();
         const salt = document.getElementById('salt').value.trim();
 
-        // Reset UI
         document.getElementById('result').classList.add('hidden');
         document.getElementById('blacklistAlert').classList.add('hidden');
         document.getElementById('successData').classList.add('hidden');
         document.getElementById('btnMint').style.display = 'none';
 
-        // CONTROLLI FORMALI
         if(cf.length !== 16) {
-            log("<span style='color:red;'>❌ ERRORE: Codice Fiscale non valido.</span>"); return;
-        }
-        const regexPIva = /^[0-9]{11}$/;
-        if(!regexPIva.test(pIva)) {
-            log("<span style='color:red;'>❌ ERRORE: La Partita IVA deve avere esattamente 11 numeri.</span>"); return;
-        }
-        if(!salt) {
-            log("<span style='color:red;'>❌ ERRORE: Inserisci il SALT di sicurezza.</span>"); return;
-        }
-
-        // SIMULAZIONE CAMERA DI COMMERCIO
-        log("> Connessione API Registro Imprese (Infocamere)...");
-        await sleep(1500);
-        log("✅ Visura Camerale OK. La P.IVA e il CF corrispondono.");
-
-        // ATTIVAZIONE FOTOCAMERA (Biometria)
-        const video = document.getElementById('video');
-        video.style.display = 'block'; // Mostra il riquadro video
-        try {
-            log("> Richiesta Biometria Liveness...");
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-            video.srcObject = stream;
-            await sleep(2500); 
-            log("✅ Scansione 3D completata. Generazione crittografica SBT in corso...");
-            
-            // CREAZIONE SBT E MASTER ADDRESS
-            const faceData = "FACE_VECTOR_DATA_SIMULATED"; 
-            currentSBT = await sha256(cf + pIva + salt + faceData);
-            currentMaster = "0x" + currentSBT.substring(0, 40); 
-            
-            stream.getTracks().forEach(track => track.stop()); // Spegne la cam
-            video.style.display = 'none'; // Nasconde il riquadro video
-
-            // VERIFICA BLACKLIST (Trucco Demo "hacker")
-            log("> Verifica Indirizzo su Blacklist Smart Contract...");
-            await sleep(1000);
-
-            if(salt.toLowerCase() === "hacker") {
-                log("<span style='color:red;'>❌ ERRORE CRITICO: Identità in BLACKLIST! Generazione Annullata.</span>");
-                document.getElementById('result').classList.remove('hidden');
-                document.getElementById('blacklistAlert').classList.remove('hidden');
-                return;
-            }
-
-            log("✅ Master Address Pulito. Pronto per il Minting.");
-
-            // OUTPUT FINALE
-            document.getElementById('result').classList.remove('hidden');
-            document.getElementById('successData').classList.remove('hidden');
-            
-            document.getElementById('sbtHashBox').innerHTML = `<strong>1. OPERA D'ARTE (Hash SBT Unico):</strong><br>${currentSBT}`;
-            document.getElementById('masterAddrBox').innerHTML = `<strong>2. CASSAFORTE (Master Address):</strong><br>${currentMaster}`;
-            
-            document.getElementById('btnGenera').style.display = 'none'; // Nascondi tasto genera
-            document.getElementById('btnMint').style.display = 'block';  // Mostra tasto MINT
-            
-            log("🚀 Onboarding completato. L'Azienda è pronta per la Blockchain.");
-
-        } catch (err) {
-            log("<span style='color:red;'>❌ ERRORE CAM: " + err.message + "</span>");
-            video.style.display = 'none';
-        }
-    }
-
-    // --- FASE 3: MINTING WEB3 POLYGON ---
-    async function mintOnPolygon() {
-        log("> Inizializzazione Web3 per il Minting...");
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                await sleep(2000);
-                const fintoTxHash = "0x" + await sha256(Date.now().toString());
-                log("✅ SBT MINTATO CON SUCCESSO SUL MASTER ADDRESS!");
-                alert("SBT Registrato su Polygon!\nHASH: " + fintoTxHash.substring(0,42));
-            } catch (error) {
-                log("<span style='color:red;'>❌ Transazione fallita: " + error.message + "</span>");
-            }
-        } else {
-            log("⚠️ Nessun wallet rilevato. Esecuzione tramite Server Relayer...");
-            await sleep(2000);
-            log("✅ SBT MINTATO VIA RELAYER (Polygon Testnet)!");
-            alert("Operazione completata con successo tramite relayer aziendale.");
-        }
-    }
-</script>
-
-</body>
-</html>
+            log("<span style='color:#ff3333;'>❌ ERRORE: Cod
