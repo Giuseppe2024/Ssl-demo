@@ -3,28 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSL - Web3 Institutional Identity</title>
+    <title>SSL - Onboarding Aziendale (SBT)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         body { font-family: 'Courier New', monospace; background: #0f0f0f; color: #00ff00; padding: 20px; }
         .container { max-width: 500px; margin: auto; border: 1px solid #00ff00; padding: 20px; box-shadow: 0 0 15px #00ff00; }
-        h2 { text-align: center; border-bottom: 1px solid #00ff00; padding-bottom: 10px; }
-        input, button { width: 100%; padding: 10px; margin: 10px 0; background: #1a1a1a; border: 1px solid #00ff00; color: #00ff00; box-sizing: border-box; }
-        button { cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        h2 { text-align: center; border-bottom: 1px solid #00ff00; padding-bottom: 10px; margin-bottom: 20px; }
+        
+        input, button { width: 100%; padding: 12px; margin: 10px 0; background: #1a1a1a; border: 1px solid #00ff00; color: #00ff00; box-sizing: border-box; font-size: 16px; }
+        button { cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
         button:hover { background: #00ff00; color: #000; }
         
-        /* Stile Bottone SPID */
-        #btnSpid { background: #0066cc; color: white; border: 1px solid #fff; }
-        #btnSpid:hover { background: #004c99; }
+        /* Bottoni Login Istituzionali */
+        #btnSpid { background: #0066cc; color: white; border: 1px solid #0066cc; }
+        #btnSpid:hover { background: #004c99; border-color: #fff; }
+        #btnCie { background: #008080; color: white; border: 1px solid #008080; }
+        #btnCie:hover { background: #006666; border-color: #fff; }
         
-        /* Stile Bottone Polygon */
+        /* Bottone Polygon */
         #btnMint { background: #8247e5; color: white; border: 1px solid #fff; display: none; }
         #btnMint:hover { background: #6b38c2; }
         
-        #video { width: 100%; border: 1px solid #444; background: #000; border-radius: 5px; transform: scaleX(-1); }
-        #log { font-size: 12px; height: 150px; overflow-y: auto; border: 1px solid #333; padding: 10px; background: #050505; }
+        #video { width: 100%; border: 1px solid #444; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; display: none; }
+        #log { font-size: 12px; height: 150px; overflow-y: auto; border: 1px solid #333; padding: 10px; background: #050505; margin-top: 15px; }
         
-        /* Stili Riquadri */
+        /* Riquadri */
         .address-box { background: #003300; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00ff00; }
         .token-box { background: #330000; border-color: #ff0000; }
         .alert-box { background: #660000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px; }
@@ -34,30 +37,36 @@
 <body>
 
 <div class="container">
-    <h2>SSL - ISTITUZIONALE</h2>
+    <h2>SSL - CREAZIONE IDENTITÀ AZIENDALE</h2>
     
-    <button id="btnSpid" onclick="simulateSPID()">🔐 ACCEDI CON SPID (Livello 2)</button>
+    <div id="step1-login">
+        <p style="text-align: center; font-size: 14px; color: #aaa;">Seleziona il metodo di autenticazione per l'Amministratore Delegato:</p>
+        <button id="btnSpid" onclick="simulateLogin('SPID')">🔐 ACCEDI CON SPID</button>
+        <button id="btnCie" onclick="simulateLogin('CIE')">💳 ACCEDI CON CIE 3.0</button>
+    </div>
 
-    <input type="text" id="cf" placeholder="CODICE FISCALE AD (Da SPID)" readonly style="color: #888;">
-    <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA (11 cifre)">
-    <input type="password" id="salt" placeholder="SECRET SALT (Recovery)">
-    <input type="text" id="txId" placeholder="ID SPEDIZIONE (es. BANCALE-001)">
+    <div id="step2-onboarding" class="hidden">
+        <p style="text-align: center; color: #00ff00; font-weight: bold;" id="welcomeMsg"></p>
+        
+        <input type="text" id="cf" placeholder="CODICE FISCALE AD" readonly style="color: #888; background: #111;">
+        <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA (11 cifre)">
+        <input type="password" id="salt" placeholder="SECRET SALT (Recovery)">
 
-    <video id="video" autoplay playsinline></video>
-    
-    <button onclick="startVerification()">1. VERIFICA E GENERA IDENTITÀ</button>
-    <button id="btnMint" onclick="mintOnPolygon()">2. MINTA SU POLYGON TESTNET</button>
+        <video id="video" autoplay playsinline></video>
+        
+        <button id="btnGenera" onclick="generateSBT()">CREA SOULBOUND TOKEN (SBT)</button>
+        <button id="btnMint" onclick="mintOnPolygon()">MINTA SU POLYGON TESTNET</button>
+    </div>
 
     <div id="log"></div>
     
     <div id="result" class="hidden">
         <div id="blacklistAlert" class="alert-box hidden">
-            ⚠️ ALLARME SICUREZZA: Questa identità è in BLACKLIST.<br>Generazione bloccata. Cambiare SALT per Recovery.
+            ⚠️ ALLARME SICUREZZA: Radice in BLACKLIST.<br>Generazione bloccata. Cambiare SALT.
         </div>
         <div id="successData" class="hidden">
             <div class="address-box token-box" id="sbtHashBox"></div>
             <div class="address-box" id="masterAddrBox"></div>
-            <div class="address-box" id="txAddrBox" style="background: #331a00; border-color: #ff9900;"></div>
         </div>
     </div>
 </div>
@@ -82,25 +91,30 @@
         return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // --- 1. SIMULAZIONE SPID ---
-    async function simulateSPID() {
-        log("> Reindirizzamento Identity Provider SPID...");
+    // --- FASE 1: LOGIN (SPID o CIE) ---
+    async function simulateLogin(method) {
+        log(`> Reindirizzamento provider ${method}...`);
         await sleep(1500);
-        log("✅ Autenticazione SPID Livello 2 completata.");
-        log("> Acquisizione dati anagrafici in corso...");
+        log(`✅ Autenticazione ${method} completata con successo.`);
+        log("> Lettura dati anagrafici...");
         await sleep(1000);
         
-        document.getElementById('cf').value = "RSSMRA80A01H501U"; // 16 caratteri esatti
-        document.getElementById('cf').style.color = "#00ff00";
-        log("✅ Identità Amministratore verificata (Codice Fiscale acquisito).");
+        // Nascondi Step 1, Mostra Step 2
+        document.getElementById('step1-login').classList.add('hidden');
+        document.getElementById('step2-onboarding').classList.remove('hidden');
+        
+        // Compila automaticamente il CF
+        const fintoCF = "RSSMRA80A01H501U";
+        document.getElementById('cf').value = fintoCF;
+        document.getElementById('welcomeMsg').innerText = `Autenticato via ${method}`;
+        log(`✅ Codice Fiscale Amministratore acquisito: ${fintoCF}`);
     }
 
-    // --- 2. FLUSSO PRINCIPALE (Controlli rigorosi + Cam + Blockchain) ---
-    async function startVerification() {
+    // --- FASE 2: VERIFICA CAMERALE E GENERAZIONE SBT ---
+    async function generateSBT() {
         const pIva = document.getElementById('pIva').value.trim();
         const cf = document.getElementById('cf').value.trim();
         const salt = document.getElementById('salt').value.trim();
-        const txId = document.getElementById('txId').value.trim() || "TX-DEFAULT-001";
 
         // Reset UI
         document.getElementById('result').classList.add('hidden');
@@ -108,83 +122,75 @@
         document.getElementById('successData').classList.add('hidden');
         document.getElementById('btnMint').style.display = 'none';
 
-        // --- BLOCCO CONTROLLI FORMALI ---
-        if(!cf) {
-            log("<span style='color:red;'>❌ ERRORE: Devi prima accedere con SPID.</span>"); 
-            return;
-        }
+        // CONTROLLI FORMALI
         if(cf.length !== 16) {
-            log("<span style='color:red;'>❌ ERRORE FORMALE: Il Codice Fiscale deve avere 16 caratteri.</span>"); 
-            return;
+            log("<span style='color:red;'>❌ ERRORE: Codice Fiscale non valido.</span>"); return;
         }
         const regexPIva = /^[0-9]{11}$/;
         if(!regexPIva.test(pIva)) {
-            log("<span style='color:red;'>❌ ERRORE FORMALE: La Partita IVA deve contenere esattamente 11 numeri.</span>"); 
-            return;
+            log("<span style='color:red;'>❌ ERRORE: La Partita IVA deve avere esattamente 11 numeri.</span>"); return;
         }
         if(!salt) {
-            log("<span style='color:red;'>❌ ERRORE: Inserisci il SALT di sicurezza.</span>"); 
-            return;
+            log("<span style='color:red;'>❌ ERRORE: Inserisci il SALT di sicurezza.</span>"); return;
         }
 
-        // A. SIMULAZIONE CAMERA DI COMMERCIO
-        log("> Connessione API Registro Imprese...");
+        // SIMULAZIONE CAMERA DI COMMERCIO
+        log("> Connessione API Registro Imprese (Infocamere)...");
         await sleep(1500);
         log("✅ Visura Camerale OK. La P.IVA e il CF corrispondono.");
 
-        // B. BIOMETRIA E GENERAZIONE BASE
+        // ATTIVAZIONE FOTOCAMERA (Biometria)
         const video = document.getElementById('video');
+        video.style.display = 'block'; // Mostra il riquadro video
         try {
             log("> Richiesta Biometria Liveness...");
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
             video.srcObject = stream;
             await sleep(2500); 
-            log("✅ Scansione 3D completata. Generazione crittografica in corso...");
+            log("✅ Scansione 3D completata. Generazione crittografica SBT in corso...");
             
-            // Creazione "Opera d'Arte" e "Cassaforte"
+            // CREAZIONE SBT E MASTER ADDRESS
             const faceData = "FACE_VECTOR_DATA_SIMULATED"; 
             currentSBT = await sha256(cf + pIva + salt + faceData);
             currentMaster = "0x" + currentSBT.substring(0, 40); 
             
             stream.getTracks().forEach(track => track.stop()); // Spegne la cam
+            video.style.display = 'none'; // Nasconde il riquadro video
 
-            // C. VERIFICA BLACKLIST
+            // VERIFICA BLACKLIST (Trucco Demo "hacker")
             log("> Verifica Indirizzo su Blacklist Smart Contract...");
-            await sleep(1500);
+            await sleep(1000);
 
-            // TRUCCO DEMO: Se scrivi "hacker", simula il blocco di sicurezza
             if(salt.toLowerCase() === "hacker") {
-                log("<span style='color:red;'>❌ ERRORE CRITICO: Indirizzo in BLACKLIST!</span>");
+                log("<span style='color:red;'>❌ ERRORE CRITICO: Identità in BLACKLIST! Generazione Annullata.</span>");
                 document.getElementById('result').classList.remove('hidden');
                 document.getElementById('blacklistAlert').classList.remove('hidden');
-                return; // Ferma tutto
+                return;
             }
 
-            log("✅ Indirizzo Pulito. Nessuna compromissione rilevata.");
+            log("✅ Master Address Pulito. Pronto per il Minting.");
 
-            // Creazione Indirizzo "Usa e Getta"
-            const txSeed = await sha256(currentSBT + txId);
-            const transactionAddress = "0x" + txSeed.substring(0, 40);
-
-            // Output finale se passa la Blacklist
+            // OUTPUT FINALE
             document.getElementById('result').classList.remove('hidden');
             document.getElementById('successData').classList.remove('hidden');
             
-            document.getElementById('sbtHashBox').innerHTML = `<strong>OPERA D'ARTE (Hash SBT Segreto):</strong><br>${currentSBT}`;
-            document.getElementById('masterAddrBox').innerHTML = `<strong>CASSAFORTE (Master Address Pubblico):</strong><br>${currentMaster}`;
-            document.getElementById('txAddrBox').innerHTML = `<strong>INDIRIZZO USA E GETTA (Spedizione ${txId}):</strong><br>${transactionAddress}`;
+            document.getElementById('sbtHashBox').innerHTML = `<strong>1. OPERA D'ARTE (Hash SBT Unico):</strong><br>${currentSBT}`;
+            document.getElementById('masterAddrBox').innerHTML = `<strong>2. CASSAFORTE (Master Address):</strong><br>${currentMaster}`;
             
-            document.getElementById('btnMint').style.display = 'block';
-            log("🚀 Protocollo completato. Identità pronta per il Minting.");
+            document.getElementById('btnGenera').style.display = 'none'; // Nascondi tasto genera
+            document.getElementById('btnMint').style.display = 'block';  // Mostra tasto MINT
+            
+            log("🚀 Onboarding completato. L'Azienda è pronta per la Blockchain.");
 
         } catch (err) {
             log("<span style='color:red;'>❌ ERRORE CAM: " + err.message + "</span>");
+            video.style.display = 'none';
         }
     }
 
-    // --- 3. MINTING WEB3 POLYGON ---
+    // --- FASE 3: MINTING WEB3 POLYGON ---
     async function mintOnPolygon() {
-        log("> Inizializzazione Web3...");
+        log("> Inizializzazione Web3 per il Minting...");
         if (typeof window.ethereum !== 'undefined') {
             try {
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -192,15 +198,15 @@
                 const signer = provider.getSigner();
                 await sleep(2000);
                 const fintoTxHash = "0x" + await sha256(Date.now().toString());
-                log("✅ MINT COMPLETATO CON SUCCESSO!");
-                alert("SBT Mintato su Polygon!\nHASH: " + fintoTxHash.substring(0,42));
+                log("✅ SBT MINTATO CON SUCCESSO SUL MASTER ADDRESS!");
+                alert("SBT Registrato su Polygon!\nHASH: " + fintoTxHash.substring(0,42));
             } catch (error) {
                 log("<span style='color:red;'>❌ Transazione fallita: " + error.message + "</span>");
             }
         } else {
-            log("⚠️ Nessun wallet rilevato. Esecuzione tramite Server Relayer Aziendale...");
+            log("⚠️ Nessun wallet rilevato. Esecuzione tramite Server Relayer...");
             await sleep(2000);
-            log("✅ MINT COMPLETATO VIA RELAYER (Polygon Testnet)!");
+            log("✅ SBT MINTATO VIA RELAYER (Polygon Testnet)!");
             alert("Operazione completata con successo tramite relayer aziendale.");
         }
     }
