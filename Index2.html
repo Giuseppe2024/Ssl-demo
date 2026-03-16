@@ -13,20 +13,15 @@
         
         input, button { width: 100%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #00cccc; color: #00ffff; box-sizing: border-box; font-size: 16px; border-radius: 4px; }
         input::placeholder { color: #006666; }
-        button { cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.3s; color: #050505; background: #00cccc; }
-        button:hover { background: #00ffff; box-shadow: 0 0 15px #00cccc; }
+        button { cursor: pointer; font-weight: bold; text-transform: uppercase; color: #050505; background: #00cccc; border: none; }
         
-        #btnSpid { background: #0066cc; color: white; border: 1px solid #0066cc; }
-        #btnCie { background: #008080; color: white; border: 1px solid #008080; }
-        #btnMint { background: #8247e5; color: white; border: 1px solid #fff; display: none; }
+        #btnSpid { background: #0066cc; color: white; }
+        #btnCie { background: #008080; color: white; }
         
-        #video { width: 100%; border: 1px solid #00cccc; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; display: none; }
+        #video { width: 100%; border: 1px solid #00cccc; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; }
         #log { font-family: 'Courier New', monospace; font-size: 12px; height: 150px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
         
         .address-box { background: #001a1a; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00cccc; font-family: 'Courier New', monospace; color: #fff; }
-        .token-box { background: #002222; border-color: #00ffff; }
-        .alert-box { background: #330000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -41,141 +36,150 @@
 
     <h2>ONBOARDING ISTITUZIONALE</h2>
     
-    <button id="btnSpid" onclick="simulateLogin('SPID')">🔐 ACCEDI CON SPID</button>
-    <button id="btnCie" onclick="simulateLogin('CIE 3.0')">💳 ACCEDI CON CIE</button>
+    <div id="fase1">
+        <p style="text-align: center; font-size: 14px; color: #88bbbb;">Seleziona autenticazione:</p>
+        <button id="btnSpid" onclick="avviaLogin('SPID')">🔐 ACCEDI CON SPID</button>
+        <button id="btnCie" onclick="avviaLogin('CIE 3.0')">💳 ACCEDI CON CIE</button>
+    </div>
 
-    <input type="text" id="cf" placeholder="CODICE FISCALE AD (Da SPID/CIE)" readonly style="color: #669999; background: #0a0a0a;">
-    <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA (11 cifre)">
-    <input type="password" id="salt" placeholder="SECRET SALT (Recovery Key)">
+    <div id="fase2" style="display: none;">
+        <p style="text-align: center; color: #00ffff; font-weight: bold;" id="msgSuccesso"></p>
+        
+        <input type="text" id="cf" readonly style="color: #669999; background: #0a0a0a;">
+        <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA (11 cifre)">
+        <input type="password" id="salt" placeholder="SECRET SALT">
 
-    <video id="video" autoplay playsinline></video>
-    
-    <button id="btnGenera" onclick="generateSBT()">CREA IDENTITÀ BLOCKCHAIN</button>
-    <button id="btnMint" onclick="mintOnPolygon()">MINTA SU POLYGON TESTNET</button>
+        <video id="video" autoplay playsinline style="display: none;"></video>
+        
+        <button id="btnGenera" onclick="generaIdentita()">CREA IDENTITÀ BLOCKCHAIN</button>
+        <button id="btnMint" onclick="minta()" style="display: none; background: #8247e5; color: white;">MINTA SU POLYGON TESTNET</button>
+    </div>
 
     <div id="log"></div>
     
-    <div id="result" class="hidden">
-        <div id="blacklistAlert" class="alert-box hidden">
-            ⚠️ ALLARME SICUREZZA: Radice in BLACKLIST.<br>Generazione bloccata. Cambiare SALT.
+    <div id="risultati" style="display: none;">
+        <div id="allarme" style="display: none; background: #330000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px;">
+            ⚠️ ALLARME SICUREZZA: Identità in BLACKLIST!
         </div>
-        <div id="successData" class="hidden">
-            <div class="address-box token-box" id="sbtHashBox"></div>
-            <div class="address-box" id="masterAddrBox"></div>
+        <div id="datiBuoni" style="display: none;">
+            <div class="address-box" style="border-color: #00ffff; background: #002222;" id="boxHash"></div>
+            <div class="address-box" id="boxMaster"></div>
         </div>
     </div>
 </div>
 
 <script>
     const logDiv = document.getElementById('log');
-    let currentSBT = "";
-    let currentMaster = "";
 
-    function log(msg) {
-        const div = document.createElement('div');
-        div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logDiv.appendChild(div);
+    function scriviLog(msg) {
+        logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
         logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const pausa = ms => new Promise(r => setTimeout(r, ms));
 
-    async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    async function creaHash(testo) {
+        const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(testo));
+        return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // --- ACCESSO SPID / CIE ---
-    async function simulateLogin(method) {
-        log(`> Reindirizzamento provider ${method}...`);
-        await sleep(1500);
-        log(`✅ Autenticazione ${method} completata.`);
-        log("> Acquisizione Codice Fiscale...");
-        await sleep(1000);
+    // --- MAGIA INFALLIBILE CAMBIO SCHERMATA ---
+    async function avviaLogin(metodo) {
+        scriviLog(`> Connessione al gateway ${metodo}...`);
+        await pausa(1500);
+        scriviLog(`✅ Autenticazione ${metodo} completata.`);
         
-        // Compila il CF come nella versione che andava perfetta
-        const fintoCF = "RSSMRA80A01H501U";
-        document.getElementById('cf').value = fintoCF;
-        document.getElementById('cf').style.color = "#00ffff";
-        log(`✅ Codice Fiscale inserito: ${fintoCF}`);
+        document.getElementById('fase1').style.display = 'none';
+        document.getElementById('fase2').style.display = 'block';
+        
+        const cfFinto = "RSSMRA80A01H501U";
+        document.getElementById('cf').value = cfFinto;
+        document.getElementById('msgSuccesso').innerText = `✅ Accesso effettuato via ${metodo}`;
+        scriviLog(`✅ CF Amministratore caricato.`);
     }
 
-    // --- GENERAZIONE SBT ---
-    async function generateSBT() {
+    // --- GENERAZIONE IDENTITÀ ---
+    async function generaIdentita() {
         const pIva = document.getElementById('pIva').value.trim();
         const cf = document.getElementById('cf').value.trim();
         const salt = document.getElementById('salt').value.trim();
 
-        document.getElementById('result').classList.add('hidden');
-        document.getElementById('blacklistAlert').classList.add('hidden');
-        document.getElementById('successData').classList.add('hidden');
+        document.getElementById('risultati').style.display = 'none';
+        document.getElementById('allarme').style.display = 'none';
+        document.getElementById('datiBuoni').style.display = 'none';
 
-        if(cf.length !== 16) {
-            log("<span style='color:#ff3333;'>❌ ERRORE: Devi prima accedere con SPID o CIE.</span>"); return;
-        }
-        const regexPIva = /^[0-9]{11}$/;
-        if(!regexPIva.test(pIva)) {
-            log("<span style='color:#ff3333;'>❌ ERRORE: La Partita IVA deve avere 11 numeri.</span>"); return;
-        }
-        if(!salt) {
-            log("<span style='color:#ff3333;'>❌ ERRORE: Inserisci il SALT di sicurezza.</span>"); return;
-        }
+        if(pIva.length !== 11) { scriviLog("<span style='color:#ff3333;'>❌ ERRORE: P.IVA deve avere 11 numeri.</span>"); return; }
+        if(!salt) { scriviLog("<span style='color:#ff3333;'>❌ ERRORE: Inserisci il SALT.</span>"); return; }
 
-        log("> Connessione API Registro Imprese...");
-        await sleep(1500);
-        log("✅ Visura Camerale OK.");
+        scriviLog("> Verifica Registro Imprese Infocamere...");
+        await pausa(1000);
+        scriviLog("✅ Visura Camerale verificata.");
 
         const video = document.getElementById('video');
         video.style.display = 'block'; 
+
         try {
-            log("> Richiesta Biometria Liveness...");
+            scriviLog("> Controllo Biometrico...");
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
             video.srcObject = stream;
-            await sleep(2500); 
-            log("✅ Scansione completata. Generazione SBT in corso...");
+            await pausa(2500); 
+            scriviLog("✅ Biometria acquisita. Calcolo crittografico in corso...");
             
-            const faceData = "FACE_VECTOR_DATA_SIMULATED"; 
-            currentSBT = await sha256(cf + pIva + salt + faceData);
-            currentMaster = "0x" + currentSBT.substring(0, 40); 
+            const hash = await creaHash(cf + pIva + salt + "FACE_SIM");
+            const master = "0x" + hash.substring(0, 40); 
             
-            stream.getTracks().forEach(track => track.stop()); 
+            stream.getTracks().forEach(t => t.stop()); 
             video.style.display = 'none'; 
 
-            log("> Verifica Blacklist...");
-            await sleep(1000);
+            scriviLog("> Interrogazione Gatekeeper (Blacklist)...");
+            await pausa(1000);
+
+            document.getElementById('risultati').style.display = 'block';
 
             if(salt.toLowerCase() === "hacker") {
-                log("<span style='color:#ff3333;'>❌ ERRORE CRITICO: Identità in BLACKLIST!</span>");
-                document.getElementById('result').classList.remove('hidden');
-                document.getElementById('blacklistAlert').classList.remove('hidden');
+                scriviLog("<span style='color:#ff3333;'>❌ BLOCCATO: Radice compromessa!</span>");
+                document.getElementById('allarme').style.display = 'block';
                 return;
             }
 
-            log("✅ Master Address Pulito.");
-
-            document.getElementById('result').classList.remove('hidden');
-            document.getElementById('successData').classList.remove('hidden');
+            scriviLog("✅ Nessuna anomalia. Generazione completata.");
+            document.getElementById('datiBuoni').style.display = 'block';
             
-            document.getElementById('sbtHashBox').innerHTML = `<strong>1. SMART IDENTITY CHAIN (SBT Hash):</strong><br>${currentSBT}`;
-            document.getElementById('masterAddrBox').innerHTML = `<strong>2. MASTER ADDRESS (Pubblico):</strong><br>${currentMaster}`;
+            document.getElementById('boxHash').innerHTML = `<strong>1. SMART IDENTITY CHAIN (SBT Hash):</strong><br>${hash}`;
+            document.getElementById('boxMaster').innerHTML = `<strong>2. MASTER ADDRESS (Pubblico):</strong><br>${master}`;
             
             document.getElementById('btnGenera').style.display = 'none'; 
             document.getElementById('btnMint').style.display = 'block';  
-            
+
         } catch (err) {
-            log("<span style='color:#ff3333;'>❌ ERRORE CAM: " + err.message + "</span>");
+            scriviLog("<span style='color:#ff3333;'>❌ ERRORE CAM: " + err.message + "</span>");
             video.style.display = 'none';
         }
     }
 
-    // --- MINTING POLYGON ---
-    async function mintOnPolygon() {
-        log("> Inizializzazione Web3 per il Minting...");
-        await sleep(2000);
-        const fintoTxHash = "0x" + await sha256(Date.now().toString());
-        log("✅ SBT MINTATO CON SUCCESSO SUL MASTER ADDRESS!");
-        alert("SBT Registrato su Polygon!\nHASH: " + fintoTxHash.substring(0,42));
+    // --- MINTING SU POLYGON (CON FURBATA PER MOBILE) ---
+    async function minta() {
+        scriviLog("> Inizializzazione Web3 per il Minting...");
+        
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+                await pausa(2000);
+                const fintoTxHash = "0x" + await creaHash(Date.now().toString());
+                scriviLog("✅ SMART IDENTITY REGISTRATA CON SUCCESSO SULLA BLOCKCHAIN!");
+                alert("SBT Registrato su Polygon!\nHASH: " + fintoTxHash.substring(0,42));
+            } catch (error) {
+                scriviLog("<span style='color:#ff3333;'>❌ Transazione fallita: " + error.message + "</span>");
+            }
+        } else {
+            scriviLog("⚠️ Nessun wallet Web3 rilevato nel browser.");
+            scriviLog("⏳ Esecuzione Gasless Minting tramite Server Relayer Aziendale...");
+            await pausa(2500);
+            scriviLog("✅ MINT COMPLETATO VIA RELAYER (Polygon Testnet)!");
+            alert("Operazione completata con successo tramite relayer aziendale. Fee pagate dal sistema.");
+        }
     }
 </script>
 
