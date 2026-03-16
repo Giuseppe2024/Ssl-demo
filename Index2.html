@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>THRON - SSL Onboarding</title>
+    <title>SMART SHEER LOGISTIC - Onboarding</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #050505; color: #00cccc; padding: 20px; }
@@ -34,7 +34,9 @@
         .address-box { background: #001a1a; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00cccc; font-family: 'Courier New', monospace; color: #fff; }
         .token-box { background: #002222; border-color: #00ffff; }
         .alert-box { background: #330000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px; }
-        .hidden { display: none; }
+        
+        /* Classe per nascondere gli elementi - con important per evitare conflitti */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -42,12 +44,8 @@
 <div class="container">
     
     <div style="text-align: center; margin-bottom: 25px;">
-        <span style="font-size: 2.8em; font-weight: 900; letter-spacing: -2px; color: #fff; text-shadow: 0 0 10px #00ffff, 0 0 20px #00cccc; display: inline-block;">
-            SMART SHEER LOGISTIC
-        </span>
-        <br>
-        <span style="font-size: 0.8em; font-weight: 300; letter-spacing: 4px; color: #ccffff; text-shadow: 0 0 5px #00cccc;">
-            
+        <span style="font-size: 2.3em; font-weight: 900; letter-spacing: 1px; color: #fff; text-shadow: 0 0 10px #00ffff, 0 0 20px #00cccc; display: inline-block; line-height: 1.1;">
+            SMART SHEER<br>LOGISTIC
         </span>
     </div>
 
@@ -90,6 +88,7 @@
     let currentSBT = "";
     let currentMaster = "";
 
+    // Funzione per stampare i log a schermo
     function log(msg) {
         const div = document.createElement('div');
         div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -97,41 +96,11 @@
         logDiv.scrollTop = logDiv.scrollHeight;
     }
 
+    // Funzione per le pause (simulazione caricamenti)
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+    // Funzione per calcolare l'Hash
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    // --- FASE 1: LOGIN (SPID o CIE) ---
-    async function simulateLogin(method) {
-        log(`> Reindirizzamento provider ${method}...`);
-        await sleep(1500);
-        log(`✅ Autenticazione ${method} completata con successo.`);
-        log("> Lettura dati anagrafici...");
-        await sleep(1000);
-        
-        document.getElementById('step1-login').classList.add('hidden');
-        document.getElementById('step2-onboarding').classList.remove('hidden');
-        
-        const fintoCF = "RSSMRA80A01H501U";
-        document.getElementById('cf').value = fintoCF;
-        document.getElementById('welcomeMsg').innerText = `Autenticato via ${method}`;
-        log(`✅ Codice Fiscale Amministratore acquisito: ${fintoCF}`);
-    }
-
-    // --- FASE 2: VERIFICA CAMERALE E GENERAZIONE SBT ---
-    async function generateSBT() {
-        const pIva = document.getElementById('pIva').value.trim();
-        const cf = document.getElementById('cf').value.trim();
-        const salt = document.getElementById('salt').value.trim();
-
-        document.getElementById('result').classList.add('hidden');
-        document.getElementById('blacklistAlert').classList.add('hidden');
-        document.getElementById('successData').classList.add('hidden');
-        document.getElementById('btnMint').style.display = 'none';
-
-        if(cf.length !== 16) {
-            log("<span style='color:#ff3333;'>❌ ERRORE: Cod
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(1
