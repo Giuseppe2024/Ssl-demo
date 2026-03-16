@@ -10,18 +10,27 @@
         .container { max-width: 500px; margin: auto; background-color: #0a0a0a; border: 1px solid #00cccc; box-shadow: 0 0 20px rgba(0, 204, 204, 0.2); padding: 20px; border-radius: 8px; }
         
         h2 { text-align: center; color: #fff; font-size: 1.2em; font-weight: 300; letter-spacing: 2px; text-shadow: 0 0 10px #00cccc; border-bottom: 1px solid #00cccc; padding-bottom: 15px; margin-bottom: 25px; }
-        
+        h3 { text-align: center; color: #00ffff; font-size: 1em; margin-bottom: 15px; }
+
         input, button { width: 100%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #00cccc; color: #00ffff; box-sizing: border-box; font-size: 16px; border-radius: 4px; }
         input::placeholder { color: #006666; }
         button { cursor: pointer; font-weight: bold; text-transform: uppercase; color: #050505; background: #00cccc; border: none; }
         
         #btnSpid { background: #0066cc; color: white; }
         #btnCie { background: #008080; color: white; }
+        #btnSpedizione { background: #ff9900; color: #000; }
         
         #video { width: 100%; border: 1px solid #00cccc; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; }
-        #log { font-family: 'Courier New', monospace; font-size: 12px; height: 150px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
+        #log { font-family: 'Courier New', monospace; font-size: 12px; height: 120px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
         
         .address-box { background: #001a1a; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00cccc; font-family: 'Courier New', monospace; color: #fff; }
+        
+        /* Stili per la Blackbox IoT */
+        .iot-panel { background: #001111; border: 1px solid #00ffff; padding: 15px; margin-top: 15px; border-radius: 5px; }
+        .iot-list { list-style: none; padding: 0; font-family: 'Courier New', monospace; font-size: 14px; line-height: 2; color: #aaa; }
+        .iot-list li.active { color: #00ff00; font-weight: bold; }
+        .blink { animation: blinker 1.5s linear infinite; color: #ff9900; font-weight: bold; text-align: center; margin-top: 15px; font-size: 13px; }
+        @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -44,19 +53,14 @@
 
     <div id="fase2" style="display: none;">
         <p style="text-align: center; color: #00ffff; font-weight: bold;" id="msgSuccesso"></p>
-        
         <input type="text" id="cf" readonly style="color: #669999; background: #0a0a0a;">
         <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA (11 cifre)">
         <input type="password" id="salt" placeholder="SECRET SALT">
-
         <video id="video" autoplay playsinline style="display: none;"></video>
-        
         <button id="btnGenera" onclick="generaIdentita()">CREA IDENTITÀ BLOCKCHAIN</button>
         <button id="btnMint" onclick="minta()" style="display: none; background: #8247e5; color: white;">MINTA SU POLYGON TESTNET</button>
     </div>
 
-    <div id="log"></div>
-    
     <div id="risultati" style="display: none;">
         <div id="allarme" style="display: none; background: #330000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px;">
             ⚠️ ALLARME SICUREZZA: Identità in BLACKLIST!
@@ -66,10 +70,34 @@
             <div class="address-box" id="boxMaster"></div>
         </div>
     </div>
+
+    <div id="fase3" style="display: none;">
+        <h3>📦 LOGISTICA OPERATIVA</h3>
+        <p style="text-align: center; font-size: 12px; color: #00ff00;">Autenticazione SBT Attiva. Sistema pronto.</p>
+        
+        <input type="text" id="idBancale" placeholder="ID BANCALE / SPEDIZIONE (es. PALLET-001)">
+        <button id="btnSpedizione" onclick="preparaSpedizione()">GENERA INDIRIZZO SPEDIZIONE</button>
+
+        <div id="iotPanel" class="iot-panel" style="display: none;">
+            <h4 style="text-align: center; margin-top: 0; color: #fff;">📡 IOT BLACKBOX SYNC</h4>
+            <div class="address-box" id="boxTx" style="border-color: #ff9900; background: #331a00;"></div>
+            
+            <ul class="iot-list">
+                <li id="chkPeso">⏳ Sincronizzazione Sensore Peso...</li>
+                <li id="chkGps">⏳ Acquisizione Satelliti GPS...</li>
+                <li id="chkTamper">⏳ Attivazione Sensori Tamper-Proof...</li>
+            </ul>
+            
+            <div class="blink">IN ATTESA DI TRASMISSIONE DATI IN BLOCKCHAIN...</div>
+        </div>
+    </div>
+
+    <div id="log"></div>
 </div>
 
 <script>
     const logDiv = document.getElementById('log');
+    let hashSBTGlobale = ""; // Variabile che salva l'SBT per passarlo alla Fase 3
 
     function scriviLog(msg) {
         logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
@@ -83,22 +111,18 @@
         return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // --- MAGIA INFALLIBILE CAMBIO SCHERMATA ---
+    // --- FASE 1 ---
     async function avviaLogin(metodo) {
         scriviLog(`> Connessione al gateway ${metodo}...`);
         await pausa(1500);
         scriviLog(`✅ Autenticazione ${metodo} completata.`);
-        
         document.getElementById('fase1').style.display = 'none';
         document.getElementById('fase2').style.display = 'block';
-        
-        const cfFinto = "RSSMRA80A01H501U";
-        document.getElementById('cf').value = cfFinto;
+        document.getElementById('cf').value = "RSSMRA80A01H501U";
         document.getElementById('msgSuccesso').innerText = `✅ Accesso effettuato via ${metodo}`;
-        scriviLog(`✅ CF Amministratore caricato.`);
     }
 
-    // --- GENERAZIONE IDENTITÀ ---
+    // --- FASE 2 ---
     async function generaIdentita() {
         const pIva = document.getElementById('pIva').value.trim();
         const cf = document.getElementById('cf').value.trim();
@@ -123,16 +147,13 @@
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
             video.srcObject = stream;
             await pausa(2500); 
-            scriviLog("✅ Biometria acquisita. Calcolo crittografico in corso...");
             
-            const hash = await creaHash(cf + pIva + salt + "FACE_SIM");
-            const master = "0x" + hash.substring(0, 40); 
+            // Creazione Hash e salvataggio globale
+            hashSBTGlobale = await creaHash(cf + pIva + salt + "FACE_SIM");
+            const master = "0x" + hashSBTGlobale.substring(0, 40); 
             
             stream.getTracks().forEach(t => t.stop()); 
             video.style.display = 'none'; 
-
-            scriviLog("> Interrogazione Gatekeeper (Blacklist)...");
-            await pausa(1000);
 
             document.getElementById('risultati').style.display = 'block';
 
@@ -142,10 +163,9 @@
                 return;
             }
 
-            scriviLog("✅ Nessuna anomalia. Generazione completata.");
+            scriviLog("✅ Identità Generata. Pronta per la Blockchain.");
             document.getElementById('datiBuoni').style.display = 'block';
-            
-            document.getElementById('boxHash').innerHTML = `<strong>1. SMART IDENTITY CHAIN (SBT Hash):</strong><br>${hash}`;
+            document.getElementById('boxHash').innerHTML = `<strong>1. SMART IDENTITY CHAIN (SBT Hash):</strong><br>${hashSBTGlobale}`;
             document.getElementById('boxMaster').innerHTML = `<strong>2. MASTER ADDRESS (Pubblico):</strong><br>${master}`;
             
             document.getElementById('btnGenera').style.display = 'none'; 
@@ -157,29 +177,51 @@
         }
     }
 
-    // --- MINTING SU POLYGON (CON FURBATA PER MOBILE) ---
     async function minta() {
         scriviLog("> Inizializzazione Web3 per il Minting...");
+        await pausa(1500);
+        alert("SBT Registrato su Polygon Testnet!\nPassaggio all'area operativa logistica.");
         
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                await pausa(2000);
-                const fintoTxHash = "0x" + await creaHash(Date.now().toString());
-                scriviLog("✅ SMART IDENTITY REGISTRATA CON SUCCESSO SULLA BLOCKCHAIN!");
-                alert("SBT Registrato su Polygon!\nHASH: " + fintoTxHash.substring(0,42));
-            } catch (error) {
-                scriviLog("<span style='color:#ff3333;'>❌ Transazione fallita: " + error.message + "</span>");
-            }
-        } else {
-            scriviLog("⚠️ Nessun wallet Web3 rilevato nel browser.");
-            scriviLog("⏳ Esecuzione Gasless Minting tramite Server Relayer Aziendale...");
-            await pausa(2500);
-            scriviLog("✅ MINT COMPLETATO VIA RELAYER (Polygon Testnet)!");
-            alert("Operazione completata con successo tramite relayer aziendale. Fee pagate dal sistema.");
-        }
+        // TRANSIZIONE ALLA FASE 3
+        document.querySelector('h2').innerText = "HUB LOGISTICO";
+        document.getElementById('fase2').style.display = 'none';
+        document.getElementById('risultati').style.display = 'none';
+        document.getElementById('fase3').style.display = 'block';
+        scriviLog("📦 Passaggio al Modulo di Spedizione Operativa completato.");
+    }
+
+    // --- FASE 3: SPEDIZIONE E BLACKBOX ---
+    async function preparaSpedizione() {
+        const idBancale = document.getElementById('idBancale').value.trim();
+        if(!idBancale) { scriviLog("<span style='color:#ff3333;'>❌ Inserisci l'ID del Bancale.</span>"); return; }
+
+        scriviLog(`> Derivazione crittografica Zero-Knowledge per [${idBancale}]...`);
+        
+        // Unisce l'SBT segreto con l'ID del bancale
+        const txHash = await creaHash(hashSBTGlobale + idBancale);
+        const txAddress = "0x" + txHash.substring(0, 40);
+
+        document.getElementById('iotPanel').style.display = 'block';
+        document.getElementById('boxTx').innerHTML = `<strong>INDIRIZZO LOGISTICO (Usa e Getta):</strong><br>${txAddress}`;
+        document.getElementById('btnSpedizione').style.display = 'none'; // Nasconde il tasto
+
+        scriviLog("✅ Indirizzo usa e getta generato. Connessione alla Blackbox in corso...");
+
+        // Simulazione caricamento hardware IoT
+        await pausa(1500);
+        document.getElementById('chkPeso').innerHTML = "✅ Verifica Peso: 450.2 KG (Conforme)";
+        document.getElementById('chkPeso').classList.add('active');
+        scriviLog("📡 [IoT] Sensore peso allineato.");
+
+        await pausa(1000);
+        document.getElementById('chkGps').innerHTML = "✅ GPS: Lat 44.06, Lon 12.56 (Rimini Hub)";
+        document.getElementById('chkGps').classList.add('active');
+        scriviLog("📡 [IoT] Coordinate GPS bloccate.");
+
+        await pausa(1000);
+        document.getElementById('chkTamper').innerHTML = "✅ Sigillo Tamper-Proof: INTEGRO";
+        document.getElementById('chkTamper').classList.add('active');
+        scriviLog("📡 [IoT] Sensori anti-infrazione armati.");
     }
 </script>
 
