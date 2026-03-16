@@ -19,18 +19,23 @@
         #btnSpid { background: #0066cc; color: white; }
         #btnCie { background: #008080; color: white; }
         #btnSpedizione { background: #ff9900; color: #000; }
+        #btnCreaNft { background: #8247e5; color: white; display: none; margin-top: 15px; }
         
         #video { width: 100%; border: 1px solid #00cccc; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; }
         #log { font-family: 'Courier New', monospace; font-size: 12px; height: 120px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
         
         .address-box { background: #001a1a; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00cccc; font-family: 'Courier New', monospace; color: #fff; }
         
-        /* Stili per la Blackbox IoT */
         .iot-panel { background: #001111; border: 1px solid #00ffff; padding: 15px; margin-top: 15px; border-radius: 5px; }
         .iot-list { list-style: none; padding: 0; font-family: 'Courier New', monospace; font-size: 14px; line-height: 2; color: #aaa; }
         .iot-list li.active { color: #00ff00; font-weight: bold; }
+        
         .blink { animation: blinker 1.5s linear infinite; color: #ff9900; font-weight: bold; text-align: center; margin-top: 15px; font-size: 13px; }
         @keyframes blinker { 50% { opacity: 0; } }
+        
+        /* Stile Box NFT */
+        .nft-box { background: #1a0033; border: 1px solid #8247e5; padding: 15px; margin-top: 15px; border-radius: 5px; text-align: center; display: none; }
+        .nft-title { color: #cc99ff; font-weight: bold; font-size: 16px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -58,7 +63,7 @@
         <input type="password" id="salt" placeholder="SECRET SALT">
         <video id="video" autoplay playsinline style="display: none;"></video>
         <button id="btnGenera" onclick="generaIdentita()">CREA IDENTITÀ BLOCKCHAIN</button>
-        <button id="btnMint" onclick="minta()" style="display: none; background: #8247e5; color: white;">MINTA SU POLYGON TESTNET</button>
+        <button id="btnMint" onclick="mintaSBT()" style="display: none; background: #009999; color: white;">MINTA SU POLYGON TESTNET</button>
     </div>
 
     <div id="risultati" style="display: none;">
@@ -72,23 +77,38 @@
     </div>
 
     <div id="fase3" style="display: none;">
-        <h3>📦 LOGISTICA OPERATIVA</h3>
-        <p style="text-align: center; font-size: 12px; color: #00ff00;">Autenticazione SBT Attiva. Sistema pronto.</p>
+        <h3>📦 HUB LOGISTICO OPERATIVO</h3>
+        <p style="text-align: center; font-size: 12px; color: #00ff00;">Autenticazione SBT Attiva.</p>
         
-        <input type="text" id="idBancale" placeholder="ID BANCALE / SPEDIZIONE (es. PALLET-001)">
-        <button id="btnSpedizione" onclick="preparaSpedizione()">GENERA INDIRIZZO SPEDIZIONE</button>
+        <input type="text" id="idBancale" placeholder="ID BANCALE (es. PALLET-001)">
+        <button id="btnSpedizione" onclick="avviaSincronizzazione()">SINCRONIZZA BLACKBOX</button>
 
         <div id="iotPanel" class="iot-panel" style="display: none;">
             <h4 style="text-align: center; margin-top: 0; color: #fff;">📡 IOT BLACKBOX SYNC</h4>
             <div class="address-box" id="boxTx" style="border-color: #ff9900; background: #331a00;"></div>
             
             <ul class="iot-list">
-                <li id="chkPeso">⏳ Sincronizzazione Sensore Peso...</li>
-                <li id="chkGps">⏳ Acquisizione Satelliti GPS...</li>
-                <li id="chkTamper">⏳ Attivazione Sensori Tamper-Proof...</li>
+                <li id="chkPeso">⏳ Sensore Peso...</li>
+                <li id="chkGps">⏳ Acquisizione GPS...</li>
+                <li id="chkTamper">⏳ Sensori Tamper-Proof...</li>
             </ul>
             
-            <div class="blink">IN ATTESA DI TRASMISSIONE DATI IN BLOCKCHAIN...</div>
+            <div id="txtAttesa" class="blink">ACQUISIZIONE DATI IN CORSO...</div>
+            
+            <button id="btnCreaNft" onclick="coniaNftBancale()">CREA NFT BANCALE (DIGITAL TWIN)</button>
+        </div>
+
+        <div id="boxNft" class="nft-box">
+            <div class="nft-title">💎 GEMELLO DIGITALE CREATO</div>
+            <div style="font-size: 12px; color: #fff; text-align: left; line-height: 1.6;">
+                <strong>Token ID:</strong> #<span id="tokenId"></span><br>
+                <strong>Proprietario:</strong> <span id="ownerAddr" style="color: #ff9900;"></span><br>
+                <strong>Metadati (IPFS):</strong> 450.2KG | Lat 44.06 | Integro<br>
+                <strong>TxHash:</strong> <span id="nftTxHash" style="color: #00ff00; word-break: break-all;"></span>
+            </div>
+            <div style="margin-top: 15px; color: #00ffff; font-size: 12px; border-top: 1px dashed #8247e5; padding-top: 10px;">
+                Bancale pronto per l'handover al corriere.
+            </div>
         </div>
     </div>
 
@@ -97,7 +117,8 @@
 
 <script>
     const logDiv = document.getElementById('log');
-    let hashSBTGlobale = ""; // Variabile che salva l'SBT per passarlo alla Fase 3
+    let hashSBTGlobale = ""; 
+    let indirizzoUsaEGetta = "";
 
     function scriviLog(msg) {
         logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
@@ -113,13 +134,12 @@
 
     // --- FASE 1 ---
     async function avviaLogin(metodo) {
-        scriviLog(`> Connessione al gateway ${metodo}...`);
-        await pausa(1500);
-        scriviLog(`✅ Autenticazione ${metodo} completata.`);
+        scriviLog(`> Gateway ${metodo}...`);
+        await pausa(1000);
         document.getElementById('fase1').style.display = 'none';
         document.getElementById('fase2').style.display = 'block';
         document.getElementById('cf').value = "RSSMRA80A01H501U";
-        document.getElementById('msgSuccesso').innerText = `✅ Accesso effettuato via ${metodo}`;
+        document.getElementById('msgSuccesso').innerText = `✅ Accesso via ${metodo}`;
     }
 
     // --- FASE 2 ---
@@ -128,27 +148,16 @@
         const cf = document.getElementById('cf').value.trim();
         const salt = document.getElementById('salt').value.trim();
 
-        document.getElementById('risultati').style.display = 'none';
-        document.getElementById('allarme').style.display = 'none';
-        document.getElementById('datiBuoni').style.display = 'none';
-
-        if(pIva.length !== 11) { scriviLog("<span style='color:#ff3333;'>❌ ERRORE: P.IVA deve avere 11 numeri.</span>"); return; }
-        if(!salt) { scriviLog("<span style='color:#ff3333;'>❌ ERRORE: Inserisci il SALT.</span>"); return; }
-
-        scriviLog("> Verifica Registro Imprese Infocamere...");
-        await pausa(1000);
-        scriviLog("✅ Visura Camerale verificata.");
+        if(pIva.length !== 11 || !salt) { scriviLog("<span style='color:#ff3333;'>❌ Dati mancanti o P.IVA errata.</span>"); return; }
 
         const video = document.getElementById('video');
         video.style.display = 'block'; 
 
         try {
-            scriviLog("> Controllo Biometrico...");
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
             video.srcObject = stream;
-            await pausa(2500); 
+            await pausa(2000); 
             
-            // Creazione Hash e salvataggio globale
             hashSBTGlobale = await creaHash(cf + pIva + salt + "FACE_SIM");
             const master = "0x" + hashSBTGlobale.substring(0, 40); 
             
@@ -158,70 +167,82 @@
             document.getElementById('risultati').style.display = 'block';
 
             if(salt.toLowerCase() === "hacker") {
-                scriviLog("<span style='color:#ff3333;'>❌ BLOCCATO: Radice compromessa!</span>");
-                document.getElementById('allarme').style.display = 'block';
-                return;
+                document.getElementById('allarme').style.display = 'block'; return;
             }
 
-            scriviLog("✅ Identità Generata. Pronta per la Blockchain.");
             document.getElementById('datiBuoni').style.display = 'block';
-            document.getElementById('boxHash').innerHTML = `<strong>1. SMART IDENTITY CHAIN (SBT Hash):</strong><br>${hashSBTGlobale}`;
-            document.getElementById('boxMaster').innerHTML = `<strong>2. MASTER ADDRESS (Pubblico):</strong><br>${master}`;
+            document.getElementById('boxHash').innerHTML = `<strong>1. SMART IDENTITY (SBT):</strong><br>${hashSBTGlobale}`;
+            document.getElementById('boxMaster').innerHTML = `<strong>2. MASTER ADDRESS:</strong><br>${master}`;
             
             document.getElementById('btnGenera').style.display = 'none'; 
             document.getElementById('btnMint').style.display = 'block';  
 
-        } catch (err) {
-            scriviLog("<span style='color:#ff3333;'>❌ ERRORE CAM: " + err.message + "</span>");
-            video.style.display = 'none';
-        }
+        } catch (err) { scriviLog("<span style='color:red;'>❌ Errore Cam.</span>"); video.style.display = 'none'; }
     }
 
-    async function minta() {
-        scriviLog("> Inizializzazione Web3 per il Minting...");
-        await pausa(1500);
-        alert("SBT Registrato su Polygon Testnet!\nPassaggio all'area operativa logistica.");
+    async function mintaSBT() {
+        scriviLog("> Minting SBT su Polygon...");
+        await pausa(1000);
         
-        // TRANSIZIONE ALLA FASE 3
-        document.querySelector('h2').innerText = "HUB LOGISTICO";
+        document.querySelector('h2').innerText = "PANNELLO OPERATIVO";
         document.getElementById('fase2').style.display = 'none';
         document.getElementById('risultati').style.display = 'none';
         document.getElementById('fase3').style.display = 'block';
-        scriviLog("📦 Passaggio al Modulo di Spedizione Operativa completato.");
+        scriviLog("📦 Hub Logistico Attivato.");
     }
 
-    // --- FASE 3: SPEDIZIONE E BLACKBOX ---
-    async function preparaSpedizione() {
+    // --- FASE 3: IOT & DIGITAL TWIN ---
+    async function avviaSincronizzazione() {
         const idBancale = document.getElementById('idBancale').value.trim();
-        if(!idBancale) { scriviLog("<span style='color:#ff3333;'>❌ Inserisci l'ID del Bancale.</span>"); return; }
+        if(!idBancale) { scriviLog("<span style='color:#ff3333;'>❌ Inserisci ID Bancale.</span>"); return; }
 
-        scriviLog(`> Derivazione crittografica Zero-Knowledge per [${idBancale}]...`);
-        
-        // Unisce l'SBT segreto con l'ID del bancale
         const txHash = await creaHash(hashSBTGlobale + idBancale);
-        const txAddress = "0x" + txHash.substring(0, 40);
+        indirizzoUsaEGetta = "0x" + txHash.substring(0, 40);
 
         document.getElementById('iotPanel').style.display = 'block';
-        document.getElementById('boxTx').innerHTML = `<strong>INDIRIZZO LOGISTICO (Usa e Getta):</strong><br>${txAddress}`;
-        document.getElementById('btnSpedizione').style.display = 'none'; // Nasconde il tasto
+        document.getElementById('boxTx').innerHTML = `<strong>INDIRIZZO LOGISTICO (Usa e Getta):</strong><br>${indirizzoUsaEGetta}`;
+        document.getElementById('btnSpedizione').style.display = 'none'; 
 
-        scriviLog("✅ Indirizzo usa e getta generato. Connessione alla Blackbox in corso...");
-
-        // Simulazione caricamento hardware IoT
-        await pausa(1500);
-        document.getElementById('chkPeso').innerHTML = "✅ Verifica Peso: 450.2 KG (Conforme)";
+        await pausa(1000);
+        document.getElementById('chkPeso').innerHTML = "✅ Peso: 450.2 KG";
         document.getElementById('chkPeso').classList.add('active');
-        scriviLog("📡 [IoT] Sensore peso allineato.");
 
-        await pausa(1000);
-        document.getElementById('chkGps').innerHTML = "✅ GPS: Lat 44.06, Lon 12.56 (Rimini Hub)";
+        await pausa(800);
+        document.getElementById('chkGps').innerHTML = "✅ GPS: Lat 44.06, Lon 12.56";
         document.getElementById('chkGps').classList.add('active');
-        scriviLog("📡 [IoT] Coordinate GPS bloccate.");
 
-        await pausa(1000);
+        await pausa(800);
         document.getElementById('chkTamper').innerHTML = "✅ Sigillo Tamper-Proof: INTEGRO";
         document.getElementById('chkTamper').classList.add('active');
-        scriviLog("📡 [IoT] Sensori anti-infrazione armati.");
+        
+        // Fine scansione: mostra il bottone per l'NFT
+        document.getElementById('txtAttesa').style.display = 'none';
+        document.getElementById('btnCreaNft').style.display = 'block';
+        scriviLog("✅ Hardware sincronizzato. Pronto per creazione Digital Twin.");
+    }
+
+    // CREAZIONE DEL GEMELLO DIGITALE
+    async function coniaNftBancale() {
+        scriviLog("> Compilazione Smart Contract ERC-721 per Digital Twin...");
+        document.getElementById('btnCreaNft').style.display = 'none';
+        document.getElementById('txtAttesa').style.display = 'block';
+        document.getElementById('txtAttesa').innerText = "CONIAZIONE NFT IN CORSO SULLA BLOCKCHAIN...";
+
+        await pausa(2500); // Finge il tempo di rete
+
+        const fakeTokenId = Math.floor(Math.random() * 90000) + 10000; // Numero a caso tipo 84923
+        const fakeTxHashNft = "0x" + await creaHash(Date.now().toString() + "NFT");
+
+        document.getElementById('txtAttesa').style.display = 'none';
+        document.getElementById('boxNft').style.display = 'block';
+        
+        // Popola i dati dell'NFT
+        document.getElementById('tokenId').innerText = fakeTokenId;
+        document.getElementById('ownerAddr').innerText = indirizzoUsaEGetta.substring(0, 15) + "...";
+        document.getElementById('nftTxHash').innerText = fakeTxHashNft;
+
+        scriviLog("💎 GEMELLO DIGITALE CREATO CON SUCCESSO.");
+        scriviLog(`🔗 Token ID #${fakeTokenId} assegnato all'indirizzo logistico.`);
     }
 </script>
 
