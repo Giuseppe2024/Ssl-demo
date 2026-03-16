@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSL - Secure Smart Logistics</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background: #0f0f0f; color: #00ff00; padding: 20px; }
+        .container { max-width: 500px; margin: auto; border: 1px solid #00ff00; padding: 20px; box-shadow: 0 0 15px #00ff00; }
+        h2 { text-align: center; border-bottom: 1px solid #00ff00; padding-bottom: 10px; }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; background: #1a1a1a; border: 1px solid #00ff00; color: #00ff00; box-sizing: border-box; }
+        button { cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        button:hover { background: #00ff00; color: #000; }
+        #video { width: 100%; border: 1px solid #444; background: #000; border-radius: 5px; transform: scaleX(-1); }
+        #log { font-size: 12px; height: 150px; overflow-y: auto; border: 1px solid #333; padding: 10px; background: #050505; }
+        .address-box { background: #003300; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00ff00; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>SSL - IDENTITY MINT</h2>
+    
+    <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA">
+    <input type="text" id="cf" placeholder="CODICE FISCALE AD">
+    <input type="password" id="salt" placeholder="SECRET SALT (Backup/Recovery)">
+
+    <video id="video" autoplay playsinline></video>
+    
+    <button onclick="startVerification()">AVVIA ONBOARDING BIOMETRICO</button>
+
+    <div id="log"></div>
+    
+    <div id="result" class="hidden">
+        <div class="address-box" id="masterAddr"></div>
+        <div class="address-box" id="txAddr" style="background: #331a00;"></div>
+    </div>
+</div>
+
+<script>
+    const logDiv = document.getElementById('log');
+
+    function log(msg) {
+        const div = document.createElement('div');
+        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        logDiv.appendChild(div);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // --- LOGICA CRITTOGRAFICA (SHA256) ---
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // --- SIMULAZIONE REGISTRO (MOCKUP BLACKLIST) ---
+    // In un caso reale, questa funzione interroga lo Smart Contract
+    function checkRegistry(pIva) {
+        const mockDatabase = {
+            "12345678901": { status: "ACTIVE", address: "0x123...abc" },
+            "00000000000": { status: "BLACKLISTED", address: "0xdead...beef" }
+        };
+        return mockDatabase[pIva] || null;
+    }
+
+    async function startVerification() {
+        const pIva = document.getElementById('pIva').value;
+        const cf = document.getElementById('cf').value;
+        const salt = document.getElementById('salt').value;
+
+        if(!pIva || !cf || !salt) {
+            log("❌ ERRORE: Compila tutti i campi.");
+            return;
+        }
+
+        // 1. CONTROLLO LOGICO GATEKEEPER
+        log("> Interrogazione Registro Blockchain...");
+        const registryStatus = checkRegistry(pIva);
+
+        if (registryStatus && registryStatus.status === "ACTIVE") {
+            log("🚫 ERRORE: P.IVA già collegata a un Soulbound Token attivo.");
+            log("⚠️ Se hai perso le chiavi, l'indirizzo deve essere prima BLACKLISTATO.");
+            return;
+        }
+
+        if (registryStatus && registryStatus.status === "BLACKLISTED") {
+            log("✅ Reset rilevato: Indirizzo precedente in Blacklist. Autorizzo nuova generazione.");
+        } else {
+            log("✅ Nuova P.IVA rilevata. Procedo.");
+        }
+
+        // 2. ACCESSO FOTOCAMERA (Versione Corazzata per Chrome)
+        const video = document.getElementById('video');
+        try {
+            log("> Richiesta accesso Biometrico...");
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: "user" }, 
+                audio: false 
+            });
+            video.srcObject = stream;
+            log("📷 Fotocamera attiva. Acquisizione volto...");
+            
+            // Simuliamo il tempo di scansione
+            await new Promise(r => setTimeout(r, 2000));
+            log("✅ Scansione completata.");
+            
+            // 3. GENERAZIONE MASTER ADDRESS (Indirizzo Radice con SBT)
+            // Formula: CF + PIVA + SALT + FACCIA
+            const faceData = "FACE_VECTOR_DATA_SIMULATED"; 
+            const masterSeed = await sha256(cf + pIva + salt + faceData);
+            const masterAddress = "0x" + masterSeed.substring(0, 40); // Simuliamo indirizzo Polygon
+
+            // 4. GENERAZIONE INDIRIZZO TRANSAZIONE (HD - Privacy)
+            // Ogni transazione ha un ID diverso che crea un figlio diverso
+            const txId = "SHIPMENT_001"; 
+            const txSeed = await sha256(masterSeed + txId);
+            const transactionAddress = "0x" + txSeed.substring(0, 40);
+
+            // 5. OUTPUT FINALE
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('masterAddr').innerHTML = `<strong>MASTER SBT (Radice):</strong><br>${masterAddress}`;
+            document.getElementById('txAddr').innerHTML = `<strong>TX ADDRESS (Usa e getta):</strong><br>${transactionAddress}`;
+            
+            log("🚀 PROCEDURA COMPLETATA: Soulbound Token pronto per il Mint.");
+            log("💡 Nota: L'indirizzo TX è anonimo e protegge la tua privacy.");
+
+            // Stop camera
+            stream.getTracks().forEach(track => track.stop());
+
+        } catch (err) {
+            log("❌ ERRORE CAM: " + err.message);
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                log("⚠️ ATTENZIONE: Chrome richiede HTTPS per la fotocamera!");
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
