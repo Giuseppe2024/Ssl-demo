@@ -88,12 +88,12 @@
             <div class="address-box" id="boxTx" style="border-color: #ff9900; background: #331a00;"></div>
             
             <ul class="iot-list">
-                <li id="chkPeso">⏳ Sensore Peso...</li>
-                <li id="chkGps">⏳ Acquisizione GPS...</li>
-                <li id="chkTamper">⏳ Sensori Tamper-Proof...</li>
+                <li id="chkConnessione">⏳ Connessione Bluetooth...</li>
+                <li id="chkTemp">⏳ Acquisizione Temperatura...</li>
+                <li id="chkGps">⏳ Acquisizione Satelliti GPS...</li>
             </ul>
             
-            <div id="txtAttesa" class="blink">ACQUISIZIONE DATI IN CORSO...</div>
+            <div id="txtAttesa" class="blink">ACQUISIZIONE DATI REALI IN CORSO...</div>
             
             <button id="btnCreaNft" onclick="coniaNftBancale()">CREA NFT BANCALE (DIGITAL TWIN)</button>
         </div>
@@ -103,7 +103,7 @@
             <div style="font-size: 12px; color: #fff; text-align: left; line-height: 1.6;">
                 <strong>Token ID:</strong> #<span id="tokenId"></span><br>
                 <strong>Proprietario:</strong> <span id="ownerAddr" style="color: #ff9900;"></span><br>
-                <strong>Metadati (IPFS):</strong> 450.2KG | Lat 44.06 | Integro<br>
+                <strong>Metadati (IPFS):</strong> <span id="metaDataText"></span><br>
                 <strong>TxHash:</strong> <span id="nftTxHash" style="color: #00ff00; word-break: break-all;"></span>
             </div>
             <div style="margin-top: 15px; color: #00ffff; font-size: 12px; border-top: 1px dashed #8247e5; padding-top: 10px;">
@@ -119,6 +119,15 @@
     const logDiv = document.getElementById('log');
     let hashSBTGlobale = ""; 
     let indirizzoUsaEGetta = "";
+    
+    // Variabili per i dati reali dal Bluetooth
+    let realTemp = "--";
+    let realLat = "--";
+    let realLng = "--";
+
+    // UUID per il Bluetooth dell'ESP32
+    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
     function scriviLog(msg) {
         logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
@@ -191,7 +200,7 @@
         scriviLog("📦 Hub Logistico Attivato.");
     }
 
-    // --- FASE 3: IOT & DIGITAL TWIN ---
+    // --- FASE 3: INTEGRAZIONE REALE ESP32 BLUETOOTH ---
     async function avviaSincronizzazione() {
         const idBancale = document.getElementById('idBancale').value.trim();
         if(!idBancale) { scriviLog("<span style='color:#ff3333;'>❌ Inserisci ID Bancale.</span>"); return; }
@@ -203,22 +212,52 @@
         document.getElementById('boxTx').innerHTML = `<strong>INDIRIZZO LOGISTICO (Usa e Getta):</strong><br>${indirizzoUsaEGetta}`;
         document.getElementById('btnSpedizione').style.display = 'none'; 
 
-        await pausa(1000);
-        document.getElementById('chkPeso').innerHTML = "✅ Peso: 450.2 KG";
-        document.getElementById('chkPeso').classList.add('active');
+        // AVVIA LA VERA CONNESSIONE BLUETOOTH
+        connettiESP32();
+    }
 
-        await pausa(800);
-        document.getElementById('chkGps').innerHTML = "✅ GPS: Lat 44.06, Lon 12.56";
-        document.getElementById('chkGps').classList.add('active');
+    async function connettiESP32() {
+        try {
+            scriviLog("> Ricerca SmartSheer_Tracker in corso via Bluetooth...");
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ name: 'SmartSheer_Tracker' }],
+                optionalServices: [SERVICE_UUID]
+            });
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(SERVICE_UUID);
+            const char = await service.getCharacteristic(CHARACTERISTIC_UUID);
 
-        await pausa(800);
-        document.getElementById('chkTamper').innerHTML = "✅ Sigillo Tamper-Proof: INTEGRO";
-        document.getElementById('chkTamper').classList.add('active');
-        
-        // Fine scansione: mostra il bottone per l'NFT
-        document.getElementById('txtAttesa').style.display = 'none';
-        document.getElementById('btnCreaNft').style.display = 'block';
-        scriviLog("✅ Hardware sincronizzato. Pronto per creazione Digital Twin.");
+            // Aggiorna UI Connessione
+            document.getElementById('chkConnessione').innerHTML = "✅ Connessione ESP32 Stabilita";
+            document.getElementById('chkConnessione').classList.add('active');
+            scriviLog("✅ Connesso al Tracker! In attesa dei sensori...");
+
+            char.startNotifications();
+            char.addEventListener('characteristicvaluechanged', (event) => {
+                // Legge i dati reali: Temp|Lat|Lng
+                const rawData = new TextDecoder().decode(event.target.value);
+                const parts = rawData.split('|');
+                
+                realTemp = parts[0];
+                realLat = parts[1];
+                realLng = parts[2];
+                
+                // Aggiorna UI con i veri dati
+                document.getElementById('chkTemp').innerHTML = `✅ Temperatura: ${realTemp} °C`;
+                document.getElementById('chkTemp').classList.add('active');
+                
+                document.getElementById('chkGps').innerHTML = `✅ Posizione: Lat ${realLat}, Lon ${realLng}`;
+                document.getElementById('chkGps').classList.add('active');
+                
+                // Sblocca il pulsante NFT
+                document.getElementById('txtAttesa').style.display = 'none';
+                document.getElementById('btnCreaNft').style.display = 'block';
+            });
+            
+        } catch (err) { 
+            scriviLog(`<span style='color:red;'>❌ Errore Bluetooth: ${err.message}</span>`); 
+            document.getElementById('txtAttesa').innerText = "ERRORE CONNESSIONE BLUETOOTH";
+        }
     }
 
     // CREAZIONE DEL GEMELLO DIGITALE
@@ -228,21 +267,22 @@
         document.getElementById('txtAttesa').style.display = 'block';
         document.getElementById('txtAttesa').innerText = "CONIAZIONE NFT IN CORSO SULLA BLOCKCHAIN...";
 
-        await pausa(2500); // Finge il tempo di rete
+        await pausa(2500); // Finge il tempo di rete della Blockchain
 
-        const fakeTokenId = Math.floor(Math.random() * 90000) + 10000; // Numero a caso tipo 84923
+        const fakeTokenId = Math.floor(Math.random() * 90000) + 10000; 
         const fakeTxHashNft = "0x" + await creaHash(Date.now().toString() + "NFT");
 
         document.getElementById('txtAttesa').style.display = 'none';
         document.getElementById('boxNft').style.display = 'block';
         
-        // Popola i dati dell'NFT
+        // Popola i dati dell'NFT con i VERI DATI DELL'ESP32
         document.getElementById('tokenId').innerText = fakeTokenId;
         document.getElementById('ownerAddr').innerText = indirizzoUsaEGetta.substring(0, 15) + "...";
+        document.getElementById('metaDataText').innerText = `Temp: ${realTemp}°C | Lat: ${realLat} | Lng: ${realLng}`;
         document.getElementById('nftTxHash').innerText = fakeTxHashNft;
 
         scriviLog("💎 GEMELLO DIGITALE CREATO CON SUCCESSO.");
-        scriviLog(`🔗 Token ID #${fakeTokenId} assegnato all'indirizzo logistico.`);
+        scriviLog(`🔗 Token ID #${fakeTokenId} assegnato all'indirizzo logistico con dati IoT reali.`);
     }
 </script>
 
