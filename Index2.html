@@ -3,288 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMART SHEER LOGISTIC</title>
+    <title>SMART SHEER LOGISTIC - ERP</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #050505; color: #00cccc; padding: 20px; }
-        .container { max-width: 500px; margin: auto; background-color: #0a0a0a; border: 1px solid #00cccc; box-shadow: 0 0 20px rgba(0, 204, 204, 0.2); padding: 20px; border-radius: 8px; }
-        
-        h2 { text-align: center; color: #fff; font-size: 1.2em; font-weight: 300; letter-spacing: 2px; text-shadow: 0 0 10px #00cccc; border-bottom: 1px solid #00cccc; padding-bottom: 15px; margin-bottom: 25px; }
-        h3 { text-align: center; color: #00ffff; font-size: 1em; margin-bottom: 15px; }
-
-        input, button { width: 100%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #00cccc; color: #00ffff; box-sizing: border-box; font-size: 16px; border-radius: 4px; }
-        input::placeholder { color: #006666; }
-        button { cursor: pointer; font-weight: bold; text-transform: uppercase; color: #050505; background: #00cccc; border: none; }
-        
-        #btnSpid { background: #0066cc; color: white; }
-        #btnCie { background: #008080; color: white; }
-        #btnSpedizione { background: #ff9900; color: #000; }
-        #btnCreaNft { background: #8247e5; color: white; display: none; margin-top: 15px; }
-        
-        #video { width: 100%; border: 1px solid #00cccc; background: #000; border-radius: 5px; transform: scaleX(-1); margin-top: 10px; }
-        #log { font-family: 'Courier New', monospace; font-size: 12px; height: 120px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
-        
-        .address-box { background: #001a1a; padding: 10px; font-size: 11px; word-break: break-all; margin-top: 10px; border: 1px dashed #00cccc; font-family: 'Courier New', monospace; color: #fff; }
-        
-        .iot-panel { background: #001111; border: 1px solid #00ffff; padding: 15px; margin-top: 15px; border-radius: 5px; }
-        .iot-list { list-style: none; padding: 0; font-family: 'Courier New', monospace; font-size: 14px; line-height: 2; color: #aaa; }
-        .iot-list li.active { color: #00ff00; font-weight: bold; }
-        
-        .blink { animation: blinker 1.5s linear infinite; color: #ff9900; font-weight: bold; text-align: center; margin-top: 15px; font-size: 13px; }
-        @keyframes blinker { 50% { opacity: 0; } }
-        
-        /* Stile Box NFT */
-        .nft-box { background: #1a0033; border: 1px solid #8247e5; padding: 15px; margin-top: 15px; border-radius: 5px; text-align: center; display: none; }
-        .nft-title { color: #cc99ff; font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #050505; color: #00cccc; padding: 20px; margin:0; }
+        .container { max-width: 900px; margin: auto; background-color: #0a0a0a; border: 1px solid #00cccc; box-shadow: 0 0 20px rgba(0, 204, 204, 0.2); padding: 20px; border-radius: 8px; }
+        h2 { text-align: center; color: #fff; border-bottom: 1px solid #00cccc; padding-bottom: 10px; margin-bottom: 20px; }
+        h3 { color: #00ffff; margin-top: 0; }
+        input[type="text"], input[type="password"], button { width: 100%; padding: 12px; margin: 8px 0; background: #111; border: 1px solid #00cccc; color: #00ffff; border-radius: 4px; box-sizing: border-box; }
+        button { cursor: pointer; font-weight: bold; background: #00cccc; color: #000; border: none; text-transform: uppercase; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+        #log { font-family: monospace; font-size: 11px; height: 120px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; background: #0a0a0a; }
+        th, td { border: 1px solid #004444; padding: 8px; text-align: left; color: #fff; word-break: break-word; }
+        th { background: #002222; color: #00ffff; }
+        .menu-top { display: flex; gap: 10px; margin-bottom: 20px; }
+        .menu-top button { margin: 0; background: #004444; color: white; }
+        #protezione-accesso { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #050505; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { padding: 30px; border: 2px solid #00cccc; background: #0a0a0a; border-radius: 10px; width: 350px; text-align: center; }
+        .admin-panel { border: 2px solid #ff3333; padding: 15px; border-radius: 8px; background: #1a0505; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    
-    <div style="text-align: center; margin-bottom: 25px;">
-        <span style="font-size: 2.3em; font-weight: 900; letter-spacing: 1px; color: #fff; text-shadow: 0 0 10px #00ffff, 0 0 20px #00cccc; display: inline-block; line-height: 1.1;">
-            SMART SHEER<br>LOGISTIC
-        </span>
-    </div>
-
-    <h2>ONBOARDING ISTITUZIONALE</h2>
-    
-    <div id="fase1">
-        <p style="text-align: center; font-size: 14px; color: #88bbbb;">Seleziona autenticazione:</p>
-        <button id="btnSpid" onclick="avviaLogin('SPID')">🔐 ACCEDI CON SPID</button>
-        <button id="btnCie" onclick="avviaLogin('CIE 3.0')">💳 ACCEDI CON CIE</button>
-    </div>
-
-    <div id="fase2" style="display: none;">
-        <p style="text-align: center; color: #00ffff; font-weight: bold;" id="msgSuccesso"></p>
-        <input type="text" id="cf" readonly style="color: #669999; background: #0a0a0a;">
-        <input type="text" id="pIva" placeholder="PARTITA IVA AZIENDA (11 cifre)">
-        <input type="password" id="salt" placeholder="SECRET SALT">
-        <video id="video" autoplay playsinline style="display: none;"></video>
-        <button id="btnGenera" onclick="generaIdentita()">CREA IDENTITÀ BLOCKCHAIN</button>
-        <button id="btnMint" onclick="mintaSBT()" style="display: none; background: #009999; color: white;">MINTA SU POLYGON TESTNET</button>
-    </div>
-
-    <div id="risultati" style="display: none;">
-        <div id="allarme" style="display: none; background: #330000; border: 1px solid #ff0000; color: #ff3333; padding: 10px; font-weight: bold; text-align: center; margin-top: 10px;">
-            ⚠️ ALLARME SICUREZZA: Identità in BLACKLIST!
-        </div>
-        <div id="datiBuoni" style="display: none;">
-            <div class="address-box" style="border-color: #00ffff; background: #002222;" id="boxHash"></div>
-            <div class="address-box" id="boxMaster"></div>
-        </div>
-    </div>
-
-    <div id="fase3" style="display: none;">
-        <h3>📦 HUB LOGISTICO OPERATIVO</h3>
-        <p style="text-align: center; font-size: 12px; color: #00ff00;">Autenticazione SBT Attiva.</p>
+<div id="protezione-accesso">
+    <div class="login-box" id="boxPassword">
+        <h2 id="titoloLogin" style="border:none; color:#00cccc; margin-top:0;">🔐 ACCESSO ERP</h2>
+        <div style="font-size: 10px; color:#aaa; text-align:left; border: 1px dashed #444; padding: 8px; margin-bottom: 15px; background:#000;" id="reteInfo">Rilevamento IP in corso...</div>
         
-        <input type="text" id="idBancale" placeholder="ID BANCALE (es. PALLET-001)">
-        <button id="btnSpedizione" onclick="avviaSincronizzazione()">SINCRONIZZA BLACKBOX</button>
-
-        <div id="iotPanel" class="iot-panel" style="display: none;">
-            <h4 style="text-align: center; margin-top: 0; color: #fff;">📡 IOT BLACKBOX SYNC</h4>
-            <div class="address-box" id="boxTx" style="border-color: #ff9900; background: #331a00;"></div>
-            
-            <ul class="iot-list">
-                <li id="chkConnessione">⏳ Connessione Bluetooth...</li>
-                <li id="chkTemp">⏳ Acquisizione Temperatura...</li>
-                <li id="chkGps">⏳ Acquisizione Satelliti GPS...</li>
-            </ul>
-            
-            <div id="txtAttesa" class="blink">ACQUISIZIONE DATI REALI IN CORSO...</div>
-            
-            <button id="btnCreaNft" onclick="coniaNftBancale()">CREA NFT BANCALE (DIGITAL TWIN)</button>
-        </div>
-
-        <div id="boxNft" class="nft-box">
-            <div class="nft-title">💎 GEMELLO DIGITALE CREATO</div>
-            <div style="font-size: 12px; color: #fff; text-align: left; line-height: 1.6;">
-                <strong>Token ID:</strong> #<span id="tokenId"></span><br>
-                <strong>Proprietario:</strong> <span id="ownerAddr" style="color: #ff9900;"></span><br>
-                <strong>Metadati (IPFS):</strong> <span id="metaDataText"></span><br>
-                <strong>TxHash:</strong> <span id="nftTxHash" style="color: #00ff00; word-break: break-all;"></span>
-            </div>
-            <div style="margin-top: 15px; color: #00ffff; font-size: 12px; border-top: 1px dashed #8247e5; padding-top: 10px;">
-                Bancale pronto per l'handover al corriere.
+        <input type="password" id="passAccesso" placeholder="Password Admin o Cliente2026">
+        
+        <div style="background:#111; border:1px solid #333; padding:15px; margin: 15px 0; border-radius:4px; text-align:left;">
+            <span style="color:#888; font-size:11px;">Verifica Umana:</span><br>
+            <div style="display:flex; align-items:center; margin-top:5px;">
+                <span style="color:#fff; font-weight:bold; font-size:16px; width:50%;" id="testoCaptcha">X + Y =</span>
+                <input type="text" id="rispostaCaptcha" placeholder="Risultato" style="width:50%; margin:0; text-align:center;">
             </div>
         </div>
+
+        <div style="text-align:left; margin-bottom:20px;">
+            <label style="color:#ff9900; font-size:13px; cursor:pointer;"><input type="checkbox" id="usa2FA"> 🛡️ Richiedi 2FA</label>
+        </div>
+        <button id="btnAccesso" onclick="verificaSicurezzaPrincipale()">VERIFICA E AVANTI ➔</button>
     </div>
 
-    <div id="log"></div>
+    <div class="login-box" id="box2FA" style="display:none; border-color:#8247e5;">
+        <h2 style="border:none; color:#8247e5; margin-top:0;">📱 2FA</h2>
+        <input type="text" id="codice2FA" placeholder="123456" maxlength="6" style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:bold;">
+        <button style="background:#8247e5; color:white; margin-top:20px;" onclick="verifica2FA()">ACCEDI AL SISTEMA</button>
+    </div>
 </div>
 
-<script>
-    const logDiv = document.getElementById('log');
-    let hashSBTGlobale = ""; 
-    let indirizzoUsaEGetta = "";
-    
-    // Variabili per i dati reali dal Bluetooth
-    let realTemp = "--";
-    let realLat = "--";
-    let realLng = "--";
+<div class="container">
+    <div style="text-align: center; margin-bottom: 25px;">
+        <span style="font-size: 2.2em; font-weight: 900; color: #fff; text-shadow: 0 0 10px #00ffff; letter-spacing: 2px;">SMART SHEER LOGISTIC</span>
+    </div>
 
-    // UUID per il Bluetooth dell'ESP32
-    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-    const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+    <div id="dashboardAdmin" style="display:none;">
+        <div class="admin-panel">
+            <h2 style="color:#ff3333; border-color:#ff3333; margin-top:0;">👑 ADMIN CONTROL CENTER</h2>
+            <div style="display: flex; gap:10px; margin-top:20px;">
+                <input type="text" id="walletHacker" placeholder="Indirizzo MetaMask rubato (0x...)" style="border-color:#ff0000; color:#ff3333;">
+                <button style="background:#ff0000; color:white; width:auto; padding:0 20px;" onclick="attivaKillSwitch()">🚨 BRUCIA SBT</button>
+            </div>
+        </div>
 
-    function scriviLog(msg) {
-        logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-        logDiv.scrollTop = logDiv.scrollHeight;
-    }
+        <div style="background: #111; padding: 15px; border-radius: 5px; border: 1px dashed #00cccc; margin-bottom: 20px;">
+            <h3 style="color:#00cccc; margin-top:0;">📖 RUBRICA PRIVATA (DECODIFICA)</h3>
+            <p style="font-size:11px; color:#aaa;">Associa gli Hash segreti delle P.IVA ai nomi reali delle aziende sul tuo PC.</p>
+            <div style="display: flex; gap:10px; margin-bottom:10px;">
+                <input type="text" id="hashDaSalvare" placeholder="P.IVA Segreta (0x...)" style="width: 50%;">
+                <input type="text" id="nomeAzienda" placeholder="Nome Reale (es. Rossi SpA)" style="width: 30%;">
+                <button style="background:#00cccc; color:#000; width: 20%;" onclick="salvaInRubrica()">SALVA NOME</button>
+            </div>
+            <table id="tabellaRubrica" style="font-size:10px; background:#000;"></table>
+        </div>
 
-    const pausa = ms => new Promise(r => setTimeout(r, ms));
+        <div style="background: #050505; padding: 15px; border-radius: 5px; border: 1px solid #00cccc;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">🌐 REGISTRO GLOBALE BLOCKCHAIN</h3>
+                <button style="background:#0066cc; color:white; width:auto; padding:8px 15px; font-size:11px;" onclick="caricaTutteSpedizioni()">SCARICA DATI NODO</button>
+            </div>
+            <div style="overflow-x:auto; margin-top:15px;">
+                <table id="tabellaAdmin">
+                    <tr><th>ID NFT</th><th>Data</th><th>Mittente</th><th>Destinatario</th><th>DDT</th><th>Sensori IOT</th></tr>
+                </table>
+            </div>
+        </div>
+    </div>
 
-    async function creaHash(testo) {
-        const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(testo));
-        return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+    <div id="dashboardCliente" style="display:none;">
+        <div id="faseOnboarding">
+            <h2>ONBOARDING IDENTITÀ (SBT)</h2>
+            <input type="text" id="pIva" placeholder="P.IVA Azienda">
+            <input type="password" id="salt" placeholder="Secret Salt (Password crittografica)">
+            <button onclick="generaIdentita()">1. GENERA IDENTITÀ CRITTOGRAFICA</button>
+            <div id="boxHash" style="background:#001a1a; padding:10px; font-size:11px; margin-top:10px; border:1px dashed #00cccc; color:#fff; display:none; word-break:break-all;"></div>
+            <button id="btnMintSBT" style="display:none; background:#009999; color:white;" onclick="registraSBTSuBlockchain()">2. FIRMA E CREA SBT SU POLYGON</button>
+        </div>
 
-    // --- FASE 1 ---
-    async function avviaLogin(metodo) {
-        scriviLog(`> Gateway ${metodo}...`);
-        await pausa(1000);
-        document.getElementById('fase1').style.display = 'none';
-        document.getElementById('fase2').style.display = 'block';
-        document.getElementById('cf').value = "RSSMRA80A01H501U";
-        document.getElementById('msgSuccesso').innerText = `✅ Accesso via ${metodo}`;
-    }
+        <div id="faseOperativa" style="display:none;">
+            <div class="menu-top">
+                <button onclick="mostraSezione('crea')">📦 SPEDISCI BANCALE</button>
+                <button onclick="mostraSezione('storico'); caricaMieSpedizioni();">📜 LE MIE SPEDIZIONI</button>
+                <button onclick="mostraSezione('handover')" style="background:#006600;">🤝 CONSEGNA AL CLIENTE</button>
+            </div>
 
-    // --- FASE 2 ---
-    async function generaIdentita() {
-        const pIva = document.getElementById('pIva').value.trim();
-        const cf = document.getElementById('cf').value.trim();
-        const salt = document.getElementById('salt').value.trim();
-
-        if(pIva.length !== 11 || !salt) { scriviLog("<span style='color:#ff3333;'>❌ Dati mancanti o P.IVA errata.</span>"); return; }
-
-        const video = document.getElementById('video');
-        video.style.display = 'block'; 
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-            video.srcObject = stream;
-            await pausa(2000); 
-            
-            hashSBTGlobale = await creaHash(cf + pIva + salt + "FACE_SIM");
-            const master = "0x" + hashSBTGlobale.substring(0, 40); 
-            
-            stream.getTracks().forEach(t => t.stop()); 
-            video.style.display = 'none'; 
-
-            document.getElementById('risultati').style.display = 'block';
-
-            if(salt.toLowerCase() === "hacker") {
-                document.getElementById('allarme').style.display = 'block'; return;
-            }
-
-            document.getElementById('datiBuoni').style.display = 'block';
-            document.getElementById('boxHash').innerHTML = `<strong>1. SMART IDENTITY (SBT):</strong><br>${hashSBTGlobale}`;
-            document.getElementById('boxMaster').innerHTML = `<strong>2. MASTER ADDRESS:</strong><br>${master}`;
-            
-            document.getElementById('btnGenera').style.display = 'none'; 
-            document.getElementById('btnMint').style.display = 'block';  
-
-        } catch (err) { scriviLog("<span style='color:red;'>❌ Errore Cam.</span>"); video.style.display = 'none'; }
-    }
-
-    async function mintaSBT() {
-        scriviLog("> Minting SBT su Polygon...");
-        await pausa(1000);
-        
-        document.querySelector('h2').innerText = "PANNELLO OPERATIVO";
-        document.getElementById('fase2').style.display = 'none';
-        document.getElementById('risultati').style.display = 'none';
-        document.getElementById('fase3').style.display = 'block';
-        scriviLog("📦 Hub Logistico Attivato.");
-    }
-
-    // --- FASE 3: INTEGRAZIONE REALE ESP32 BLUETOOTH ---
-    async function avviaSincronizzazione() {
-        const idBancale = document.getElementById('idBancale').value.trim();
-        if(!idBancale) { scriviLog("<span style='color:#ff3333;'>❌ Inserisci ID Bancale.</span>"); return; }
-
-        const txHash = await creaHash(hashSBTGlobale + idBancale);
-        indirizzoUsaEGetta = "0x" + txHash.substring(0, 40);
-
-        document.getElementById('iotPanel').style.display = 'block';
-        document.getElementById('boxTx').innerHTML = `<strong>INDIRIZZO LOGISTICO (Usa e Getta):</strong><br>${indirizzoUsaEGetta}`;
-        document.getElementById('btnSpedizione').style.display = 'none'; 
-
-        // AVVIA LA VERA CONNESSIONE BLUETOOTH
-        connettiESP32();
-    }
-
-    async function connettiESP32() {
-        try {
-            scriviLog("> Ricerca SmartSheer_Tracker in corso via Bluetooth...");
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ name: 'SmartSheer_Tracker' }],
-                optionalServices: [SERVICE_UUID]
-            });
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService(SERVICE_UUID);
-            const char = await service.getCharacteristic(CHARACTERISTIC_UUID);
-
-            // Aggiorna UI Connessione
-            document.getElementById('chkConnessione').innerHTML = "✅ Connessione ESP32 Stabilita";
-            document.getElementById('chkConnessione').classList.add('active');
-            scriviLog("✅ Connesso al Tracker! In attesa dei sensori...");
-
-            char.startNotifications();
-            char.addEventListener('characteristicvaluechanged', (event) => {
-                // Legge i dati reali: Temp|Lat|Lng
-                const rawData = new TextDecoder().decode(event.target.value);
-                const parts = rawData.split('|');
-                
-                realTemp = parts[0];
-                realLat = parts[1];
-                realLng = parts[2];
-                
-                // Aggiorna UI con i veri dati
-                document.getElementById('chkTemp').innerHTML = `✅ Temperatura: ${realTemp} °C`;
-                document.getElementById('chkTemp').classList.add('active');
-                
-                document.getElementById('chkGps').innerHTML = `✅ Posizione: Lat ${realLat}, Lon ${realLng}`;
-                document.getElementById('chkGps').classList.add('active');
-                
-                // Sblocca il pulsante NFT
-                document.getElementById('txtAttesa').style.display = 'none';
-                document.getElementById('btnCreaNft').style.display = 'block';
-            });
-            
-        } catch (err) { 
-            scriviLog(`<span style='color:red;'>❌ Errore Bluetooth: ${err.message}</span>`); 
-            document.getElementById('txtAttesa').innerText = "ERRORE CONNESSIONE BLUETOOTH";
-        }
-    }
-
-    // CREAZIONE DEL GEMELLO DIGITALE
-    async function coniaNftBancale() {
-        scriviLog("> Compilazione Smart Contract ERC-721 per Digital Twin...");
-        document.getElementById('btnCreaNft').style.display = 'none';
-        document.getElementById('txtAttesa').style.display = 'block';
-        document.getElementById('txtAttesa').innerText = "CONIAZIONE NFT IN CORSO SULLA BLOCKCHAIN...";
-
-        await pausa(2500); // Finge il tempo di rete della Blockchain
-
-        const fakeTokenId = Math.floor(Math.random() * 90000) + 10000; 
-        const fakeTxHashNft = "0x" + await creaHash(Date.now().toString() + "NFT");
-
-        document.getElementById('txtAttesa').style.display = 'none';
-        document.getElementById('boxNft').style.display = 'block';
-        
-        // Popola i dati dell'NFT con i VERI DATI DELL'ESP32
-        document.getElementById('tokenId').innerText = fakeTokenId;
-        document.getElementById('ownerAddr').innerText = indirizzoUsaEGetta.substring(0, 15) + "...";
-        document.getElementById('metaDataText').innerText = `Temp: ${realTemp}°C | Lat: ${realLat} | Lng: ${realLng}`;
-        document.getElementById('nftTxHash').innerText = fakeTxHashNft;
-
-        scriviLog("💎 GEMELLO DIGITALE CREATO CON SUCCESSO.");
-        scriviLog(`🔗 Token ID #${fakeTokenId} assegnato all'indirizzo logistico con dati IoT reali.`);
-    }
-</script>
-
-</body>
-</html>
+            <div id="sezioneCrea">
+                <h3>CRE
