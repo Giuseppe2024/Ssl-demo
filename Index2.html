@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMART SHEER LOGISTIC - ERP</title>
+    <title>SMART SHEER - B2B LOGISTIC ERP</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #050505; color: #00cccc; padding: 20px; margin:0; }
         .container { max-width: 900px; margin: auto; background-color: #0a0a0a; border: 1px solid #00cccc; box-shadow: 0 0 20px rgba(0, 204, 204, 0.2); padding: 20px; border-radius: 8px; }
-        h2 { text-align: center; color: #fff; border-bottom: 1px solid #00cccc; padding-bottom: 10px; margin-bottom: 20px; }
-        h3 { color: #00ffff; margin-top: 0; }
-        input[type="text"], input[type="password"], button { width: 100%; padding: 12px; margin: 8px 0; background: #111; border: 1px solid #00cccc; color: #00ffff; border-radius: 4px; box-sizing: border-box; }
+        h2, h3 { color: #00ffff; margin-top: 0; }
+        input[type="text"], input[type="password"], input[type="number"], button { width: 100%; padding: 12px; margin: 8px 0; background: #111; border: 1px solid #00cccc; color: #00ffff; border-radius: 4px; box-sizing: border-box; }
         button { cursor: pointer; font-weight: bold; background: #00cccc; color: #000; border: none; text-transform: uppercase; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         #log { font-family: monospace; font-size: 11px; height: 120px; overflow-y: auto; border: 1px solid #004444; padding: 10px; background: #000; margin-top: 15px; color: #00cccc; }
@@ -19,9 +18,9 @@
         th { background: #002222; color: #00ffff; }
         .menu-top { display: flex; gap: 10px; margin-bottom: 20px; }
         .menu-top button { margin: 0; background: #004444; color: white; }
+        .box-panel { background: #001a1a; padding: 15px; border: 1px dashed #00ffff; border-radius: 5px; margin-top: 15px; }
         #protezione-accesso { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #050505; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .login-box { padding: 30px; border: 2px solid #00cccc; background: #0a0a0a; border-radius: 10px; width: 350px; text-align: center; }
-        .admin-panel { border: 2px solid #ff3333; padding: 15px; border-radius: 8px; background: #1a0505; margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -29,12 +28,459 @@
 <div id="protezione-accesso">
     <div class="login-box" id="boxPassword">
         <h2 id="titoloLogin" style="border:none; color:#00cccc; margin-top:0;">🔐 ACCESSO ERP</h2>
-        
         <input type="password" id="passAccesso" placeholder="Password Admin o Cliente2026">
         
         <div style="background:#111; border:1px solid #333; padding:15px; margin: 15px 0; border-radius:4px; text-align:left;">
             <span style="color:#888; font-size:11px;">Verifica Umana:</span><br>
             <div style="display:flex; align-items:center; margin-top:5px;">
+                <span style="color:#fff; font-weight:bold; font-size:16px; width:50%;" id="testoCaptcha">Calcolo...</span>
+                <input type="text" id="rispostaCaptcha" placeholder="Risultato" style="width:50%; margin:0; text-align:center;">
+            </div>
+        </div>
+
+        <div style="text-align:left; margin-bottom:20px;">
+            <label style="color:#ff9900; font-size:13px; cursor:pointer;"><input type="checkbox" id="usa2FA"> 🛡️ Richiedi 2FA</label>
+        </div>
+        <button id="btnAccesso" onclick="verificaSicurezzaPrincipale()">VERIFICA E AVANTI ➔</button>
+    </div>
+
+    <div class="login-box" id="box2FA" style="display:none; border-color:#8247e5;">
+        <h2 style="border:none; color:#8247e5; margin-top:0;">📱 2FA (Inserisci 123456)</h2>
+        <input type="text" id="codice2FA" placeholder="123456" maxlength="6" style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:bold;">
+        <button style="background:#8247e5; color:white; margin-top:20px;" onclick="verifica2FA()">ACCEDI AL SISTEMA</button>
+    </div>
+</div>
+
+<div class="container">
+    <div style="text-align: center; margin-bottom: 25px;">
+        <span style="font-size: 2.2em; font-weight: 900; color: #fff; text-shadow: 0 0 10px #00ffff;">SMART SHEER LOGISTIC</span>
+    </div>
+
+    <div id="dashboardAdmin" style="display:none;">
+        <div style="border: 2px solid #ff3333; padding: 15px; border-radius: 8px; background: #1a0505; margin-bottom: 20px;">
+            <h2 style="color:#ff3333; border-color:#ff3333; margin-top:0;">👑 ADMIN CONTROL CENTER</h2>
+            <div style="display: flex; gap:10px; margin-top:20px;">
+                <input type="text" id="walletHacker" placeholder="Wallet rubato (0x...)" style="border-color:#ff0000; color:#ff3333;">
+                <button style="background:#ff0000; color:white; width:auto; padding:0 20px;" onclick="attivaKillSwitch()">🚨 BRUCIA SBT</button>
+            </div>
+        </div>
+
+        <div style="background: #111; padding: 15px; border-radius: 5px; border: 1px dashed #00cccc; margin-bottom: 20px;">
+            <h3 style="color:#00cccc; margin-top:0;">📖 RUBRICA PRIVATA (OFF-CHAIN)</h3>
+            <div style="display: flex; gap:10px; margin-bottom:10px;">
+                <input type="text" id="hashDaSalvare" placeholder="P.IVA Segreta (0x...)" style="width: 50%;">
+                <input type="text" id="nomeAzienda" placeholder="Nome Reale (es. Rossi SpA)" style="width: 30%;">
+                <button style="background:#00cccc; color:#000; width: 20%;" onclick="salvaInRubrica()">SALVA</button>
+            </div>
+            <table id="tabellaRubrica" style="font-size:10px; background:#000;"></table>
+        </div>
+
+        <div style="background: #050505; padding: 15px; border-radius: 5px; border: 1px solid #00cccc;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">🌐 REGISTRO GLOBALE BLOCKCHAIN</h3>
+                <button style="background:#0066cc; color:white; width:auto; padding:8px 15px; font-size:11px;" onclick="caricaTutteSpedizioni()">SCARICA DATI NODO</button>
+            </div>
+            <div style="overflow-x:auto; margin-top:15px;">
+                <table id="tabellaAdmin"></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardCliente" style="display:none;">
+        
+        <div id="faseOnboarding">
+            <h3>1. ONBOARDING & GEO-FENCING</h3>
+            <input type="text" id="pIva" placeholder="La tua P.IVA">
+            <input type="password" id="salt" placeholder="Secret Salt (Password crittografica)">
+            <input type="text" id="indPartenza" placeholder="Indirizzo Magazzino Partenza (es. Via Roma 1, Milano)">
+            <button onclick="registraMagazzino()">CALCOLA GPS E FIRMA SBT</button>
+            <p id="geoPartenza" style="font-size:11px; color:#aaa;"></p>
+            <button style="background:#444; margin-top:10px;" onclick="mostraApp()">-> Salta (Se già registrato) <-</button>
+        </div>
+
+        <div id="faseOperativa" style="display:none;">
+            <div class="menu-top">
+                <button onclick="mostra('crea')">📦 SPEDISCI</button>
+                <button onclick="mostra('inArrivo'); caricaInArrivo();" style="background:#ff9900; color:black;">📥 IN ARRIVO</button>
+                <button onclick="mostra('box')" style="background:#ff3333; color:white;">🚨 LETTURA BOX IOT</button>
+            </div>
+
+            <div id="sezioneCrea">
+                <h3>CREA E FISSA LE REGOLE</h3>
+                <div class="box-panel">
+                    <input type="text" id="pIvaDest" placeholder="P.IVA Destinatario">
+                    <input type="text" id="walletDest" placeholder="Wallet Destinatario (0x...)">
+                    
+                    <h4 style="color:#ff9900; margin-bottom:0;">📍 Destinazione</h4>
+                    <input type="text" id="indDest" placeholder="Indirizzo Destinazione (es. Via Torino 5, Roma)">
+                    
+                    <h4 style="color:#00ff00; margin-bottom:0;">🌡️ Sensori & Sicurezza</h4>
+                    <div style="display:flex; gap:10px;">
+                        <input type="number" id="tMin" placeholder="Temp Min (°C)">
+                        <input type="number" id="tMax" placeholder="Temp Max (°C)">
+                    </div>
+                    <label style="color:#fff; margin-top:10px; display:block; cursor:pointer;">
+                        <input type="checkbox" id="chkTamper"> Attiva Sensore Antimanipolazione (Luce/Urti)
+                    </label>
+
+                    <h4 style="color:#8247e5; margin-bottom:0; margin-top:20px;">💰 Escrow & Pagamento</h4>
+                    <label style="color:#fff; display:block; cursor:pointer; margin-top:5px;">
+                        <input type="checkbox" id="chkPagamento" onchange="document.getElementById('boxPrezzo').style.display = this.checked ? 'block' : 'none'"> 
+                        Richiedi Pagamento in POL
+                    </label>
+                    <div id="boxPrezzo" style="display:none; margin-top:10px;">
+                        <input type="number" id="prezzo" placeholder="Valore Merce (in POL)">
+                    </div>
+                </div>
+                <button style="background:#00cc00; color:black; margin-top:15px;" onclick="creaSpedizione()">VERIFICA GPS MITTENTE E CONIA NFT</button>
+            </div>
+
+            <div id="sezioneInArrivo" style="display:none;">
+                <h3 style="color:#ff9900;">BANCALI IN ARRIVO / ESCROW</h3>
+                <table id="tabellaArrivi"></table>
+            </div>
+
+            <div id="sezioneBox" style="display:none;">
+                <h3 style="color:#ff3333;">📡 SINCRONIZZAZIONE BLACKBOX</h3>
+                <input type="text" id="tokenIdBox" placeholder="ID Spedizione (Token ID) da sbloccare">
+                <button style="background:#0066cc; color:white; margin-top:10px;" onclick="connettiBluetoothArrivo()">1. CONNETTI ESP32 (BLUETOOTH)</button>
+
+                <div id="pannelloLiveBox" class="box-panel" style="display:none; border-color:#0066cc;">
+                    <h4 style="color:#00ffff; margin-top:0;">Dati Rilevati in Tempo Reale:</h4>
+                    <p style="font-family:monospace; color:#fff;">🌡️ Temperatura: <strong id="liveTemp" style="color:#ff9900;">In attesa...</strong></p>
+                    <p style="font-family:monospace; color:#fff;">📍 Posizione GPS: <strong id="liveGps" style="color:#ff9900;">In attesa...</strong></p>
+                    <p style="font-family:monospace; color:#fff;">🚨 Sensori Tamper: <strong id="liveTamper" style="color:#ff9900;">In attesa...</strong></p>
+                    <button id="btnVerdetto" style="background:#ff3333; color:white; margin-top:15px; display:none;" onclick="eseguiVerdetto()">2. ESEGUI VERDETTO FINANZIARIO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="log"></div>
+</div>
+
+<script>
+    // ==========================================
+    // ⚠️ 1. INCOLLA QUI L'INDIRIZZO DA REMIX ⚠️
+    // ==========================================
+    const CONTRACT_ADDRESS = "0xTuoNuovoIndirizzoRemix"; 
+    
+    const CONTRACT_ABI = [
+        "function registraOperatore(string memory _idMadreHTML, string memory _pIvaHash, string memory _latLng) public",
+        "function spedisciBancale(address _destWallet, string memory _pIvaDestHash, uint256 _prezzo, bool _richiedePagamento, int256 _tMin, int256 _tMax, string memory _destLat, string memory _destLng, bool _chkTamper) public",
+        "function pagaEscrow(uint256 tokenId) public payable",
+        "function completaConsegna(uint256 tokenId, bool verificaSuperata) public",
+        "function leggiSpedizione(uint256 tokenId) public view returns (address mittente, address destinatario, string memory pIvaMittente, string memory pIvaDestinatario, uint256 prezzo, bool richiedePagamento, uint8 stato, tuple(int256 tempMin, int256 tempMax, bool richiedeGps, string destLat, string destLng, bool richiedeAntitamper) regole)",
+        "function nextTokenId() public view returns (uint256)",
+        "function coordinateMagazzino(address) public view returns (string)",
+        "function revocaIdentita(address operatoreCompromesso) public"
+    ];
+
+    // Variabili Sicurezza
+    let captchaCorretto = 0; let ruoloTemporaneo = "";
+    
+    // Variabili Dati Locali
+    let hashSBTGlobale = ""; let myPIvaSegreta = ""; let myRegisteredLatLng = ""; 
+    
+    // Variabili Bluetooth IOT
+    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+    let realTemp = 0; let realLat = "0"; let realLng = "0"; let isTampered = false;
+
+    function scriviLog(msg) {
+        document.getElementById('log').innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+        document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+    }
+
+    // --- SICUREZZA E LOGIN ---
+    window.onload = async function() {
+        generaCaptcha();
+        const adminHashSalvato = localStorage.getItem('adminSecretHash');
+        if(!adminHashSalvato) {
+            document.getElementById('titoloLogin').innerText = "⚠️ CREA PASSWORD ADMIN";
+            document.getElementById('passAccesso').placeholder = "Imposta Master Password...";
+            document.getElementById('btnAccesso').innerText = "SALVA E ACCEDI";
+        }
+        
+        // Stealth IP Check
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            let bl = JSON.parse(localStorage.getItem('ipBlacklist')) || [];
+            if(bl.includes(data.ip)) {
+                document.body.innerHTML = `<h1 style="color:red;text-align:center;margin-top:20%;">⛔ ERROR 403: FIREWALL ATTIVO</h1>`;
+            }
+        } catch(e) {}
+    };
+
+    function generaCaptcha() {
+        let n1 = Math.floor(Math.random()*10)+1, n2 = Math.floor(Math.random()*10)+1;
+        captchaCorretto = n1 + n2;
+        document.getElementById('testoCaptcha').innerText = `${n1} + ${n2} =`;
+    }
+
+    async function verificaSicurezzaPrincipale() {
+        const pass = document.getElementById('passAccesso').value;
+        if(parseInt(document.getElementById('rispostaCaptcha').value) !== captchaCorretto) {
+            alert("❌ Captcha errato."); generaCaptcha(); return;
+        }
+
+        const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+        const hashPass = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const adminHashSalvato = localStorage.getItem('adminSecretHash');
+
+        if(!adminHashSalvato) {
+            localStorage.setItem('adminSecretHash', hashPass);
+            alert("✅ Password Admin impostata!");
+            ruoloTemporaneo = "Admin"; concediAccesso(); return;
+        }
+
+        if (hashPass === adminHashSalvato) { ruoloTemporaneo = "Admin"; concediAccesso(); }
+        else if (pass === "Cliente2026") { ruoloTemporaneo = "Cliente"; concediAccesso(); }
+        else { alert("❌ Password errata"); generaCaptcha(); }
+    }
+
+    function verifica2FA() {
+        if(document.getElementById('codice2FA').value === "123456") concediAccesso();
+        else alert("❌ Codice errato.");
+    }
+
+    function concediAccesso() {
+        if(document.getElementById('usa2FA').checked && document.getElementById('boxPassword').style.display !== 'none') {
+            document.getElementById('boxPassword').style.display = 'none';
+            document.getElementById('box2FA').style.display = 'block';
+            return;
+        }
+        document.getElementById('protezione-accesso').style.display = 'none';
+        
+        if(ruoloTemporaneo === "Admin") {
+            document.getElementById('dashboardAdmin').style.display = 'block';
+            caricaRubricaLocale();
+        } else {
+            document.getElementById('dashboardCliente').style.display = 'block';
+        }
+    }
+
+    // --- RUBRICA ADMIN ---
+    function caricaRubricaLocale() {
+        let rubrica = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+        const tb = document.getElementById('tabellaRubrica');
+        tb.innerHTML = "<tr><th>P.IVA Segreta (Hash)</th><th>Nome Azienda</th><th>Azione</th></tr>";
+        for (const [hash, nome] of Object.entries(rubrica)) {
+            tb.innerHTML += `<tr><td style="color:#888;">${hash.substring(0,15)}...</td><td style="color:#0ff; font-weight:bold;">${nome}</td><td><button style="background:#f33; padding:2px;" onclick="eliminaDaRubrica('${hash}')">X</button></td></tr>`;
+        }
+    }
+    function salvaInRubrica() {
+        const hash = document.getElementById('hashDaSalvare').value.trim();
+        const nome = document.getElementById('nomeAzienda').value.trim();
+        if(hash && nome) {
+            let r = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+            r[hash] = nome; localStorage.setItem('rubricaAdmin', JSON.stringify(r));
+            caricaRubricaLocale();
+        }
+    }
+    function eliminaDaRubrica(h) {
+        let r = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+        delete r[h]; localStorage.setItem('rubricaAdmin', JSON.stringify(r));
+        caricaRubricaLocale();
+    }
+    async function attivaKillSwitch() {
+        const wallet = document.getElementById('walletHacker').value;
+        try {
+            const signer = (new ethers.providers.Web3Provider(window.ethereum)).getSigner();
+            const tx = await new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer).revocaIdentita(wallet);
+            await tx.wait(); alert("Hacker Bannato!");
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+
+    // --- GEOLOCALIZZAZIONE ---
+    async function calcolaCoordinate(indirizzo) {
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(indirizzo)}`);
+            const data = await res.json();
+            if(data.length > 0) return { lat: data[0].lat, lng: data[0].lon };
+            else throw new Error("Non trovato");
+        } catch(e) { alert("Errore GPS"); return null; }
+    }
+    function calcolaDistanza(lat1, lon1, lat2, lon2) {
+        const p = 0.017453292519943295;
+        const c = Math.cos;
+        const a = 0.5 - c((lat2 - lat1) * p)/2 + c(lat1 * p) * c(lat2 * p) * (1 - c((lon2 - lon1) * p))/2;
+        return 12742 * Math.asin(Math.sqrt(a)); 
+    }
+
+    // --- LOGICA CLIENTE (UI) ---
+    function mostra(sez) {
+        document.getElementById('sezioneCrea').style.display = sez === 'crea' ? 'block' : 'none';
+        document.getElementById('sezioneInArrivo').style.display = sez === 'inArrivo' ? 'block' : 'none';
+        document.getElementById('sezioneBox').style.display = sez === 'box' ? 'block' : 'none';
+    }
+    function mostraApp() {
+        document.getElementById('faseOnboarding').style.display = 'none';
+        document.getElementById('faseOperativa').style.display = 'block';
+    }
+
+    // --- LOGICA CLIENTE (BLOCKCHAIN) ---
+    async function registraMagazzino() {
+        const pIva = document.getElementById('pIva').value.trim();
+        const ind = document.getElementById('indPartenza').value;
+        if(!pIva || !ind) return alert("Compila tutto!");
+
+        const coords = await calcolaCoordinate(ind);
+        if(!coords) return;
+        myRegisteredLatLng = `${coords.lat},${coords.lng}`;
+        document.getElementById('geoPartenza').innerText = `GPS: ${myRegisteredLatLng}`;
+
+        const d = pIva + document.getElementById('salt').value;
+        const hashBuf1 = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(d));
+        hashSBTGlobale = "0x" + Array.from(new Uint8Array(hashBuf1)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0,40);
+
+        const hashBuf2 = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pIva));
+        myPIvaSegreta = "0x" + Array.from(new Uint8Array(hashBuf2)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0,40);
+
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            const signer = provider.getSigner();
+            const tx = await new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer).registraOperatore(hashSBTGlobale, myPIvaSegreta, myRegisteredLatLng);
+            await tx.wait();
+            scriviLog("✅ Registrazione completata."); mostraApp();
+        } catch(e) { scriviLog("❌ Errore: " + e.message); }
+    }
+
+    async function creaSpedizione() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        scriviLog("Verifica Geo-Fencing (Posizione Mittente)...");
+        const mioIndirizzoRegistrato = await contract.coordinateMagazzino(await signer.getAddress());
+        if(!mioIndirizzoRegistrato) return alert("Magazzino non registrato!");
+
+        const pIvaDest = document.getElementById('pIvaDest').value.trim();
+        const destBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pIvaDest));
+        const destHash = "0x" + Array.from(new Uint8Array(destBuf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0,40);
+
+        const cDest = await calcolaCoordinate(document.getElementById('indDest').value);
+        if(!cDest) return;
+
+        const paga = document.getElementById('chkPagamento').checked;
+        const val = paga ? ethers.utils.parseEther(document.getElementById('prezzo').value.toString()) : 0;
+
+        try {
+            scriviLog("Coniazione NFT...");
+            const tx = await contract.spedisciBancale(
+                document.getElementById('walletDest').value, destHash, val, paga, 
+                parseInt(document.getElementById('tMin').value), parseInt(document.getElementById('tMax').value), 
+                cDest.lat.toString(), cDest.lng.toString(), document.getElementById('chkTamper').checked
+            );
+            await tx.wait();
+            scriviLog(paga ? "💎 NFT IN ATTESA DI ESCROW." : "💎 NFT IN VIAGGIO."); alert("Spedizione Creata!");
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+
+    async function caricaInArrivo() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+        const myWallet = await provider.getSigner().getAddress();
+        
+        try {
+            const tot = await contract.nextTokenId();
+            const tb = document.getElementById('tabellaArrivi');
+            tb.innerHTML = "<tr><th>ID</th><th>Tipo</th><th>Valore</th><th>Stato</th><th>Azione</th></tr>";
+            
+            for(let i=0; i<tot; i++) {
+                const s = await contract.leggiSpedizione(i); 
+                if(s.destinatario.toLowerCase() === myWallet.toLowerCase()) {
+                    let tipo = s.richiedePagamento ? "💰 Escrow" : "📦 Normale";
+                    let valStr = s.richiedePagamento ? ethers.utils.formatEther(s.prezzo) + " POL" : "-";
+                    let statoStr = ["Attesa Pagamento", "In Viaggio", "✅ Consegnato", "❌ Fallito/Reso"][s.stato];
+                    let btn = (s.stato === 0 && s.richiedePagamento) ? `<button style="background:#f90; padding:5px; font-size:10px;" onclick="pagaEscrow(${i}, '${ethers.utils.formatEther(s.prezzo)}')">PAGA</button>` : "-";
+                    tb.innerHTML += `<tr><td>#${i}</td><td>${tipo}</td><td>${valStr}</td><td>${statoStr}</td><td>${btn}</td></tr>`;
+                }
+            }
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+
+    async function pagaEscrow(id, importo) {
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const tx = await new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer).pagaEscrow(id, { value: ethers.utils.parseEther(importo) });
+            await tx.wait(); scriviLog("💰 ESCROW PAGATO!"); caricaInArrivo();
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+
+    // --- BLUETOOTH & VERDETTO ---
+    async function connettiBluetoothArrivo() {
+        if(!document.getElementById('tokenIdBox').value) return alert("Inserisci ID Spedizione!");
+        try {
+            scriviLog("Ricerca ESP32...");
+            const device = await navigator.bluetooth.requestDevice({ filters: [{name: 'SmartSheer_Tracker'}], optionalServices: [SERVICE_UUID] });
+            const server = await device.gatt.connect();
+            const char = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHARACTERISTIC_UUID);
+            
+            document.getElementById('pannelloLiveBox').style.display = 'block';
+            char.startNotifications();
+            char.addEventListener('characteristicvaluechanged', (e) => {
+                const val = new TextDecoder().decode(e.target.value).split('|');
+                realTemp = parseFloat(val[0]); realLat = val[1]; realLng = val[2]; isTampered = (parseInt(val[3]) === 1);
+                
+                document.getElementById('liveTemp').innerText = `${realTemp} °C`;
+                document.getElementById('liveGps').innerText = `${realLat}, ${realLng}`;
+                const txtTamper = document.getElementById('liveTamper');
+                if(isTampered) { txtTamper.innerText = "🚨 ALLARME MANOMISSIONE"; txtTamper.style.color = "#f00"; }
+                else { txtTamper.innerText = "✅ SIGILLO OK"; txtTamper.style.color = "#0f0"; }
+                
+                document.getElementById('btnVerdetto').style.display = 'block';
+            });
+        } catch(e) { scriviLog("❌ Errore BLE: Assicurati che l'ESP32 stia inviando Temp|Lat|Lng|Tamper. " + e.message); }
+    }
+
+    async function eseguiVerdetto() {
+        const id = document.getElementById('tokenIdBox').value;
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        try {
+            scriviLog("Incrocio Dati Sensori con Regole Smart Contract...");
+            const s = await contract.leggiSpedizione(id);
+            const r = s.regole;
+            let ok = true; let log = "";
+
+            if(realTemp < r.tempMin || realTemp > r.tempMax) { ok = false; log += "Temperatura Errata! "; }
+            if(r.richiedeAntitamper && isTampered) { ok = false; log += "Manomissione! "; }
+            if(calcolaDistanza(parseFloat(realLat), parseFloat(realLng), parseFloat(r.destLat), parseFloat(r.destLng)) > 2) { ok = false; log += "Posizione Errata! "; }
+
+            scriviLog(ok ? "✅ REGOLE RISPETTATE." : `❌ VIOLAZIONE: ${log}`);
+            const tx = await contract.completaConsegna(id, ok);
+            await tx.wait();
+            alert(ok ? "Merce perfetta. Transazione Chiusa!" : "Merce rifiutata. Rimborso/Reso effettuato!");
+            scriviLog("💼 CONCLUSO.");
+        } catch(e) { scriviLog("❌ Errore: " + e.message); }
+    }
+
+    // --- DASHBOARD ADMIN ---
+    async function caricaTutteSpedizioni() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+        let rubrica = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+        try {
+            const tot = await contract.nextTokenId();
+            const tb = document.getElementById('tabellaAdmin');
+            tb.innerHTML = "<tr><th>ID</th><th>Mittente</th><th>Destinatario</th><th>Valore</th><th>Stato</th></tr>";
+            for(let i=0; i<tot; i++) {
+                const s = await contract.leggiSpedizione(i);
+                let nMitt = rubrica[s.pIvaMittente] || (s.pIvaMittente.substring(0,8)+"...");
+                let nDest = rubrica[s.pIvaDestinatario] || (s.pIvaDestinatario.substring(0,8)+"...");
+                let st = ["Attesa Escrow", "In Viaggio", "✅ OK", "❌ Reso"][s.stato];
+                tb.innerHTML += `<tr><td>#${i}</td><td style="color:#0f0;">${nMitt}</td><td style="color:#f90;">${nDest}</td><td>${ethers.utils.formatEther(s.prezzo)}</td><td>${st}</td></tr>`;
+            }
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+</script>
+</body>
+</html>            <div style="display:flex; align-items:center; margin-top:5px;">
                 <span style="color:#fff; font-weight:bold; font-size:16px; width:50%;" id="testoCaptcha">Calcolo...</span>
                 <input type="text" id="rispostaCaptcha" placeholder="Risultato" style="width:50%; margin:0; text-align:center;">
             </div>
