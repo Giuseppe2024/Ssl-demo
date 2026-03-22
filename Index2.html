@@ -29,12 +29,380 @@
 <div id="protezione-accesso">
     <div class="login-box" id="boxPassword">
         <h2 id="titoloLogin" style="border:none; color:#00cccc; margin-top:0;">🔐 ACCESSO ERP</h2>
-        <div style="font-size: 10px; color:#aaa; text-align:left; border: 1px dashed #444; padding: 8px; margin-bottom: 15px; background:#000;" id="reteInfo">Rilevamento IP in corso...</div>
         
         <input type="password" id="passAccesso" placeholder="Password Admin o Cliente2026">
         
         <div style="background:#111; border:1px solid #333; padding:15px; margin: 15px 0; border-radius:4px; text-align:left;">
             <span style="color:#888; font-size:11px;">Verifica Umana:</span><br>
+            <div style="display:flex; align-items:center; margin-top:5px;">
+                <span style="color:#fff; font-weight:bold; font-size:16px; width:50%;" id="testoCaptcha">Calcolo...</span>
+                <input type="text" id="rispostaCaptcha" placeholder="Risultato" style="width:50%; margin:0; text-align:center;">
+            </div>
+        </div>
+
+        <div style="text-align:left; margin-bottom:20px;">
+            <label style="color:#ff9900; font-size:13px; cursor:pointer;"><input type="checkbox" id="usa2FA"> 🛡️ Richiedi 2FA</label>
+        </div>
+        <button id="btnAccesso" onclick="verificaSicurezzaPrincipale()">VERIFICA E AVANTI ➔</button>
+    </div>
+
+    <div class="login-box" id="box2FA" style="display:none; border-color:#8247e5;">
+        <h2 style="border:none; color:#8247e5; margin-top:0;">📱 2FA</h2>
+        <input type="text" id="codice2FA" placeholder="123456" maxlength="6" style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:bold;">
+        <button style="background:#8247e5; color:white; margin-top:20px;" onclick="verifica2FA()">ACCEDI AL SISTEMA</button>
+    </div>
+</div>
+
+<div class="container">
+    <div style="text-align: center; margin-bottom: 25px;">
+        <span style="font-size: 2.2em; font-weight: 900; color: #fff; text-shadow: 0 0 10px #00ffff; letter-spacing: 2px;">SMART SHEER LOGISTIC</span>
+    </div>
+
+    <div id="dashboardAdmin" style="display:none;">
+        <div class="admin-panel">
+            <h2 style="color:#ff3333; border-color:#ff3333; margin-top:0;">👑 ADMIN CONTROL CENTER</h2>
+            <div style="display: flex; gap:10px; margin-top:20px;">
+                <input type="text" id="walletHacker" placeholder="Indirizzo MetaMask rubato (0x...)" style="border-color:#ff0000; color:#ff3333;">
+                <button style="background:#ff0000; color:white; width:auto; padding:0 20px;" onclick="attivaKillSwitch()">🚨 BRUCIA SBT</button>
+            </div>
+        </div>
+
+        <div style="background: #111; padding: 15px; border-radius: 5px; border: 1px dashed #00cccc; margin-bottom: 20px;">
+            <h3 style="color:#00cccc; margin-top:0;">📖 RUBRICA PRIVATA (DECODIFICA)</h3>
+            <p style="font-size:11px; color:#aaa;">Associa gli Hash segreti delle P.IVA ai nomi reali delle aziende sul tuo PC.</p>
+            <div style="display: flex; gap:10px; margin-bottom:10px;">
+                <input type="text" id="hashDaSalvare" placeholder="P.IVA Segreta (0x...)" style="width: 50%;">
+                <input type="text" id="nomeAzienda" placeholder="Nome Reale (es. Rossi SpA)" style="width: 30%;">
+                <button style="background:#00cccc; color:#000; width: 20%;" onclick="salvaInRubrica()">SALVA NOME</button>
+            </div>
+            <table id="tabellaRubrica" style="font-size:10px; background:#000;"></table>
+        </div>
+
+        <div style="background: #050505; padding: 15px; border-radius: 5px; border: 1px solid #00cccc;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">🌐 REGISTRO GLOBALE BLOCKCHAIN</h3>
+                <button style="background:#0066cc; color:white; width:auto; padding:8px 15px; font-size:11px;" onclick="caricaTutteSpedizioni()">SCARICA DATI NODO</button>
+            </div>
+            <div style="overflow-x:auto; margin-top:15px;">
+                <table id="tabellaAdmin">
+                    <tr><th>ID NFT</th><th>Data</th><th>Mittente</th><th>Destinatario</th><th>DDT</th><th>Sensori IOT</th></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardCliente" style="display:none;">
+        <div id="faseOnboarding">
+            <h2>ONBOARDING IDENTITÀ (SBT)</h2>
+            <input type="text" id="pIva" placeholder="P.IVA Azienda">
+            <input type="password" id="salt" placeholder="Secret Salt (Password crittografica)">
+            <button onclick="generaIdentita()">1. GENERA IDENTITÀ CRITTOGRAFICA</button>
+            <div id="boxHash" style="background:#001a1a; padding:10px; font-size:11px; margin-top:10px; border:1px dashed #00cccc; color:#fff; display:none; word-break:break-all;"></div>
+            <button id="btnMintSBT" style="display:none; background:#009999; color:white;" onclick="registraSBTSuBlockchain()">2. FIRMA E CREA SBT SU POLYGON</button>
+        </div>
+
+        <div id="faseOperativa" style="display:none;">
+            <div class="menu-top">
+                <button onclick="mostraSezione('crea')">📦 SPEDISCI BANCALE</button>
+                <button onclick="mostraSezione('storico'); caricaMieSpedizioni();">📜 LE MIE SPEDIZIONI</button>
+                <button onclick="mostraSezione('handover')" style="background:#006600;">🤝 CONSEGNA AL CLIENTE</button>
+            </div>
+
+            <div id="sezioneCrea">
+                <h3>CREA GEMELLO DIGITALE</h3>
+                <input type="text" id="idBancale" placeholder="ID Bancale (es. PALLET-001)">
+                <input type="text" id="pIvaDestinatario" placeholder="P.IVA Destinatario (In chiaro)" style="border-color:#8247e5;">
+                <input type="text" id="datiDDT" placeholder="Dati DDT">
+                
+                <div style="background: #001a1a; padding: 15px; border: 1px dashed #00ffff; border-radius: 5px; margin: 15px 0;">
+                    <h4 style="margin-top:0; color:#00ffff;">⚙️ REGOLE IOT</h4>
+                    <label style="color:#fff;"><input type="checkbox" id="chkGpsReq"> Registra Tracciamento GPS</label><br><br>
+                    <label style="color:#fff;"><input type="checkbox" id="chkTempReq" onchange="document.getElementById('rangeTemp').style.display = this.checked ? 'block' : 'none'"> Controllo Temperatura</label>
+                    <div id="rangeTemp" style="display:none; margin-top:10px;">
+                        <input type="text" id="tempMin" placeholder="Min (°C)" style="width:48%;">
+                        <input type="text" id="tempMax" placeholder="Max (°C)" style="width:48%; float:right;">
+                    </div>
+                </div>
+                <button style="background:#ff9900; color:#000;" onclick="avviaSincronizzazione()">SINCRONIZZA SENSORI E CONIA NFT</button>
+            </div>
+
+            <div id="sezioneStorico" style="display:none;">
+                <h3>IL MIO STORICO</h3>
+                <div style="overflow-x:auto;"><table id="tabellaCliente"></table></div>
+            </div>
+
+            <div id="sezioneHandover" style="display:none; background:#002200; padding:15px; border:1px solid #00ff00; border-radius:5px;">
+                <h3 style="color:#00ff00; margin-top:0;">🤝 HANDOVER (CESSIONE)</h3>
+                <input type="text" id="tokenIdTransfer" placeholder="ID NFT da trasferire (es. 0)">
+                <input type="text" id="walletCliente" placeholder="Indirizzo MetaMask Cliente (0x...)">
+                <button style="background:#00cc00; color:black;" onclick="trasferisciNFT()">FIRMA CONSEGNA</button>
+            </div>
+        </div>
+    </div>
+    <div id="log"></div>
+</div>
+
+<script>
+    // ==========================================
+    // ⚠️ 1. INCOLLA QUI L'INDIRIZZO DA REMIX ⚠️
+    // ==========================================
+    const CONTRACT_ADDRESS = "0xTUOINDIRIZZOREMIX"; 
+    
+    const CONTRACT_ABI = [
+        "function registraOperatore(string memory idMadreHTML, string memory _pIvaSegreta) public",
+        "function verificaCliente(string memory _pIvaSegreta) public view returns (bool)",
+        "function spedisciBancale(string memory idFiglioHTML, string memory _pIvaDestSegreta, string memory _ddt, string memory _condizioni, string memory _temp, string memory _gps) public",
+        "function leggiDati(uint256 tokenId) public view returns (string memory, string memory, string memory, string memory, string memory, string memory, string memory, string memory, uint256)",
+        "function getTotaleSpedizioni() public view returns (uint256)",
+        "function revocaIdentita(address operatoreCompromesso) public",
+        "function transferFrom(address from, address to, uint256 tokenId) public"
+    ];
+
+    let myIP = "Stealth_Mode"; let myGeo = "Sconosciuto"; let captchaCorretto = 0; let ruoloTemporaneo = "";
+    let hashSBTGlobale = ""; let idFiglioBancale = ""; let myPIvaSegreta = "";
+    
+    // Dati IoT Simulati
+    let realTemp = "4.5"; let realLat = "45.4642"; let realLng = "9.1900"; 
+
+    function scriviLog(msg) {
+        const div = document.getElementById('log');
+        div.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+        div.scrollTop = div.scrollHeight;
+    }
+
+    window.onload = async function() {
+        // 1. GENERA SUBITO IL CAPTCHA
+        generaCaptcha();
+        
+        // 2. GESTIONE PASSWORD ADMIN
+        const adminHashSalvato = localStorage.getItem('adminSecretHash');
+        if(!adminHashSalvato) {
+            document.getElementById('titoloLogin').innerText = "⚠️ CREA PASSWORD ADMIN";
+            document.getElementById('passAccesso').placeholder = "Imposta Master Password...";
+            document.getElementById('btnAccesso').innerText = "SALVA E ACCEDI";
+        }
+        
+        // 3. RILEVAMENTO IP INVISIBILE (Background)
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            myIP = data.ip;
+            myGeo = data.city + ", " + data.country_name;
+            
+            // Verifica silenziosa Firewall
+            let bl = JSON.parse(localStorage.getItem('ipBlacklist')) || [];
+            if(bl.includes(myIP)) {
+                document.body.innerHTML = `<h1 style="color:red;text-align:center;margin-top:20%;">⛔ ERROR 403: FIREWALL ATTIVO. ACCESSO NEGATO.</h1>`;
+            }
+        } catch(e) {
+            console.log("Sistema Anti-Bot in esecuzione locale.");
+        }
+    };
+
+    function generaCaptcha() {
+        let n1 = Math.floor(Math.random()*10)+1;
+        let n2 = Math.floor(Math.random()*10)+1;
+        captchaCorretto = n1 + n2;
+        document.getElementById('testoCaptcha').innerText = `${n1} + ${n2} =`;
+    }
+
+    async function verificaSicurezzaPrincipale() {
+        const pass = document.getElementById('passAccesso').value;
+        const inputCaptcha = document.getElementById('rispostaCaptcha').value;
+
+        // Controllo se il captcha è vuoto o errato
+        if(inputCaptcha === "" || parseInt(inputCaptcha) !== captchaCorretto) {
+            alert("❌ Captcha errato o mancante."); 
+            generaCaptcha(); 
+            return;
+        }
+
+        const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+        const hashPass = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const adminHashSalvato = localStorage.getItem('adminSecretHash');
+
+        if(!adminHashSalvato) {
+            localStorage.setItem('adminSecretHash', hashPass);
+            alert("✅ Password Admin impostata per questo dispositivo!");
+            ruoloTemporaneo = "Admin"; concediAccesso(); return;
+        }
+
+        if (hashPass === adminHashSalvato) { ruoloTemporaneo = "Admin"; concediAccesso(); }
+        else if (pass === "Cliente2026") { ruoloTemporaneo = "Cliente"; concediAccesso(); }
+        else { alert("❌ Password errata"); generaCaptcha(); }
+    }
+
+    function verifica2FA() {
+        if(document.getElementById('codice2FA').value === "123456") concediAccesso();
+        else alert("❌ Codice errato.");
+    }
+
+    function concediAccesso() {
+        if(document.getElementById('usa2FA').checked && document.getElementById('boxPassword').style.display !== 'none') {
+            document.getElementById('boxPassword').style.display = 'none';
+            document.getElementById('box2FA').style.display = 'block';
+            return;
+        }
+        document.getElementById('protezione-accesso').style.display = 'none';
+        
+        if(ruoloTemporaneo === "Admin") {
+            document.getElementById('dashboardAdmin').style.display = 'block';
+            caricaRubricaLocale();
+        } else {
+            document.getElementById('dashboardCliente').style.display = 'block';
+        }
+    }
+
+    // --- RUBRICA ADMIN ---
+    function caricaRubricaLocale() {
+        let rubrica = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+        const tb = document.getElementById('tabellaRubrica');
+        tb.innerHTML = "<tr><th>P.IVA Segreta (Hash)</th><th>Nome Decodificato</th><th>Azioni</th></tr>";
+        for (const [hash, nome] of Object.entries(rubrica)) {
+            tb.innerHTML += `<tr><td style="color:#888;">${hash.substring(0,10)}...</td><td style="color:#0ff; font-weight:bold;">${nome}</td><td><button style="background:#f33; padding:2px; font-size:10px;" onclick="eliminaDaRubrica('${hash}')">X</button></td></tr>`;
+        }
+    }
+    function salvaInRubrica() {
+        const hash = document.getElementById('hashDaSalvare').value.trim();
+        const nome = document.getElementById('nomeAzienda').value.trim();
+        if(!hash || !nome) return;
+        let r = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+        r[hash] = nome; localStorage.setItem('rubricaAdmin', JSON.stringify(r));
+        caricaRubricaLocale();
+    }
+    function eliminaDaRubrica(h) {
+        let r = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+        delete r[h]; localStorage.setItem('rubricaAdmin', JSON.stringify(r));
+        caricaRubricaLocale();
+    }
+
+    // --- LOGICA CLIENTE (HASHING E SPEDIZIONE) ---
+    function mostraSezione(sez) {
+        document.getElementById('sezioneCrea').style.display = sez === 'crea' ? 'block' : 'none';
+        document.getElementById('sezioneStorico').style.display = sez === 'storico' ? 'block' : 'none';
+        document.getElementById('sezioneHandover').style.display = sez === 'handover' ? 'block' : 'none';
+    }
+
+    async function generaIdentita() {
+        const d = document.getElementById('pIva').value.trim() + document.getElementById('salt').value;
+        const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(d));
+        hashSBTGlobale = "0x" + Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0,40);
+        
+        const pivaBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(document.getElementById('pIva').value.trim()));
+        myPIvaSegreta = "0x" + Array.from(new Uint8Array(pivaBuf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0,40);
+
+        document.getElementById('boxHash').innerHTML = `<strong>Indirizzo Madre:</strong><br>${hashSBTGlobale}<br><br><strong>La tua P.IVA Segreta:</strong><br>${myPIvaSegreta}`;
+        document.getElementById('boxHash').style.display = 'block';
+        document.getElementById('btnMintSBT').style.display = 'block';
+    }
+
+    async function registraSBTSuBlockchain() {
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            const signer = provider.getSigner();
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+            
+            scriviLog("Firma SBT e registrazione P.IVA nel network...");
+            const tx = await contract.registraOperatore(hashSBTGlobale, myPIvaSegreta);
+            await tx.wait();
+            
+            document.getElementById('faseOnboarding').style.display = 'none';
+            document.getElementById('faseOperativa').style.display = 'block';
+            scriviLog("✅ Registrazione completata.");
+        } catch(e) { scriviLog("❌ Errore: " + e.message); }
+    }
+
+    async function avviaSincronizzazione() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+        const pIvaDestChiaro = document.getElementById('pIvaDestinatario').value.trim();
+        if(!pIvaDestChiaro) return alert("Inserisci P.IVA Destinatario!");
+
+        const destBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pIvaDestChiaro));
+        const destSegreta = "0x" + Array.from(new Uint8Array(destBuf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0,40);
+
+        scriviLog("Verifica Destinatario sulla Blockchain...");
+        const isCliente = await contract.verificaCliente(destSegreta);
+        if(!isCliente) return alert("⚠️ Questa P.IVA non appartiene a un cliente registrato!");
+
+        const id = document.getElementById('idBancale').value;
+        const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(hashSBTGlobale + id));
+        idFiglioBancale = "0x" + Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0,40);
+
+        let cond = document.getElementById('chkGpsReq').checked ? "GPS: SI | " : "";
+        if(document.getElementById('chkTempReq').checked) cond += `TEMP: ${document.getElementById('tempMin').value}-${document.getElementById('tempMax').value}°C`;
+        if(!cond) cond = "Standard";
+
+        try {
+            scriviLog("Coniazione NFT in corso...");
+            const tx = await contract.spedisciBancale(idFiglioBancale, destSegreta, document.getElementById('datiDDT').value, cond, realTemp, `${realLat},${realLng}`);
+            await tx.wait();
+            scriviLog("💎 NFT CONIATO CON SUCCESSO!");
+        } catch(e) { scriviLog("❌ Errore Mint: " + e.message); }
+    }
+
+    // --- LETTURE TABELLE ---
+    async function caricaTutteSpedizioni() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+        let rubrica = JSON.parse(localStorage.getItem('rubricaAdmin')) || {};
+        
+        try {
+            const tot = await contract.getTotaleSpedizioni();
+            const tb = document.getElementById('tabellaAdmin');
+            tb.innerHTML = "<tr><th>ID</th><th>Data</th><th>Mittente (Decodifica)</th><th>Destinatario (Decodifica)</th><th>DDT</th><th>Sensori</th></tr>";
+            for(let i=0; i<tot; i++) {
+                const d = await contract.leggiDati(i);
+                let nMitt = rubrica[d[2]] || (d[2].substring(0,8)+"...");
+                let nDest = rubrica[d[3]] || (d[3].substring(0,8)+"...");
+                tb.innerHTML += `<tr><td>#${i}</td><td>${new Date(d[8]*1000).toLocaleString()}</td><td style="color:#0f0;">${nMitt}</td><td style="color:#f90;">${nDest}</td><td>${d[4]}</td><td>T:${d[6]}°C</td></tr>`;
+            }
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+
+    async function caricaMieSpedizioni() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+        try {
+            const tot = await contract.getTotaleSpedizioni();
+            const tb = document.getElementById('tabellaCliente');
+            tb.innerHTML = "<tr><th>ID NFT</th><th>Stato</th><th>P.IVA Controparte</th><th>DDT</th><th>Dati IOT</th></tr>";
+            for(let i=0; i<tot; i++) {
+                const d = await contract.leggiDati(i);
+                let dir = "", contro = "";
+                if(d[2] === myPIvaSegreta) { dir = "📤 INVIATO"; contro = d[3]; } 
+                else if(d[3] === myPIvaSegreta) { dir = "📥 IN ARRIVO"; contro = d[2]; } 
+                
+                if(dir) tb.innerHTML += `<tr><td>#${i}</td><td style="color:${dir.includes('INVIATO')?'#f90':'#0f0'};">${dir}</td><td>${contro.substring(0,10)}...</td><td>${d[4]}</td><td>T:${d[6]}°C</td></tr>`;
+            }
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+
+    async function trasferisciNFT() {
+        const tokenId = document.getElementById('tokenIdTransfer').value;
+        const addrCliente = document.getElementById('walletCliente').value;
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const tx = await new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer).transferFrom(await signer.getAddress(), addrCliente, tokenId);
+            await tx.wait(); alert("Consegna Completata!");
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+
+    async function attivaKillSwitch() {
+        const wallet = document.getElementById('walletHacker').value;
+        try {
+            const signer = (new ethers.providers.Web3Provider(window.ethereum)).getSigner();
+            const tx = await new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer).revocaIdentita(wallet);
+            await tx.wait(); alert("Hacker Bannato!");
+        } catch(e) { scriviLog("❌ " + e.message); }
+    }
+</script>
+</body>
+</html>            <span style="color:#888; font-size:11px;">Verifica Umana:</span><br>
             <div style="display:flex; align-items:center; margin-top:5px;">
                 <span style="color:#fff; font-weight:bold; font-size:16px; width:50%;" id="testoCaptcha">X + Y =</span>
                 <input type="text" id="rispostaCaptcha" placeholder="Risultato" style="width:50%; margin:0; text-align:center;">
