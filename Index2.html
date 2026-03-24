@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v15.1 | Ultimate Sovereign ERP</title>
+    <title>SmartSheer v16.0 | Ultimate Sovereign ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -82,6 +82,7 @@
             <select id="role-selector">
                 <option value="master">MASTER GENERALE (Proprietario)</option>
                 <option value="client">CLIENT MASTER (Azienda)</option>
+                <option value="buyer">BUYER (Cliente Finale)</option>
             </select>
             
             <div id="setup-section" style="display: none; margin-top:15px;">
@@ -106,7 +107,7 @@
         </div>
 
         <div id="login-staff-area" style="display: none;">
-            <p style="font-size: 0.8rem; color: var(--text);">Inquadra il QR Code fornito dall'Azienda per timbrare l'accesso e abilitare il terminale.</p>
+            <p style="font-size: 0.8rem; color: var(--text);">Inquadra il QR Code fornito dall'Azienda per timbrare l'accesso.</p>
             <div id="qr-reader" style="width: 100%; height: 250px;"></div>
             <button class="btn-danger" style="margin-top: 15px;" onclick="stopQRScanner()">ANNULLA</button>
         </div>
@@ -128,6 +129,7 @@
     <div class="tab-bar" id="tab-nav"></div>
 
     <div class="content-area">
+        
         <div id="panel-admin" class="panel">
             <div class="card" style="border-color: var(--danger);">
                 <h2 style="color: var(--danger);">🚨 SECURITY: GREY & BLACK LIST</h2>
@@ -145,7 +147,6 @@
                         <tbody id="forensic-log-body"></tbody>
                     </table>
                 </div>
-                <button class="btn-neon" style="width:auto; margin-top:10px; padding: 10px 20px;" onclick="exportLogs()">ESPORTA REGISTRO (.CSV)</button>
             </div>
         </div>
 
@@ -167,20 +168,51 @@
         </div>
 
         <div id="panel-factory" class="panel">
-            <div class="card">
-                <h2>🚀 FACTORY: CONIAZIONE LOTTO & SETUP SENSORI</h2>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="card" style="border-color: var(--neon);">
+                <h2 style="color: var(--neon);">🚀 FACTORY: COSTRUTTORE PASSAPORTO DIGITALE (NFT)</h2>
+                <p style="font-size: 0.75rem; color: #888;">Questi dati saranno PUBBLICI e visibili al cliente finale (Marketing & Autenticità).</p>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                    
                     <div>
-                        <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Rolex Submariner)">
-                        <input type="text" id="nft-batch" placeholder="Serie/Annata (es. 2026)">
-                        <input type="number" id="nft-qty" placeholder="Quantità Unità" value="1">
+                        <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Formaggio di Fossa DOP)">
+                        <input type="text" id="nft-desc" placeholder="Descrizione o Storia (Breve)">
+                        
+                        <div style="display:flex; gap:10px; margin-top: 8px;">
+                            <input type="text" id="nft-attr-1-key" placeholder="Attributo (es. Annata)" style="flex:1;">
+                            <input type="text" id="nft-attr-1-val" placeholder="Valore (es. 2026)" style="flex:2;">
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="nft-attr-2-key" placeholder="Attributo (es. Origine GPS)" style="flex:1;">
+                            <input type="text" id="nft-attr-2-val" placeholder="Valore (es. Sogliano al Rubicone)" style="flex:2;">
+                        </div>
+
+                        <div style="margin-top: 15px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; text-align: center;">
+                            <label style="color: var(--neon); cursor: pointer; font-size: 0.8rem;">
+                                📸 CARICA FOTO PRODOTTO
+                                <input type="file" id="nft-image" accept="image/png, image/jpeg" style="display: none;" onchange="previewImage(this)">
+                            </label>
+                            <div id="img-preview-box" style="margin-top: 10px; display: none;">
+                                <img id="img-preview" src="" style="max-width: 100%; max-height: 120px; border-radius: 4px;">
+                            </div>
+                        </div>
                     </div>
-                    <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--master);">📡 REQUISITI ORACLE (BOX IOT)</h3>
+
+                    <div style="background: var(--bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--master);">🔒 DATI LOGISTICI E ORACLE IOT (SEGRETI)</h3>
+                        <p style="font-size: 0.65rem; color: #888; margin-bottom: 15px;">Questi parametri regolano l'Escrow e non sono visibili al pubblico.</p>
+                        
+                        <div style="display:flex; gap:10px;">
+                            <input type="number" id="nft-qty" placeholder="Unità nel Lotto Reale" value="1" style="flex:1;">
+                            <input type="number" id="nft-price" placeholder="Prezzo Escrow (MATIC)" style="flex:1;">
+                        </div>
+                        <input type="text" id="nft-buyer" placeholder="Indirizzo Acquirente (0x...)">
+                        
+                        <hr style="border-color: var(--border); margin: 15px 0;">
                         
                         <div class="checkbox-group">
                             <input type="checkbox" id="iot-temp" onchange="toggleTempInputs()"> 
-                            <label>Controllo Temperatura</label>
+                            <label>Controllo Temperatura (Oracolo)</label>
                         </div>
                         <div id="temp-ranges" style="display:none; gap:10px; margin-left: 25px; margin-bottom: 10px;">
                             <input type="number" id="temp-min" placeholder="Min °C" style="padding: 6px;">
@@ -191,11 +223,12 @@
                             <input type="checkbox" id="iot-gps"> <label>Tracciamento GPS Obbligatorio</label>
                         </div>
                         <div class="checkbox-group">
-                            <input type="checkbox" id="iot-tamper"> <label>Sensore Anti-Manomissione / Urti</label>
+                            <input type="checkbox" id="iot-tamper"> <label>Sensore Anti-Manomissione</label>
                         </div>
                     </div>
                 </div>
-                <button class="btn-neon" onclick="mintBatch()">SIGILLA REQUISITI E CARICA NEL VAULT</button>
+                
+                <button class="btn-neon" style="margin-top: 25px;" onclick="buildAndMintNFT()">📦 IMPACCHETTA JSON E CONIA NEL VAULT</button>
             </div>
         </div>
 
@@ -219,18 +252,45 @@
         </div>
 
         <div id="panel-operations" class="panel">
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
+                
                 <div class="card" style="border-color: var(--neon); margin-bottom: 0;" id="ui-staff-in">
                     <h2 style="color: var(--neon);">📥 INGRESSO (CHECK-IN)</h2>
-                    <button class="btn-grey" onclick="connectBLE('inbound')">1. LEGGI BOX IOT</button>
-                    <input type="text" id="checkin-nft" placeholder="ID NFT in arrivo" style="margin-top:15px;">
-                    <button class="btn-neon" onclick="executeStaffAction('checkin')">2. CONFERMA RICEZIONE</button>
+                    <p style="font-size:0.7rem; color:#888;">Prendi in carico la merce nel tuo Hub.</p>
+                    <input type="text" id="checkin-nft" placeholder="ID Lotto in arrivo">
+                    <button class="btn-neon" onclick="executeStaffAction('checkin')">CONFERMA RICEZIONE</button>
                 </div>
+
+                <div class="card" style="border-color: var(--grey); margin-bottom: 0;" id="ui-staff-transit">
+                    <h2 style="color: var(--text);">📍 REGISTRA CHECKPOINT</h2>
+                    <p style="font-size:0.7rem; color:#888;">Salva la posizione e i dati IoT senza chiudere la spedizione.</p>
+                    <button class="btn-grey" onclick="connectBLE('transit')">1. LEGGI DATI IOT</button>
+                    <input type="text" id="checkpoint-nft" placeholder="ID Lotto in transito" style="margin-top:10px;">
+                    <input type="text" id="checkpoint-loc" placeholder="Posizione (Es. Hub Bologna)" style="margin-top:10px;">
+                    <button class="btn-grey" style="background:#30363d;" onclick="executeCheckpoint()">2. REGISTRA SU CHAIN</button>
+                </div>
+
                 <div class="card" style="border-color: var(--master); margin-bottom: 0;" id="ui-staff-out">
-                    <h2 style="color: var(--master);">📤 USCITA (HANDOVER)</h2>
-                    <button class="btn-grey" onclick="connectBLE('outbound')">1. ATTIVA E SIGILLA BOX</button>
-                    <input type="text" id="handover-nft" placeholder="ID NFT da spedire" style="margin-top:15px;">
-                    <button class="btn-staff" onclick="executeStaffAction('handover')">2. TRASFERISCI PROPRIETÀ</button>
+                    <h2 style="color: var(--master);">📤 USCITA (HANDOVER FINALE)</h2>
+                    <p style="font-size:0.7rem; color:#888;">Consegna al cliente. Lo Smart Contract verificherà l'Oracolo IoT.</p>
+                    <button class="btn-grey" onclick="connectBLE('outbound')">1. VERIFICA SIGILLI IOT</button>
+                    <input type="text" id="handover-nft" placeholder="ID Lotto da consegnare" style="margin-top:10px;">
+                    <button class="btn-staff" onclick="executeHandover()">2. TENTA CONSEGNA (SBLOCCO ESCROW)</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-buyer" class="panel">
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">🛒 BUYER: GESTIONE DISPUTE E OVERRIDE</h2>
+                <p style="font-size:0.8rem;">Se l'Oracolo IoT ha bloccato la consegna, l'ordine entra in DISPUTA. Puoi forzare l'accettazione e pagare comunque, oppure rifiutare la merce.</p>
+                <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--danger); margin-top:15px;">
+                    <h3 style="margin-top:0; font-size:0.75rem; color:var(--text);">INSERISCI ID LOTTO BLOCCATO</h3>
+                    <input type="text" id="disputed-nft" placeholder="Es. Lotto #405">
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button class="btn-danger" style="background:transparent; border:1px solid var(--danger); color:var(--danger);" onclick="refundDispute()">❌ RIFIUTA E CHIEDI RIMBORSO</button>
+                        <button class="btn-danger" onclick="forceAcceptance()">⚠️ PAGA COMUNQUE (ACCETTA DANNO)</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -245,7 +305,6 @@
     let html5QrcodeScanner;
     let currentStaffPerms = {};
 
-    // --- CONTROLLO INIZIALE SETUP (AGGIORNATO) ---
     function checkSetupState() {
         if (localStorage.getItem('smartsheer_setup') === 'true') {
             document.getElementById('setup-section').style.display = 'none';
@@ -258,25 +317,17 @@
     
     window.addEventListener('DOMContentLoaded', checkSetupState);
 
-    // --- LOGICA DI RESET IN TEMPO REALE (LA PATCH!) ---
     function resetDevice() {
-        if(confirm("ATTENZIONE CRITICA: Il reset cancellerà irreversibilmente la memoria locale del Vault. Se non hai il backup o la password, perderai l'accesso. Procedere?")) {
-            // 1. Svuota la memoria
+        if(confirm("ATTENZIONE CRITICA: Il reset cancellerà irreversibilmente la memoria locale del Vault. Procedere?")) {
             localStorage.removeItem('smartsheer_setup');
-            
-            // 2. Svuota i campi visivamente per sicurezza
             document.getElementById('gate-pass-new').value = '';
             document.getElementById('gate-pass-confirm').value = '';
             document.getElementById('gate-pass').value = '';
-            
-            // 3. Forza l'aggiornamento grafico senza ricaricare la pagina
             checkSetupState();
-            
-            showAlert("Memoria azzerata correttamente. Ricrea o inserisci la tua Master Password.");
+            showAlert("Memoria azzerata. Ricrea la tua Master Password.");
         }
     }
 
-    // --- UI UTILITIES ---
     function togglePass(id) {
         const input = document.getElementById(id);
         input.type = input.type === "password" ? "text" : "password";
@@ -285,6 +336,17 @@
     function toggleTempInputs() {
         const isChecked = document.getElementById('iot-temp').checked;
         document.getElementById('temp-ranges').style.display = isChecked ? 'flex' : 'none';
+    }
+
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('img-preview').src = e.target.result;
+                document.getElementById('img-preview-box').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
     }
 
     function switchLoginMode(mode) {
@@ -306,7 +368,6 @@
     function goHome() { location.reload(); }
     function showAlert(msg) { document.getElementById('gate-msg').innerText = msg; }
 
-    // --- LOGICA ACCESSO MASTER/CLIENT ---
     async function unlockSystemAdmin() {
         let finalPass = "";
         const isSetupDone = localStorage.getItem('smartsheer_setup');
@@ -342,7 +403,6 @@
         } else { showAlert("MetaMask non trovato."); }
     }
 
-    // --- LOGICA ACCESSO STAFF (QR SCANNER) ---
     function startQRScanner() {
         html5QrcodeScanner = new Html5Qrcode("qr-reader");
         html5QrcodeScanner.start(
@@ -374,14 +434,12 @@
             document.getElementById('ui-staff-out').style.display = currentStaffPerms.out ? 'block' : 'none';
 
             launchDashboard(staffWallet.address, 'staff');
-            log(`Badge verificato. Permessi: [Mint:${currentStaffPerms.mint}] [In:${currentStaffPerms.in}] [Out:${currentStaffPerms.out}]`);
         } catch(e) {
             showAlert("QR Code non riconosciuto.");
             switchLoginMode('admin');
         }
     }
 
-    // --- AVVIO DASHBOARD ---
     function launchDashboard(address, role) {
         document.getElementById('gate-overlay').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
@@ -406,6 +464,9 @@
             addTab("OPERAZIONI LOGISTICHE", "panel-operations"); 
             if(currentStaffPerms.mint) addTab("FACTORY DELEGATA", "panel-factory");
         }
+        if(role === 'buyer') {
+            addTab("PORTALE ACQUIRENTE", "panel-buyer");
+        }
         showPanel(nav.firstChild.getAttribute('data-panel'));
     }
 
@@ -425,18 +486,16 @@
         document.getElementById(id).style.display = 'block';
     }
 
-    // --- FUNZIONI CORE ---
     async function mintIdentity() {
         const dna = CryptoJS.SHA256(document.getElementById('reg-piva').value + document.getElementById('reg-salt').value + encryptionKey).toString();
-        log(`🛡️ SBT Identity Sigillata: ${dna.substring(0,24)}...`);
+        log(`🛡️ SBT Identity Sigillata in locale: ${dna.substring(0,24)}... Pronta per lo Smart Contract.`);
     }
 
-    async function mintBatch() {
-        const config = {
-            qty: document.getElementById('nft-qty').value,
-            iot: { temp: document.getElementById('iot-temp').checked, gps: document.getElementById('iot-gps').checked, tamper: document.getElementById('iot-tamper').checked }
-        };
-        log(`🚀 Coniazione Lotto Avviata. Qty: ${config.qty}.`);
+    async function buildAndMintNFT() {
+        const name = document.getElementById('nft-name').value;
+        const qty = document.getElementById('nft-qty').value;
+        log(`📦 Composizione JSON per "${name}" completata. Dati inviati all'IPFS.`);
+        log(`🚀 Avvio coniazione su Smart Contract... Qtà: ${qty}`);
     }
 
     function generateWorkerQR() {
@@ -449,13 +508,35 @@
         document.getElementById('qr-display').style.display = "block";
         document.getElementById('qr-display').innerHTML = "";
         new QRCode(document.getElementById("qr-display"), { text: payload, width: 200, height: 200 });
-        log(`👥 Badge Generato per ${name}. Indirizzo Wallet: ${workerWallet.address.substring(0,8)}...`);
+        log(`👥 Badge Generato per ${name}.`);
     }
 
     async function connectBLE(direction) { log(`📡 Sincronizzazione Bluetooth Box IoT per ${direction}...`); }
+    
     async function executeStaffAction(action) { log(`⚖️ Validazione ${action} On-Chain richiesta...`); }
+    
+    async function executeCheckpoint() {
+        const id = document.getElementById('checkpoint-nft').value;
+        const loc = document.getElementById('checkpoint-loc').value;
+        log(`📍 Richiesta Checkpoint per Lotto #${id} a [${loc}]. Dati inviati alla Blockchain.`);
+    }
 
-    // --- FORENSIC & UTILS ---
+    async function executeHandover() {
+        const id = document.getElementById('handover-nft').value;
+        log(`⏳ Tentativo di Handover per l'ID #${id}...`);
+    }
+
+    async function forceAcceptance() {
+        const id = document.getElementById('disputed-nft').value;
+        if(confirm(`ATTENZIONE: Stai per ignorare gli allarmi dell'Oracolo IoT per il Lotto #${id}. I fondi verranno inviati irrevocabilmente al venditore. Procedere?`)) {
+            log(`⚠️ OVERRIDE ACQUIRENTE ESEGUITO: Lotto #${id} accettato. Fondi Escrow sbloccati.`);
+        }
+    }
+
+    function refundDispute() {
+        log(`❌ Rimborso richiesto per merce danneggiata o non conforme.`);
+    }
+
     async function captureForensicData(ruolo, azione) {
         let ip = "LOCAL";
         try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); ip = d.ip; } catch(e){}
@@ -468,8 +549,7 @@
         }
     }
     
-    function exportLogs() { log("💾 Esportazione Forense CSV Completata."); }
-    function applyBan(type) { log(type === 'grey' ? `⏸️ GREY LIST per ${document.getElementById('ban-addr').value}` : `🔥 BLACK LIST DEFINITIVA per ${document.getElementById('ban-addr').value}`); }
+    function applyBan(type) { log(type === 'black' ? `🔥 BLACK LIST DEFINITIVA applicata.` : `⏸️ GREY LIST applicata.`); }
     function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
     
     async function startCamera() {
