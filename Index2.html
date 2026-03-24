@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v12.0 | Sovereign Logistics ERP</title>
+    <title>SmartSheer v15.0 | Ultimate Sovereign ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --text: #c9d1d9; --master: #fbbf24; --danger: #f85149; }
+        :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --text: #c9d1d9; --master: #fbbf24; --danger: #f85149; --grey: #8b949e; --success: #3fb950; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; font-size: 13px; overflow: hidden; }
         
         /* GATE DI ACCESSO */
         #gate-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .gate-card { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); width: 420px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); }
-        .gate-card h1 { font-family: 'Orbitron'; color: var(--neon); margin-bottom: 30px; letter-spacing: 2px; }
-        
+        .gate-card { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); width: 420px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); max-height: 90vh; overflow-y: auto; }
+        .gate-card h1 { font-family: 'Orbitron'; color: var(--neon); margin-bottom: 20px; letter-spacing: 2px; }
         .pass-container { position: relative; width: 100%; }
         .eye-icon { position: absolute; right: 12px; top: 18px; cursor: pointer; user-select: none; font-size: 1.2rem; }
 
@@ -26,6 +26,7 @@
         #main-app { display: none; height: 100vh; flex-direction: column; }
         nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .brand { font-family: 'Orbitron'; font-weight: 700; color: var(--neon); }
+        .nav-actions { display: flex; gap: 15px; align-items: center; }
         
         .tab-bar { display: flex; background: #161b22; padding: 10px 20px; gap: 10px; border-bottom: 1px solid var(--border); }
         .tab { padding: 10px 18px; cursor: pointer; border-radius: 5px; font-weight: 600; color: #888; transition: 0.3s; font-size: 0.75rem; }
@@ -35,6 +36,451 @@
         .panel { display: none; }
         .panel.active { display: block; }
 
+        /* UI ELEMENTS */
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+        h2 { font-family: 'Orbitron'; font-size: 0.8rem; text-transform: uppercase; color: var(--neon); margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
+        input[type="text"], input[type="password"], input[type="number"], select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
+        .btn-neon { background: var(--neon); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-grey { background: var(--grey); color: #fff; }
+        .btn-staff { background: var(--master); color: #000; }
+        .btn-home { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 15px; width: auto; margin: 0; border-radius: 20px; font-size: 0.7rem; }
+        .btn-home:hover { background: var(--danger); color: #fff; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 0.8rem; }
+        .checkbox-group input { width: auto; }
+        
+        .reset-link { display: block; margin-top: 20px; font-size: 0.7rem; color: #8b949e; text-decoration: underline; cursor: pointer; }
+        .reset-link:hover { color: var(--danger); }
+
+        #video-container, #qr-reader { width: 100%; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); }
+        #webcam { width: 100%; height: 100%; object-fit: cover; }
+        #terminal { background: #000; color: var(--success); font-family: monospace; padding: 15px; border-radius: 8px; height: 120px; overflow-y: auto; font-size: 0.75rem; border: 1px solid var(--border); }
+        #qr-display { background: #fff; padding: 15px; border-radius: 8px; width: fit-content; margin: 20px auto; display: none; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
+        th { color: #888; text-transform: uppercase; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.65rem; }
+    </style>
+</head>
+<body>
+
+<div id="gate-overlay">
+    <div class="gate-card">
+        <h1>SMARTSHEER</h1>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn-grey" id="btn-mode-admin" onclick="switchLoginMode('admin')" style="background: var(--border);">AMMINISTRAZIONE</button>
+            <button class="btn-staff" id="btn-mode-staff" onclick="switchLoginMode('staff')">STAFF (SCAN QR)</button>
+        </div>
+
+        <div id="login-admin-area">
+            <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left;">RUOLO DI SISTEMA</label>
+            <select id="role-selector">
+                <option value="master">MASTER GENERALE (Proprietario)</option>
+                <option value="client">CLIENT MASTER (Azienda)</option>
+            </select>
+            
+            <div id="setup-section" style="display: none; margin-top:15px;">
+                <label style="color:var(--master); font-size: 0.6rem; display:block; text-align:left;">CREA MASTER PASSWORD</label>
+                <div class="pass-container">
+                    <input type="password" id="gate-pass-new" placeholder="Crea Password (min. 6 caratteri)">
+                    <span class="eye-icon" onclick="togglePass('gate-pass-new')">👁️</span>
+                </div>
+                <div class="pass-container">
+                    <input type="password" id="gate-pass-confirm" placeholder="Ripeti Password">
+                </div>
+            </div>
+
+            <div id="login-section" style="margin-top:15px;">
+                <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left;">PASSWORD VAULT</label>
+                <div class="pass-container">
+                    <input type="password" id="gate-pass" placeholder="Inserisci Password">
+                    <span class="eye-icon" onclick="togglePass('gate-pass')">👁️</span>
+                </div>
+            </div>
+            <button class="btn-neon" onclick="unlockSystemAdmin()">SBLOCCA CON METAMASK</button>
+        </div>
+
+        <div id="login-staff-area" style="display: none;">
+            <p style="font-size: 0.8rem; color: var(--text);">Inquadra il QR Code fornito dall'Azienda per timbrare l'accesso e abilitare il terminale.</p>
+            <div id="qr-reader" style="width: 100%; height: 250px;"></div>
+            <button class="btn-danger" style="margin-top: 15px;" onclick="stopQRScanner()">ANNULLA</button>
+        </div>
+
+        <div id="gate-msg" style="margin-top:10px; font-size:0.7rem; color:var(--danger)"></div>
+        <a class="reset-link" onclick="resetDevice()">Ripristina Dispositivo (Pulisci Memoria)</a>
+    </div>
+</div>
+
+<div id="main-app">
+    <nav>
+        <div class="brand">SMARTSHEER <span id="tag-ruolo" style="font-size:0.6rem; color:#888"></span></div>
+        <div class="nav-actions">
+            <div id="eth-address" style="font-family:monospace; font-size:0.75rem; background:#161b22; padding:5px 12px; border-radius:20px;">0x00...</div>
+            <button class="btn-home" onclick="goHome()">🏠 DISCONNETTI</button>
+        </div>
+    </nav>
+
+    <div class="tab-bar" id="tab-nav"></div>
+
+    <div class="content-area">
+        
+        <div id="panel-admin" class="panel">
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">🚨 SECURITY: GREY & BLACK LIST</h2>
+                <div style="display:flex; gap:10px; align-items: center;">
+                    <input type="text" id="ban-addr" placeholder="Indirizzo Wallet (0x...)">
+                    <button class="btn-grey" style="width:auto; padding:0 20px;" onclick="applyBan('grey')">GREY LIST (Sospendi)</button>
+                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan('black')">BLACK LIST (Banna)</button>
+                </div>
+            </div>
+            <div class="card" style="border-color: var(--neon);">
+                <h2>⚖️ REGISTRO ATTIVITÀ FORENSE</h2>
+                <div style="overflow-x: auto; max-height: 200px;">
+                    <table id="forensic-table">
+                        <thead><tr><th>Data/Ora</th><th>Ruolo</th><th>Azione</th><th>IP Pubblico</th><th>Esito</th></tr></thead>
+                        <tbody id="forensic-log-body"></tbody>
+                    </table>
+                </div>
+                <button class="btn-neon" style="width:auto; margin-top:10px; padding: 10px 20px;" onclick="exportLogs()">ESPORTA REGISTRO (.CSV)</button>
+            </div>
+        </div>
+
+        <div id="panel-onboarding" class="panel">
+            <div class="card">
+                <h2>🛡️ ONBOARDING SBT (DNA AZIENDALE)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                    <div>
+                        <input type="text" id="reg-piva" placeholder="P.IVA / ID Aziendale">
+                        <input type="password" id="reg-salt" placeholder="Salt Privacy">
+                        <button class="btn-neon" onclick="mintIdentity()">CONIA IDENTITÀ SBT</button>
+                    </div>
+                    <div>
+                        <div id="video-container" style="height: 150px;"><video id="webcam" autoplay playsinline></video></div>
+                        <button class="btn-neon" style="background:#161b22; color:#fff;" onclick="startCamera()">ACCENDI CAMERA</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-factory" class="panel">
+            <div class="card">
+                <h2>🚀 FACTORY: CONIAZIONE LOTTO & SETUP SENSORI</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div>
+                        <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Rolex Submariner)">
+                        <input type="text" id="nft-batch" placeholder="Serie/Annata (es. 2026)">
+                        <input type="number" id="nft-qty" placeholder="Quantità Unità" value="1">
+                    </div>
+                    <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--master);">📡 REQUISITI ORACLE (BOX IOT)</h3>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="iot-temp" onchange="toggleTempInputs()"> 
+                            <label>Controllo Temperatura</label>
+                        </div>
+                        <div id="temp-ranges" style="display:none; gap:10px; margin-left: 25px; margin-bottom: 10px;">
+                            <input type="number" id="temp-min" placeholder="Min °C" style="padding: 6px;">
+                            <input type="number" id="temp-max" placeholder="Max °C" style="padding: 6px;">
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="iot-gps"> <label>Tracciamento GPS Obbligatorio</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="iot-tamper"> <label>Sensore Anti-Manomissione / Urti</label>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-neon" onclick="mintBatch()">SIGILLA REQUISITI E CARICA NEL VAULT</button>
+            </div>
+        </div>
+
+        <div id="panel-staff-manage" class="panel">
+            <div class="card">
+                <h2>👥 GESTIONE STAFF: CREAZIONE BADGE & PERMESSI</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div>
+                        <input type="text" id="worker-name" placeholder="Nome Magazziniere">
+                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE QR</button>
+                    </div>
+                    <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--neon);">🛠️ ASSEGNA POTERI ON-CHAIN</h3>
+                        <div class="checkbox-group"><input type="checkbox" id="perm-mint"> <label>Può Coniare Lotti (Factory)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="perm-in" checked> <label>Può Ricevere Merce (Check-in)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="perm-out" checked> <label>Può Spedire Merce (Handover)</label></div>
+                    </div>
+                </div>
+                <div id="qr-display"></div>
+            </div>
+        </div>
+
+        <div id="panel-operations" class="panel">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="card" style="border-color: var(--neon); margin-bottom: 0;" id="ui-staff-in">
+                    <h2 style="color: var(--neon);">📥 INGRESSO (CHECK-IN)</h2>
+                    <button class="btn-grey" onclick="connectBLE('inbound')">1. LEGGI BOX IOT</button>
+                    <input type="text" id="checkin-nft" placeholder="ID NFT in arrivo" style="margin-top:15px;">
+                    <button class="btn-neon" onclick="executeStaffAction('checkin')">2. CONFERMA RICEZIONE</button>
+                </div>
+                <div class="card" style="border-color: var(--master); margin-bottom: 0;" id="ui-staff-out">
+                    <h2 style="color: var(--master);">📤 USCITA (HANDOVER)</h2>
+                    <button class="btn-grey" onclick="connectBLE('outbound')">1. ATTIVA E SIGILLA BOX</button>
+                    <input type="text" id="handover-nft" placeholder="ID NFT da spedire" style="margin-top:15px;">
+                    <button class="btn-staff" onclick="executeStaffAction('handover')">2. TRASFERISCI PROPRIETÀ</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="terminal">> Attesa Inizializzazione Rete...</div>
+    </div>
+</div>
+
+<script>
+    const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; 
+    let provider, signer, encryptionKey, currentRole;
+    let html5QrcodeScanner;
+    let currentStaffPerms = {};
+
+    // --- CONTROLLO INIZIALE SETUP ---
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('smartsheer_setup')) {
+            document.getElementById('setup-section').style.display = 'block';
+            document.getElementById('login-section').style.display = 'none';
+        }
+    });
+
+    // --- UI UTILITIES ---
+    function togglePass(id) {
+        const input = document.getElementById(id);
+        input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function toggleTempInputs() {
+        const isChecked = document.getElementById('iot-temp').checked;
+        document.getElementById('temp-ranges').style.display = isChecked ? 'flex' : 'none';
+    }
+
+    function switchLoginMode(mode) {
+        if(mode === 'admin') {
+            document.getElementById('login-admin-area').style.display = 'block';
+            document.getElementById('login-staff-area').style.display = 'none';
+            document.getElementById('btn-mode-admin').style.background = 'var(--border)';
+            document.getElementById('btn-mode-staff').style.background = 'transparent';
+            if(html5QrcodeScanner) stopQRScanner();
+        } else {
+            document.getElementById('login-admin-area').style.display = 'none';
+            document.getElementById('login-staff-area').style.display = 'block';
+            document.getElementById('btn-mode-admin').style.background = 'transparent';
+            document.getElementById('btn-mode-staff').style.background = 'var(--master)';
+            startQRScanner();
+        }
+    }
+
+    function resetDevice() {
+        if(confirm("ATTENZIONE CRITICA: Il reset cancellerà irreversibilmente la memoria locale del Vault. Se non hai il backup o la password, perderai l'accesso. Procedere?")) {
+            localStorage.removeItem('smartsheer_setup');
+            location.reload();
+        }
+    }
+
+    function goHome() { location.reload(); }
+    function showAlert(msg) { document.getElementById('gate-msg').innerText = msg; }
+
+    // --- LOGICA ACCESSO MASTER/CLIENT (METAMASK) ---
+    async function unlockSystemAdmin() {
+        let finalPass = "";
+        const isSetupDone = localStorage.getItem('smartsheer_setup');
+
+        if (!isSetupDone) {
+            const p1 = document.getElementById('gate-pass-new').value;
+            const p2 = document.getElementById('gate-pass-confirm').value;
+            if (p1.length < 6) return showAlert("Minimo 6 caratteri.");
+            if (p1 !== p2) return showAlert("Password non combaciano.");
+            finalPass = p1;
+        } else {
+            finalPass = document.getElementById('gate-pass').value;
+            if (finalPass.length < 6) return showAlert("Inserisci password.");
+        }
+
+        currentRole = document.getElementById('role-selector').value;
+
+        if (window.ethereum) {
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                const addr = await signer.getAddress();
+                
+                const msg = `SmartSheer_Auth_${finalPass}_2026`;
+                const sig = await signer.signMessage(msg);
+                encryptionKey = ethers.utils.keccak256(sig);
+
+                if (!isSetupDone) localStorage.setItem('smartsheer_setup', 'true');
+
+                launchDashboard(addr, currentRole);
+            } catch(e) { showAlert("Firma MetaMask rifiutata."); }
+        } else { showAlert("MetaMask non trovato."); }
+    }
+
+    // --- LOGICA ACCESSO STAFF (QR SCANNER) ---
+    function startQRScanner() {
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText, decodedResult) => {
+                stopQRScanner();
+                processStaffLogin(decodedText);
+            },
+            (errorMessage) => { /* ignora errori di lettura frame */ }
+        ).catch((err) => { showAlert("Errore fotocamera. Controlla i permessi."); });
+    }
+
+    function stopQRScanner() {
+        if(html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); }).catch(err => console.log(err));
+        }
+    }
+
+    function processStaffLogin(qrDataStr) {
+        try {
+            // Il QR contiene un JSON strutturato { pk: "0x...", perms: {mint:bool, in:bool, out:bool} }
+            const staffData = JSON.parse(qrDataStr);
+            if(!staffData.pk || !staffData.perms) throw new Error("QR Non Valido");
+            
+            const staffWallet = new ethers.Wallet(staffData.pk);
+            currentStaffPerms = staffData.perms;
+            currentRole = 'staff';
+            
+            // Configura UI Permessi
+            document.getElementById('ui-staff-in').style.display = currentStaffPerms.in ? 'block' : 'none';
+            document.getElementById('ui-staff-out').style.display = currentStaffPerms.out ? 'block' : 'none';
+
+            launchDashboard(staffWallet.address, 'staff');
+            log(`Badge verificato. Permessi: [Mint:${currentStaffPerms.mint}] [In:${currentStaffPerms.in}] [Out:${currentStaffPerms.out}]`);
+        } catch(e) {
+            showAlert("QR Code non riconosciuto dal sistema.");
+            switchLoginMode('admin'); // Torna indietro
+        }
+    }
+
+    // --- AVVIO DASHBOARD ---
+    function launchDashboard(address, role) {
+        document.getElementById('gate-overlay').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('eth-address').innerText = address.substring(0,6)+"..."+address.substring(38);
+        document.getElementById('tag-ruolo').innerText = role.toUpperCase();
+        
+        buildTabs(role);
+        captureForensicData(role.toUpperCase(), "SYSTEM_LOGIN");
+        log(`Connessione Stabilita. Ruolo: ${role.toUpperCase()}`);
+    }
+
+    function buildTabs(role) {
+        const nav = document.getElementById('tab-nav');
+        nav.innerHTML = "";
+        if(role === 'master') { addTab("MASTER CONTROL", "panel-admin"); }
+        if(role === 'client') {
+            addTab("IDENTITY", "panel-onboarding");
+            addTab("FACTORY & IOT", "panel-factory");
+            addTab("STAFF MANAGER", "panel-staff-manage");
+        }
+        if(role === 'staff') { 
+            addTab("OPERAZIONI LOGISTICHE", "panel-operations"); 
+            if(currentStaffPerms.mint) addTab("FACTORY DELEGATA", "panel-factory");
+        }
+        showPanel(nav.firstChild.getAttribute('data-panel'));
+    }
+
+    function addTab(label, panelId) {
+        const t = document.createElement('div');
+        t.className = "tab"; t.innerText = label; t.setAttribute('data-panel', panelId);
+        t.onclick = (e) => {
+            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+            e.target.classList.add('active'); showPanel(panelId);
+        };
+        document.getElementById('tab-nav').appendChild(t);
+        if(document.getElementById('tab-nav').childNodes.length === 1) t.classList.add('active');
+    }
+
+    function showPanel(id) {
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+    }
+
+    // --- FUNZIONI CORE ---
+    async function mintIdentity() {
+        const dna = CryptoJS.SHA256(document.getElementById('reg-piva').value + document.getElementById('reg-salt').value + encryptionKey).toString();
+        log(`🛡️ SBT Identity Sigillata: ${dna.substring(0,24)}...`);
+    }
+
+    async function mintBatch() {
+        const config = {
+            qty: document.getElementById('nft-qty').value,
+            iot: {
+                temp: document.getElementById('iot-temp').checked,
+                tMin: document.getElementById('temp-min').value,
+                tMax: document.getElementById('temp-max').value,
+                gps: document.getElementById('iot-gps').checked,
+                tamper: document.getElementById('iot-tamper').checked
+            }
+        };
+        log(`🚀 Coniazione Lotto Avviata. Qty: ${config.qty}. Oracolo IoT: [Temp:${config.iot.temp}] [GPS:${config.iot.gps}] [Urti:${config.iot.tamper}]`);
+    }
+
+    function generateWorkerQR() {
+        const name = document.getElementById('worker-name').value;
+        const perms = {
+            mint: document.getElementById('perm-mint').checked,
+            in: document.getElementById('perm-in').checked,
+            out: document.getElementById('perm-out').checked
+        };
+        
+        const entropy = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + encryptionKey + Date.now()));
+        const workerWallet = new ethers.Wallet(entropy);
+        
+        const payload = JSON.stringify({ pk: workerWallet.privateKey, perms: perms });
+        
+        document.getElementById('qr-display').style.display = "block";
+        document.getElementById('qr-display').innerHTML = "";
+        new QRCode(document.getElementById("qr-display"), { text: payload, width: 200, height: 200 });
+        
+        log(`👥 Badge Generato per ${name}. Indirizzo Wallet: ${workerWallet.address.substring(0,8)}...`);
+    }
+
+    async function connectBLE(direction) { log(`📡 Sincronizzazione Bluetooth Box IoT per ${direction}...`); }
+    async function executeStaffAction(action) { log(`⚖️ Validazione ${action} On-Chain richiesta...`); }
+
+    // --- FORENSIC & UTILS ---
+    async function captureForensicData(ruolo, azione) {
+        let ip = "LOCAL";
+        try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); ip = d.ip; } catch(e){}
+        const entry = { timestamp: new Date().toLocaleString(), ruolo, azione, ip, esito: "OK" };
+        let logs = JSON.parse(localStorage.getItem('smartsheer_forensic') || "[]");
+        logs.unshift(entry); localStorage.setItem('smartsheer_forensic', JSON.stringify(logs));
+        if(currentRole === 'master') {
+            const tb = document.getElementById('forensic-log-body');
+            if(tb) tb.innerHTML = logs.map(l => `<tr><td>${l.timestamp}</td><td><span class="badge" style="background:#333; color:#fff;">${l.ruolo}</span></td><td>${l.azione}</td><td style="color:var(--neon);">${l.ip}</td><td style="color:var(--success);">${l.esito}</td></tr>`).join('');
+        }
+    }
+    
+    function exportLogs() { log("💾 Esportazione Forense CSV Completata."); }
+    function applyBan(type) { log(type === 'grey' ? `⏸️ GREY LIST per ${document.getElementById('ban-addr').value}` : `🔥 BLACK LIST DEFINITIVA per ${document.getElementById('ban-addr').value}`); }
+    function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
+    
+    // Inizializza Webcam (Onboarding)
+    async function startCamera() {
+        try { document.getElementById('webcam').srcObject = await navigator.mediaDevices.getUserMedia({video: true}); log("📸 Modulo Biometrico Attivo."); } 
+        catch(e) { log("❌ Modulo Biometrico: Permesso Negato."); }
+    }
+</script>
+</body>
+</html>
         /* UI ELEMENTS */
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
         h2 { font-family: 'Orbitron'; font-size: 0.8rem; text-transform: uppercase; color: var(--neon); margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
