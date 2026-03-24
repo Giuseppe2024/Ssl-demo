@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v11.0 | Sovereign Logistics ERP</title>
+    <title>SmartSheer v12.0 | Sovereign Logistics ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -14,10 +14,13 @@
         :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --text: #c9d1d9; --master: #fbbf24; --danger: #f85149; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; font-size: 13px; overflow: hidden; }
         
-        /* GATE */
+        /* GATE DI ACCESSO */
         #gate-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); width: 420px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); }
         .gate-card h1 { font-family: 'Orbitron'; color: var(--neon); margin-bottom: 30px; letter-spacing: 2px; }
+        
+        .pass-container { position: relative; width: 100%; }
+        .eye-icon { position: absolute; right: 12px; top: 18px; cursor: pointer; user-select: none; font-size: 1.2rem; }
 
         /* DASHBOARD */
         #main-app { display: none; height: 100vh; flex-direction: column; }
@@ -42,6 +45,9 @@
         .btn-danger { background: var(--danger); color: #fff; }
         .btn-staff { background: var(--master); color: #000; }
 
+        .reset-link { display: block; margin-top: 20px; font-size: 0.7rem; color: #8b949e; text-decoration: underline; cursor: pointer; transition: color 0.2s; }
+        .reset-link:hover { color: var(--danger); }
+
         #video-container { width: 100%; height: 200px; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         #terminal { background: #000; color: #3fb950; font-family: monospace; padding: 15px; border-radius: 8px; height: 120px; overflow-y: auto; font-size: 0.75rem; border: 1px solid var(--border); }
@@ -65,10 +71,30 @@
             <option value="staff">STAFF (MAGAZZINIERE)</option>
         </select>
         
-        <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left; margin-top:15px;">PASSWORD VAULT</label>
-        <input type="password" id="gate-pass" placeholder="Master Password (HD Salt)">
+        <div id="setup-section" style="display: none; margin-top:15px;">
+            <label style="color:var(--master); font-size: 0.6rem; display:block; text-align:left;">PRIMO ACCESSO: CREA MASTER PASSWORD</label>
+            <div class="pass-container">
+                <input type="password" id="gate-pass-new" placeholder="Crea Password (min. 6 caratteri)">
+                <span class="eye-icon" onclick="togglePass('gate-pass-new')">👁️</span>
+            </div>
+            <div class="pass-container">
+                <input type="password" id="gate-pass-confirm" placeholder="Ripeti Password">
+            </div>
+            <p style="font-size:0.65rem; color:#888; text-align:left; margin-top:5px;">Attenzione: La password non viene salvata in alcun database. Non dimenticarla.</p>
+        </div>
+
+        <div id="login-section" style="margin-top:15px;">
+            <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left;">PASSWORD VAULT</label>
+            <div class="pass-container">
+                <input type="password" id="gate-pass" placeholder="Inserisci Password">
+                <span class="eye-icon" onclick="togglePass('gate-pass')">👁️</span>
+            </div>
+        </div>
         
         <button class="btn-neon" onclick="unlockSystem()">SBLOCCA CON METAMASK</button>
+        <div id="gate-msg" style="margin-top:10px; font-size:0.7rem; color:var(--danger)"></div>
+
+        <a class="reset-link" onclick="resetDevice()">Ripristina Dispositivo (Pulisci Memoria)</a>
     </div>
 </div>
 
@@ -163,11 +189,48 @@
     const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // SOSTITUIRE CON INDIRIZZO REMIX
     let provider, signer, encryptionKey, currentRole;
 
+    // --- CONTROLLO INIZIALE (SETUP vs LOGIN) ---
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('smartsheer_setup')) {
+            document.getElementById('setup-section').style.display = 'block';
+            document.getElementById('login-section').style.display = 'none';
+        }
+    });
+
+    // --- UTILITIES UI ---
+    function togglePass(id) {
+        const input = document.getElementById(id);
+        input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function resetDevice() {
+        if(confirm("Sei sicuro di voler ripristinare il dispositivo? La memoria locale verrà cancellata.")) {
+            localStorage.removeItem('smartsheer_setup');
+            location.reload();
+        }
+    }
+
+    function showAlert(msg) {
+        document.getElementById('gate-msg').innerText = msg;
+    }
+
     // --- LOGICA DI ACCESSO E SICUREZZA ---
     async function unlockSystem() {
-        const pass = document.getElementById('gate-pass').value;
+        let finalPass = "";
+        const isSetupDone = localStorage.getItem('smartsheer_setup');
+
+        if (!isSetupDone) {
+            const p1 = document.getElementById('gate-pass-new').value;
+            const p2 = document.getElementById('gate-pass-confirm').value;
+            if (p1.length < 6) return showAlert("La password deve avere almeno 6 caratteri.");
+            if (p1 !== p2) return showAlert("Le password non coincidono!");
+            finalPass = p1;
+        } else {
+            finalPass = document.getElementById('gate-pass').value;
+            if (finalPass.length < 6) return showAlert("Inserisci una password valida.");
+        }
+
         currentRole = document.getElementById('role-selector').value;
-        if(pass.length < 4) return alert("Inserisci una password valida.");
 
         if (window.ethereum) {
             try {
@@ -176,9 +239,11 @@
                 signer = provider.getSigner();
                 const addr = await signer.getAddress();
                 
-                const msg = `SmartSheer_Auth_${pass}_2026`;
+                const msg = `SmartSheer_Auth_${finalPass}_2026`;
                 const sig = await signer.signMessage(msg);
                 encryptionKey = ethers.utils.keccak256(sig);
+
+                if (!isSetupDone) { localStorage.setItem('smartsheer_setup', 'true'); }
 
                 document.getElementById('gate-overlay').style.display = 'none';
                 document.getElementById('main-app').style.display = 'flex';
@@ -188,7 +253,9 @@
                 buildTabs(currentRole);
                 await captureForensicData(currentRole.toUpperCase(), "LOGIN_ACCESS");
                 log(`Sessione avviata. Vault Key: ${encryptionKey.substring(0,10)}...`);
-            } catch(e) { alert("Accesso negato: firma MetaMask obbligatoria."); }
+            } catch(e) { showAlert("Accesso negato: firma MetaMask obbligatoria."); }
+        } else {
+            showAlert("MetaMask non rilevato nel browser.");
         }
     }
 
@@ -330,170 +397,6 @@
         const l = document.getElementById('terminal');
         l.innerHTML += `<br>> ${m}`;
         l.scrollTop = l.scrollHeight;
-    }
-</script>
-</body>
-</html>            text-transform: uppercase; margin-top: 15px; transition: 0.3s;
-        }
-        .btn-gate:hover { box-shadow: 0 0 20px rgba(0, 242, 255, 0.5); transform: translateY(-2px); }
-
-        /* --- DASHBOARD MODULARE --- */
-        #main-app { display: none; height: 100vh; flex-direction: column; }
-        nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        
-        .tab-bar { display: flex; background: #161b22; padding: 10px 20px; gap: 10px; border-bottom: 1px solid var(--border); }
-        .tab { padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 0.8rem; font-weight: 600; color: #888; transition: 0.3s; }
-        .tab.active { background: #30363d; color: var(--neon); border-bottom: 2px solid var(--neon); }
-
-        .content-area { flex: 1; padding: 30px; overflow-y: auto; }
-        .panel { display: none; }
-        .panel.active { display: block; }
-
-        .card { background: var(--card); border: 1px solid var(--border); padding: 25px; border-radius: 12px; margin-bottom: 20px; }
-        #log { background: #000; color: #3fb950; font-family: monospace; padding: 15px; border-radius: 8px; font-size: 0.7rem; margin-top: 20px; }
-    </style>
-</head>
-<body>
-
-<div id="gate-overlay">
-    <div class="gate-card">
-        <h1>SMARTSHEER 2026</h1>
-        <p style="font-size: 0.8rem; color: #8b949e; margin-bottom: 20px;">Sincronizza Identità & Sblocca Vault</p>
-        
-        <label style="display:block; text-align:left; font-size: 0.7rem; color: var(--neon);">1. SELEZIONA RUOLO</label>
-        <select id="role-selector">
-            <option value="none">-- Scegli la tua funzione --</option>
-            <option value="admin">MASTER GENERALE (Proprietario)</option>
-            <option value="client">CLIENT MASTER (Azienda)</option>
-            <option value="staff">STAFF (Magazziniere)</option>
-        </select>
-
-        <label style="display:block; text-align:left; font-size: 0.7rem; color: var(--neon); margin-top:15px;">2. PASSWORD DI DECRIPTAZIONE</label>
-        <input type="password" id="master-pass" placeholder="Inserisci la tua Master Password">
-
-        <button class="btn-gate" onclick="unlockSystem()">COLLEGA METAMASK & SBLOCCA</button>
-        
-        <div id="gate-status" style="margin-top:15px; font-size:0.7rem; color:#f85149;"></div>
-    </div>
-</div>
-
-<div id="main-app">
-    <nav>
-        <div style="font-family:'Orbitron'; font-weight:700; color:var(--neon)">SMARTSHEER <span id="tag-ruolo" style="font-size:0.6rem; color:#8b949e"></span></div>
-        <div id="user-address" style="font-family:monospace; font-size:0.75rem; background:#161b22; padding:5px 12px; border-radius:20px;"></div>
-    </nav>
-
-    <div class="tab-bar" id="nav-tabs">
-        </div>
-
-    <div class="content-area" id="main-content">
-        <div id="panel-onboarding" class="panel">
-            <div class="card">
-                <h2>🛡️ Registrazione Identità (SBT)</h2>
-                <p>Nessun Soulbound Token trovato. Crea ora la tua Identità Aziendale.</p>
-                <input type="text" id="reg-piva" placeholder="P.IVA Aziendale">
-                <button class="btn-gate" onclick="mintIdentitySBT()">CONIA SBT IDENTITÀ</button>
-            </div>
-        </div>
-
-        <div id="panel-factory" class="panel">
-            <div class="card">
-                <h2>🚀 Factory: Generazione NFT</h2>
-                <input type="text" id="nft-name" placeholder="Nome (es. Rolex)">
-                <input type="number" id="nft-qty" placeholder="Quantità">
-                <button class="btn-gate" onclick="coniaLotto()">GENERA CARICO NEL VAULT</button>
-            </div>
-        </div>
-
-        <div id="panel-staff" class="panel">
-            <div class="card">
-                <h2>👥 Gestione Team</h2>
-                <input type="text" id="worker-name" placeholder="Nome Magazziniere">
-                <button class="btn-gate" style="background:var(--master)" onclick="createWorkerQR()">GENERA QR LOGIN</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="log">> Sistema pronto. Log di sicurezza attivo.</div>
-</div>
-
-<script>
-    let currentRole = "";
-    let userWallet = "";
-    let encryptionKey = ""; // Questa sarà la nostra Master Key generata
-
-    async function unlockSystem() {
-        const role = document.getElementById('role-selector').value;
-        const pass = document.getElementById('master-pass').value;
-
-        if (role === "none" || pass.length < 4) {
-            document.getElementById('gate-status').innerText = "Errore: Seleziona ruolo e password valida.";
-            return;
-        }
-
-        if (window.ethereum) {
-            try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                userWallet = accounts[0];
-                const signer = provider.getSigner();
-
-                // LA MAGIA: Firma deterministica basata sulla password
-                // Questo crea il nostro "Seme" di privacy che non esiste sulla blockchain
-                const msg = `SmartSheer_Auth_${pass}_2026`;
-                const signature = await signer.signMessage(msg);
-                encryptionKey = ethers.utils.keccak256(signature);
-
-                document.getElementById('gate-overlay').style.display = "none";
-                document.getElementById('main-app').style.display = "flex";
-                setupDashboard(role);
-                
-                log(`Sblocco effettuato come ${role.toUpperCase()}.`);
-                log(`Vault Key Derivata: ${encryptionKey.substring(0,10)}...`);
-
-            } catch (err) {
-                document.getElementById('gate-status').innerText = "MetaMask: Accesso negato o firma annullata.";
-            }
-        }
-    }
-
-    function setupDashboard(role) {
-        currentRole = role;
-        document.getElementById('tag-ruolo').innerText = role.toUpperCase();
-        document.getElementById('user-address').innerText = userWallet;
-        
-        const tabs = document.getElementById('nav-tabs');
-        tabs.innerHTML = "";
-
-        if(role === "client") {
-            addTab("IDENTITÀ", "panel-onboarding");
-            addTab("FACTORY NFT", "panel-factory");
-            addTab("GESTIONE STAFF", "panel-staff");
-            showPanel("panel-onboarding");
-        }
-        // Aggiungi qui gli altri ruoli...
-    }
-
-    function addTab(label, panelId) {
-        const t = document.createElement("div");
-        t.className = "tab";
-        t.innerText = label;
-        t.onclick = (e) => {
-            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-            e.target.classList.add('active');
-            showPanel(panelId);
-        };
-        document.getElementById('nav-tabs').appendChild(t);
-    }
-
-    function showPanel(id) {
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-
-    function log(m) {
-        const l = document.getElementById('log');
-        l.innerHTML += `<br>> ${m}`;
     }
 </script>
 </body>
