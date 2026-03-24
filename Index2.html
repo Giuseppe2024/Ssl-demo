@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v15.0 | Ultimate Sovereign ERP</title>
+    <title>SmartSheer v15.1 | Ultimate Sovereign ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -128,7 +128,6 @@
     <div class="tab-bar" id="tab-nav"></div>
 
     <div class="content-area">
-        
         <div id="panel-admin" class="panel">
             <div class="card" style="border-color: var(--danger);">
                 <h2 style="color: var(--danger);">🚨 SECURITY: GREY & BLACK LIST</h2>
@@ -246,13 +245,36 @@
     let html5QrcodeScanner;
     let currentStaffPerms = {};
 
-    // --- CONTROLLO INIZIALE SETUP ---
-    window.addEventListener('DOMContentLoaded', () => {
-        if (!localStorage.getItem('smartsheer_setup')) {
+    // --- CONTROLLO INIZIALE SETUP (AGGIORNATO) ---
+    function checkSetupState() {
+        if (localStorage.getItem('smartsheer_setup') === 'true') {
+            document.getElementById('setup-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+        } else {
             document.getElementById('setup-section').style.display = 'block';
             document.getElementById('login-section').style.display = 'none';
         }
-    });
+    }
+    
+    window.addEventListener('DOMContentLoaded', checkSetupState);
+
+    // --- LOGICA DI RESET IN TEMPO REALE (LA PATCH!) ---
+    function resetDevice() {
+        if(confirm("ATTENZIONE CRITICA: Il reset cancellerà irreversibilmente la memoria locale del Vault. Se non hai il backup o la password, perderai l'accesso. Procedere?")) {
+            // 1. Svuota la memoria
+            localStorage.removeItem('smartsheer_setup');
+            
+            // 2. Svuota i campi visivamente per sicurezza
+            document.getElementById('gate-pass-new').value = '';
+            document.getElementById('gate-pass-confirm').value = '';
+            document.getElementById('gate-pass').value = '';
+            
+            // 3. Forza l'aggiornamento grafico senza ricaricare la pagina
+            checkSetupState();
+            
+            showAlert("Memoria azzerata correttamente. Ricrea o inserisci la tua Master Password.");
+        }
+    }
 
     // --- UI UTILITIES ---
     function togglePass(id) {
@@ -281,22 +303,15 @@
         }
     }
 
-    function resetDevice() {
-        if(confirm("ATTENZIONE CRITICA: Il reset cancellerà irreversibilmente la memoria locale del Vault. Se non hai il backup o la password, perderai l'accesso. Procedere?")) {
-            localStorage.removeItem('smartsheer_setup');
-            location.reload();
-        }
-    }
-
     function goHome() { location.reload(); }
     function showAlert(msg) { document.getElementById('gate-msg').innerText = msg; }
 
-    // --- LOGICA ACCESSO MASTER/CLIENT (METAMASK) ---
+    // --- LOGICA ACCESSO MASTER/CLIENT ---
     async function unlockSystemAdmin() {
         let finalPass = "";
         const isSetupDone = localStorage.getItem('smartsheer_setup');
 
-        if (!isSetupDone) {
+        if (!isSetupDone || isSetupDone !== 'true') {
             const p1 = document.getElementById('gate-pass-new').value;
             const p2 = document.getElementById('gate-pass-confirm').value;
             if (p1.length < 6) return showAlert("Minimo 6 caratteri.");
@@ -337,35 +352,32 @@
                 stopQRScanner();
                 processStaffLogin(decodedText);
             },
-            (errorMessage) => { /* ignora errori di lettura frame */ }
-        ).catch((err) => { showAlert("Errore fotocamera. Controlla i permessi."); });
+            (errorMessage) => { /* ignora errori lib */ }
+        ).catch((err) => { showAlert("Errore fotocamera."); });
     }
 
     function stopQRScanner() {
         if(html5QrcodeScanner) {
-            html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); }).catch(err => console.log(err));
+            html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); }).catch(e => console.log(e));
         }
     }
 
     function processStaffLogin(qrDataStr) {
         try {
-            // Il QR contiene un JSON strutturato { pk: "0x...", perms: {mint:bool, in:bool, out:bool} }
             const staffData = JSON.parse(qrDataStr);
-            if(!staffData.pk || !staffData.perms) throw new Error("QR Non Valido");
-            
+            if(!staffData.pk || !staffData.perms) throw new Error();
             const staffWallet = new ethers.Wallet(staffData.pk);
             currentStaffPerms = staffData.perms;
             currentRole = 'staff';
             
-            // Configura UI Permessi
             document.getElementById('ui-staff-in').style.display = currentStaffPerms.in ? 'block' : 'none';
             document.getElementById('ui-staff-out').style.display = currentStaffPerms.out ? 'block' : 'none';
 
             launchDashboard(staffWallet.address, 'staff');
             log(`Badge verificato. Permessi: [Mint:${currentStaffPerms.mint}] [In:${currentStaffPerms.in}] [Out:${currentStaffPerms.out}]`);
         } catch(e) {
-            showAlert("QR Code non riconosciuto dal sistema.");
-            switchLoginMode('admin'); // Torna indietro
+            showAlert("QR Code non riconosciuto.");
+            switchLoginMode('admin');
         }
     }
 
@@ -422,34 +434,21 @@
     async function mintBatch() {
         const config = {
             qty: document.getElementById('nft-qty').value,
-            iot: {
-                temp: document.getElementById('iot-temp').checked,
-                tMin: document.getElementById('temp-min').value,
-                tMax: document.getElementById('temp-max').value,
-                gps: document.getElementById('iot-gps').checked,
-                tamper: document.getElementById('iot-tamper').checked
-            }
+            iot: { temp: document.getElementById('iot-temp').checked, gps: document.getElementById('iot-gps').checked, tamper: document.getElementById('iot-tamper').checked }
         };
-        log(`🚀 Coniazione Lotto Avviata. Qty: ${config.qty}. Oracolo IoT: [Temp:${config.iot.temp}] [GPS:${config.iot.gps}] [Urti:${config.iot.tamper}]`);
+        log(`🚀 Coniazione Lotto Avviata. Qty: ${config.qty}.`);
     }
 
     function generateWorkerQR() {
         const name = document.getElementById('worker-name').value;
-        const perms = {
-            mint: document.getElementById('perm-mint').checked,
-            in: document.getElementById('perm-in').checked,
-            out: document.getElementById('perm-out').checked
-        };
-        
+        const perms = { mint: document.getElementById('perm-mint').checked, in: document.getElementById('perm-in').checked, out: document.getElementById('perm-out').checked };
         const entropy = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + encryptionKey + Date.now()));
         const workerWallet = new ethers.Wallet(entropy);
-        
         const payload = JSON.stringify({ pk: workerWallet.privateKey, perms: perms });
         
         document.getElementById('qr-display').style.display = "block";
         document.getElementById('qr-display').innerHTML = "";
         new QRCode(document.getElementById("qr-display"), { text: payload, width: 200, height: 200 });
-        
         log(`👥 Badge Generato per ${name}. Indirizzo Wallet: ${workerWallet.address.substring(0,8)}...`);
     }
 
@@ -473,7 +472,6 @@
     function applyBan(type) { log(type === 'grey' ? `⏸️ GREY LIST per ${document.getElementById('ban-addr').value}` : `🔥 BLACK LIST DEFINITIVA per ${document.getElementById('ban-addr').value}`); }
     function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
     
-    // Inizializza Webcam (Onboarding)
     async function startCamera() {
         try { document.getElementById('webcam').srcObject = await navigator.mediaDevices.getUserMedia({video: true}); log("📸 Modulo Biometrico Attivo."); } 
         catch(e) { log("❌ Modulo Biometrico: Permesso Negato."); }
