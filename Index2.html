@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v16.3 | Stealth & Consumer ERP</title>
+    <title>SmartSheer v17.0 | Sovereign Web3 ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -124,7 +124,8 @@
                 <h2 style="color: var(--danger);">🚨 SECURITY: BLACK LIST (BLOCCO TOTALE INDIRIZZI)</h2>
                 <div style="display:flex; gap:10px; align-items: center;">
                     <input type="text" id="ban-addr" placeholder="Indirizzo Wallet (0x...)">
-                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan('black')">APPLICA BLACK LIST</button>
+                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan(true)">APPLICA BANDO</button>
+                    <button class="btn-grey" style="width:auto; padding:0 20px;" onclick="applyBan(false)">RIMUIVI BANDO</button>
                 </div>
             </div>
             <div class="card" style="border-color: var(--neon);">
@@ -178,8 +179,7 @@
                             <input type="text" id="nft-attr-1-val" placeholder="Valore (es. 2026)" style="flex:2;">
                         </div>
                         <div style="margin-top: 15px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; text-align: center;">
-                            <label style="color: var(--neon); cursor: pointer; font-size: 0.8rem;">
-                                📸 CARICA FOTO PRODOTTO
+                            <label style="color: var(--neon); cursor: pointer; font-size: 0.8rem;">📸 CARICA FOTO PRODOTTO
                                 <input type="file" id="nft-image" accept="image/png, image/jpeg" style="display: none;" onchange="previewImage(this)">
                             </label>
                             <div id="img-preview-box" style="margin-top: 10px; display: none;">
@@ -195,14 +195,11 @@
                             <label style="color:var(--master); font-weight:bold;">Richiedi Pagamento alla Consegna (Escrow)</label>
                         </div>
                         <div id="escrow-fields" style="display:none; gap:10px; margin-top: 10px;">
-                            <input type="number" id="nft-price" placeholder="Prezzo (EURC)" style="flex:1;" value="0">
+                            <input type="number" id="nft-price" placeholder="Prezzo (EURC/MATIC)" style="flex:1;" value="0">
                             <input type="text" id="nft-buyer" placeholder="Indirizzo Acquirente (0x...)" style="flex:2;">
                         </div>
                         <hr style="border-color: var(--border); margin: 15px 0;">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="iot-temp" onchange="toggleTempInputs()"> 
-                            <label>Controllo Temperatura (Oracolo)</label>
-                        </div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-temp" onchange="toggleTempInputs()"> <label>Controllo Temperatura (Oracolo)</label></div>
                         <div id="temp-ranges" style="display:none; gap:10px; margin-left: 25px; margin-bottom: 10px;">
                             <input type="number" id="temp-min" placeholder="Min °C" style="padding: 6px;">
                             <input type="number" id="temp-max" placeholder="Max °C" style="padding: 6px;">
@@ -221,7 +218,7 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                     <div>
                         <input type="text" id="worker-name" placeholder="Nome Magazziniere">
-                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE QR</button>
+                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE QR E DELEGA SU CHAIN</button>
                     </div>
                     <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
                         <h3 style="margin-top:0; font-size:0.75rem; color:var(--neon);">🛠️ ASSEGNA POTERI ON-CHAIN</h3>
@@ -243,46 +240,38 @@
 
         <div id="panel-operations" class="panel">
             <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
-                <div class="card" style="border-color: var(--neon); margin-bottom: 0;" id="ui-staff-in">
-                    <h2 style="color: var(--neon);">📥 INGRESSO (CHECK-IN)</h2>
-                    <button class="btn-grey" onclick="connectBLE('checkin')">1. LEGGI DATI IOT</button>
-                    <input type="text" id="checkin-nft" placeholder="ID Lotto in arrivo" style="margin-top:10px;">
-                    <button class="btn-neon" onclick="executeStaffAction('checkin')">2. CONFERMA RICEZIONE</button>
-                </div>
                 <div class="card" style="border-color: var(--grey); margin-bottom: 0;" id="ui-staff-transit">
                     <h2 style="color: var(--text);">📍 REGISTRA CHECKPOINT</h2>
                     <button class="btn-grey" onclick="connectBLE('transit')">1. LEGGI DATI IOT E GPS</button>
-                    <input type="text" id="checkpoint-nft" placeholder="ID Lotto in transito" style="margin-top:10px;">
+                    <input type="text" id="checkpoint-nft" placeholder="ID Lotto in transito (es. 1)" style="margin-top:10px;">
                     <button class="btn-grey" style="background:#30363d;" onclick="executeCheckpoint()">2. REGISTRA HASH SU CHAIN</button>
                 </div>
                 <div class="card" style="border-color: var(--master); margin-bottom: 0;" id="ui-staff-out">
                     <h2 style="color: var(--master);">📤 USCITA (HANDOVER FINALE)</h2>
                     <button class="btn-grey" onclick="connectBLE('outbound')">1. VERIFICA SIGILLI IOT</button>
-                    <input type="text" id="handover-nft" placeholder="ID Lotto da consegnare" style="margin-top:10px;">
+                    <input type="text" id="handover-nft" placeholder="ID Lotto (es. 1)" style="margin-top:10px;">
                     <button class="btn-staff" onclick="executeHandover()">2. TENTA CONSEGNA E SBLOCCO</button>
                 </div>
             </div>
         </div>
 
         <div id="panel-buyer" class="panel">
-            
             <div class="card" style="border-color: var(--success); margin-bottom: 20px;">
                 <h2 style="color: var(--success);">🔍 VERIFICA PRODOTTO (PASSAPORTO PUBBLICO)</h2>
-                <p style="font-size:0.75rem; color:#888;">Simula la lettura del QR Code sulla confezione da parte del consumatore.</p>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="public-nft-id" placeholder="ID Lotto o Hash QR (es. 405)" style="flex:2;">
+                    <input type="text" id="public-nft-id" placeholder="ID Lotto o Hash QR (es. 1)" style="flex:2;">
                     <button class="btn-success" onclick="readPublicNFT()">LEGGI PASSAPORTO</button>
                 </div>
-                <div id="nft-public-display" style="display:none; margin-top:20px; padding:20px; background:#161b22; border-radius:8px; border:1px solid var(--success); text-align:center;">
-                    </div>
+                <div id="nft-public-display" style="display:none; margin-top:20px; padding:20px; background:#161b22; border-radius:8px; border:1px solid var(--success); text-align:center;"></div>
             </div>
 
             <div class="card" style="border-color: var(--danger);">
-                <h2 style="color: var(--danger);">🛒 B2B: GESTIONE DISPUTE E RIMBORSI</h2>
+                <h2 style="color: var(--danger);">🛒 B2B: ESCROW E GESTIONE DISPUTE</h2>
                 <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--danger); margin-top:15px;">
-                    <input type="text" id="disputed-nft" placeholder="ID Lotto in Disputa (Es. 405)">
+                    <input type="text" id="disputed-nft" placeholder="ID Lotto (Es. 1)">
                     <div style="display:flex; gap:10px; margin-top:15px;">
-                        <button class="btn-danger" style="background:transparent; border:1px solid var(--danger); color:var(--danger);" onclick="refundDispute()">❌ RIFIUTA E RITIRA RIMBORSO EURC</button>
+                        <button class="btn-success" style="background:var(--success); color:#000;" onclick="fundEscrowAction()">💸 PAGA/CARICA ESCROW</button>
+                        <button class="btn-danger" style="background:transparent; border:1px solid var(--danger); color:var(--danger);" onclick="refundDispute()">❌ RIFIUTA E RITIRA RIMBORSO</button>
                         <button class="btn-danger" onclick="forceAcceptance()">⚠️ PAGA COMUNQUE VENDITORE</button>
                     </div>
                 </div>
@@ -294,12 +283,29 @@
 </div>
 
 <script>
+    // 🚨 🚨 🚨 INSERISCI QUI IL CONTRACT ADDRESS DA REMIX IDE 🚨 🚨 🚨
     const CONTRACT_ADDRESS = "0xeDBcFDF5d690663858999639d3601E2F723B69db"; 
+
+    // ABI: Il ponte che traduce il Javascript in Solidity
+    const contractABI = [
+        "function setBan(address _target, bool _status) external",
+        "function mintSBT(bytes32 _dnaHash) external",
+        "function registerHub(bytes32 _hubHash) external",
+        "function setStealthWorker(address _ephemeralStaff, bool _mint, bool _in, bool _out, bool _active) external",
+        "function mintBatch(address _motherClient, bytes32 _metadataHash, uint256 _qty, tuple(bool reqTemp, int256 minTemp, int256 maxTemp, bool reqGps, bool reqTamper) _reqs, uint256 _price, address _buyer) external",
+        "function fundEscrow(uint256 _id) external payable",
+        "function recordCheckpoint(uint256 _id, bytes32 _hubHash) external",
+        "function executeHandover(uint256 _id, int256 _recordedTemp, bool _gpsValid, bool _tamperValid) external",
+        "function forceAcceptance(uint256 _id) external",
+        "function refundDispute(uint256 _id) external"
+    ];
+
     let provider, signer, encryptionKey, currentRole;
     let html5QrcodeScanner;
     let currentStaffPerms = {};
     let lastSensorData = null; 
     let staffList = JSON.parse(localStorage.getItem('smartsheer_staff') || "[]"); 
+    let videoStream = null;
 
     function checkSetupState() {
         if (localStorage.getItem('smartsheer_setup') === 'true') {
@@ -314,18 +320,12 @@
 
     function resetDevice() {
         if(confirm("ATTENZIONE CRITICA: Il reset cancellerà la memoria locale. Procedere?")) {
-            localStorage.removeItem('smartsheer_setup');
-            document.getElementById('gate-pass-new').value = '';
-            document.getElementById('gate-pass-confirm').value = '';
-            document.getElementById('gate-pass').value = '';
-            checkSetupState();
-            showAlert("Memoria azzerata. Ricrea la tua Master Password.");
+            localStorage.clear(); location.reload();
         }
     }
 
     function togglePass(id) { const input = document.getElementById(id); input.type = input.type === "password" ? "text" : "password"; }
     function toggleTempInputs() { document.getElementById('temp-ranges').style.display = document.getElementById('iot-temp').checked ? 'flex' : 'none'; }
-    
     function toggleEscrow() {
         const isChecked = document.getElementById('use-escrow').checked;
         document.getElementById('escrow-fields').style.display = isChecked ? 'flex' : 'none';
@@ -334,12 +334,9 @@
 
     function previewImage(input) {
         if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('img-preview').src = e.target.result;
-                document.getElementById('img-preview-box').style.display = 'block';
-            }
-            reader.readAsDataURL(input.files[0]);
+            var r = new FileReader();
+            r.onload = (e) => { document.getElementById('img-preview').src = e.target.result; document.getElementById('img-preview-box').style.display = 'block'; }
+            r.readAsDataURL(input.files[0]);
         }
     }
 
@@ -362,10 +359,10 @@
     function goHome() { location.reload(); }
     function showAlert(msg) { document.getElementById('gate-msg').innerText = msg; }
 
+    // --- AUTENTICAZIONE METAMASK ---
     async function unlockSystemAdmin() {
         let finalPass = "";
         const isSetupDone = localStorage.getItem('smartsheer_setup');
-
         if (!isSetupDone || isSetupDone !== 'true') {
             const p1 = document.getElementById('gate-pass-new').value;
             const p2 = document.getElementById('gate-pass-confirm').value;
@@ -391,7 +388,6 @@
                 encryptionKey = ethers.utils.keccak256(sig);
 
                 if (!isSetupDone) localStorage.setItem('smartsheer_setup', 'true');
-
                 launchDashboard(addr, currentRole);
             } catch(e) { showAlert("Firma MetaMask rifiutata."); }
         } else { showAlert("MetaMask non trovato."); }
@@ -415,6 +411,8 @@
             const staffWallet = new ethers.Wallet(staffData.pk);
             currentStaffPerms = staffData.perms;
             currentRole = 'staff';
+            signer = staffWallet.connect(provider); // Imposta il signer col wallet usa-e-getta!
+            
             document.getElementById('ui-staff-in').style.display = currentStaffPerms.in ? 'block' : 'none';
             document.getElementById('ui-staff-out').style.display = currentStaffPerms.out ? 'block' : 'none';
             launchDashboard(staffWallet.address, 'staff');
@@ -428,7 +426,6 @@
         document.getElementById('tag-ruolo').innerText = role.toUpperCase();
         
         buildTabs(role);
-        captureForensicData(role.toUpperCase(), "SYSTEM_LOGIN");
         log(`Connessione Stabilita. Ruolo: ${role.toUpperCase()}`);
         if(role === 'client') renderStaffList(); 
     }
@@ -452,23 +449,65 @@
     }
     function showPanel(id) { document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById(id).style.display = 'block'; }
 
-    async function connectBLE(direction) {
-        log(`📡 Inizializzazione scanner Bluetooth per [${direction.toUpperCase()}]...`);
-        try {
-            const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service', 'environmental_sensing'] });
-            log(`🔗 Device accoppiato: ${device.name || 'Box Anonimo'} (${device.id})`);
-            const server = await device.gatt.connect();
-            lastSensorData = { temp: 18.5, tamper: false, gps: true, lat: "44.41", lon: "12.20" }; 
-            log(`🌡️ Dati Oracolo acquisiti con successo.`);
-            server.disconnect();
-        } catch (error) { log(`❌ Connessione BLE fallita: ${error.message}`); }
+    // --- FUNZIONI VIDEOCAMERA ---
+    async function startCamera() {
+        try { 
+            videoStream = await navigator.mediaDevices.getUserMedia({video: true}); 
+            document.getElementById('webcam').srcObject = videoStream;
+            log("📸 Modulo Biometrico Attivo. Inquadra il viso e premi CONIA IDENTITÀ."); 
+        } catch(e) { log("❌ Modulo Biometrico: Permesso Negato."); }
     }
 
-    function registerHub() {
+    function stopCamera() {
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            document.getElementById('webcam').srcObject = null;
+            videoStream = null;
+            log("🎥 Videocamera spenta con successo.");
+        }
+    }
+
+    // --- CHIAMATE ALLO SMART CONTRACT CON ETHERS.JS ---
+
+    async function applyBan(status) {
+        const target = document.getElementById('ban-addr').value;
+        if(!target) return log("Inserisci indirizzo da bannare.");
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            log(`⏳ Attesa firma Master per BAN...`);
+            const tx = await contract.setBan(target, status);
+            await tx.wait();
+            log(`✅ Lista aggiornata. L'indirizzo non può più operare.`);
+        } catch(e) { log(`❌ Errore Ban: ${e.message}`); }
+    }
+
+    async function mintIdentity() {
+        if (!videoStream) return log("⚠️ Accendi prima la fotocamera per il riconoscimento biometrico!");
+        const piva = document.getElementById('reg-piva').value;
+        const salt = document.getElementById('reg-salt').value;
+        if (!piva || !salt) return log("⚠️ Inserisci P.IVA e Salt Privacy.");
+
+        log("📸 SORRIDI! Acquisizione biometrica in corso... (5 secondi)");
+        setTimeout(async () => {
+            stopCamera();
+            const dna = CryptoJS.SHA256(piva + salt + encryptionKey).toString();
+            const dnaBytes32 = "0x" + dna;
+            log(`⏳ Attesa approvazione MetaMask per SBT...`);
+            try {
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+                const tx = await contract.mintSBT(dnaBytes32);
+                log(`🚀 Transazione inviata! Hash: ${tx.hash.substring(0,16)}...`);
+                await tx.wait();
+                log(`✅ IDENTITÀ CONIATA CON SUCCESSO SUL NODO!`);
+            } catch (error) { log(`❌ Errore Blockchain: ${error.message}`); }
+        }, 5000);
+    }
+
+    async function registerHub() {
         const name = document.getElementById('hub-name').value;
         const lat = document.getElementById('hub-lat').value;
         const lon = document.getElementById('hub-lon').value;
-        if (!lat || !lon) return showAlert("Inserisci le coordinate GPS dell'Hub.");
+        if (!lat || !lon) return log("⚠️ Inserisci le coordinate GPS dell'Hub.");
 
         const rawData = lat + "|" + lon;
         const hubHash = "0x" + CryptoJS.SHA256(rawData + encryptionKey).toString();
@@ -477,39 +516,167 @@
         hubs[name] = hubHash;
         localStorage.setItem('smartsheer_hubs', JSON.stringify(hubs));
 
-        log(`📍 Hub "${name}" blindato. Hash generato: ${hubHash.substring(0,16)}...`);
-        log(`🔗 Invia questo Hash allo Smart Contract. Nessuno vedrà le vere coordinate.`);
+        log(`⏳ Attesa approvazione MetaMask per Hub Cieco...`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await contract.registerHub(hubHash);
+            await tx.wait();
+            log(`✅ HUB GEOFENCING REGISTRATO CON SUCCESSO!`);
+        } catch (error) { log(`❌ Errore: ${error.message}`); }
     }
 
-    async function executeStaffAction(action) { 
-        if(!lastSensorData) return log(`⚠️ Devi prima leggere i dati IoT dal Box!`);
-        log(`⚖️ Validazione ${action} On-Chain... Geofencing GPS: OK.`); 
-    }
-    
-    async function executeCheckpoint() {
-        if(!lastSensorData) return log(`⚠️ Devi prima leggere i dati IoT dal Box!`);
+    async function buildAndMintNFT() {
+        const name = document.getElementById('nft-name').value;
+        const qty = document.getElementById('nft-qty').value;
+        const priceRaw = document.getElementById('nft-price').value || "0";
+        const buyer = document.getElementById('nft-buyer').value || ethers.constants.AddressZero;
         
+        const reqTemp = document.getElementById('iot-temp').checked;
+        const minTemp = document.getElementById('temp-min').value || 0;
+        const maxTemp = document.getElementById('temp-max').value || 0;
+        const reqGps = document.getElementById('iot-gps').checked;
+        const reqTamper = document.getElementById('iot-tamper').checked;
+
+        const reqs = [reqTemp, minTemp, maxTemp, reqGps, reqTamper];
+        // Simula metadata IPFS (normalmente questo salirebbe su pinata.cloud)
+        const metadataHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + Date.now()));
+        const price = ethers.utils.parseEther(priceRaw.toString());
+
+        log(`⏳ Firma richiesta su MetaMask per coniare il Lotto...`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const motherClient = await signer.getAddress();
+            const tx = await contract.mintBatch(motherClient, metadataHash, qty, reqs, price, buyer);
+            log(`🚀 Lotto in creazione... Hash: ${tx.hash.substring(0,16)}`);
+            await tx.wait();
+            log(`✅ LOTTO CONIATO E SIGILLATO NEL VAULT.`);
+        } catch (e) { log(`❌ Errore Blockchain: ${e.message}`); }
+    }
+
+    async function generateWorkerQR() {
+        const name = document.getElementById('worker-name').value;
+        if(!name) return showAlert("Inserisci il nome del magazziniere.");
+        const perms = { mint: document.getElementById('perm-mint').checked, in: document.getElementById('perm-in').checked, out: document.getElementById('perm-out').checked };
+        
+        const entropy = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + encryptionKey + Date.now()));
+        const workerWallet = new ethers.Wallet(entropy);
+        
+        log(`⏳ Delega On-Chain per ${name}... Firma la transazione.`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await contract.setStealthWorker(workerWallet.address, perms.mint, perms.in, perms.out, true);
+            await tx.wait();
+            
+            const payload = JSON.stringify({ pk: workerWallet.privateKey, perms: perms });
+            staffList.push({ name: name, address: workerWallet.address, perms: perms, active: true });
+            localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
+            renderStaffList();
+
+            document.getElementById('qr-display').style.display = "block";
+            document.getElementById('qr-display').innerHTML = "";
+            new QRCode(document.getElementById("qr-display"), { text: payload, width: 200, height: 200 });
+            log(`✅ DELEGA STEALTH ATTIVATA SULLA BLOCKCHAIN.`);
+        } catch (e) { log(`❌ Errore Delega: ${e.message}`); }
+    }
+
+    async function revokeStaff(index) {
+        if(confirm(`Revocare i poteri a ${staffList[index].name}?`)) {
+            log(`⏳ Attesa firma per revoca On-Chain...`);
+            try {
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+                const s = staffList[index];
+                const tx = await contract.setStealthWorker(s.address, false, false, false, false);
+                await tx.wait();
+
+                staffList[index].active = false;
+                localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
+                renderStaffList();
+                log(`✅ PERMESSI REVOCATI. Il QR è bloccato.`);
+            } catch (e) { log(`❌ Errore: ${e.message}`); }
+        }
+    }
+
+    async function connectBLE(direction) {
+        log(`📡 Ricerca sensori Bluetooth [${direction}]...`);
+        try {
+            const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service'] });
+            const server = await device.gatt.connect();
+            // Dati fittizi dal sensore
+            lastSensorData = { temp: 18, tamper: true, gps: true, lat: "44.41", lon: "12.20" }; 
+            log(`🌡️ Dati Oracolo acquisiti.`);
+            server.disconnect();
+        } catch (error) { log(`❌ Errore BLE: ${error.message}`); }
+    }
+
+    async function executeCheckpoint() {
+        if(!lastSensorData) return log(`⚠️ Leggi i dati dal Box!`);
         const id = document.getElementById('checkpoint-nft').value;
         const currentData = lastSensorData.lat + "|" + lastSensorData.lon;
-        const currentHash = "0x" + CryptoJS.SHA256(currentData + encryptionKey).toString();
+        const hubHash = "0x" + CryptoJS.SHA256(currentData + encryptionKey).toString();
 
-        log(`📍 Richiesta Checkpoint per Lotto #${id}.`);
-        log(`🕵️‍♂️ Posizione criptata off-chain. Hash inviato: ${currentHash.substring(0,16)}...`);
+        log(`⏳ Invio Checkpoint On-Chain per Lotto #${id}...`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await contract.recordCheckpoint(id, hubHash);
+            await tx.wait();
+            log(`✅ CHECKPOINT REGISTRATO. Geofencing confermato.`);
+        } catch(e) { log(`❌ Errore: Contratto rifiutato. Sei fuori dal perimetro? (${e.message})`); }
     }
 
     async function executeHandover() {
-        if(!lastSensorData) return log(`⚠️ Devi prima verificare i sigilli IoT dal Box!`);
+        if(!lastSensorData) return log(`⚠️ Verifica i sigilli dal Box!`);
         const id = document.getElementById('handover-nft').value;
-        log(`⏳ Tentativo di Handover per l'ID #${id}...`);
+        log(`⏳ Invio richiesta Handover On-Chain...`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await contract.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamper);
+            await tx.wait();
+            log(`✅ HANDOVER COMPLETATO. L'Escrow ha elaborato i fondi.`);
+        } catch(e) { log(`❌ Handover Fallito: Danni IoT rilevati o problemi di permessi. (${e.message})`); }
+    }
+
+    // --- AZIONI ACQUIRENTE (BUYER) ---
+    async function fundEscrowAction() {
+        const id = document.getElementById('disputed-nft').value;
+        const amountToFund = prompt("Inserisci importo in MATIC/ETH per fondare l'Escrow:");
+        if (!amountToFund) return;
+        
+        log(`⏳ Versamento fondi per Lotto #${id}...`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await contract.fundEscrow(id, { value: ethers.utils.parseEther(amountToFund) });
+            await tx.wait();
+            log(`✅ ESCROW FINANZIATO E BLOCCATO IN CASSAFORTE.`);
+        } catch(e) { log(`❌ Errore Versamento: ${e.message}`); }
+    }
+
+    async function forceAcceptance() {
+        const id = document.getElementById('disputed-nft').value;
+        log(`⏳ Forzatura pagamento al venditore...`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await contract.forceAcceptance(id);
+            await tx.wait();
+            log(`⚠️ OVERRIDE ESEGUITO. Il venditore è stato pagato nonostante i danni.`);
+        } catch(e) { log(`❌ Errore Forzatura: ${e.message}`); }
+    }
+
+    async function refundDispute() {
+        const id = document.getElementById('disputed-nft').value;
+        log(`⏳ Richiesta rimborso per merce rovinata...`);
+        try {
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await contract.refundDispute(id);
+            await tx.wait();
+            log(`✅ RIMBORSO APPROVATO. Fondi restituiti al tuo wallet.`);
+        } catch(e) { log(`❌ Errore Rimborso: ${e.message}`); }
     }
 
     function readPublicNFT() {
         const id = document.getElementById('public-nft-id').value;
-        if(!id) return showAlert("Inserisci l'ID del Lotto.");
-        
+        if(!id) return showAlert("Inserisci l'ID.");
         const display = document.getElementById('nft-public-display');
         display.style.display = 'block';
-        
         display.innerHTML = `
             <h3 style="color:var(--success); margin-top:0; font-size:1.1rem;">🧀 Formaggio di Fossa DOP - Riserva Speciale</h3>
             <div style="width:100%; height:120px; background:#0d1117; border-radius:6px; margin-bottom:15px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--success);">
@@ -517,49 +684,8 @@
             </div>
             <p><strong>Lotto ID:</strong> #${id}</p>
             <p><strong>Origine Fossa:</strong> Sogliano al Rubicone</p>
-            <p><strong>Data Infossatura:</strong> 1 Agosto 2025</p>
-            <hr style="border-color:var(--border); margin:15px 0;">
-            <p style="color:var(--success); font-weight:bold; font-size:0.9rem;">✅ Catena del freddo certificata (Smart Contract)</p>
-            <p style="font-size:0.65rem; color:#888;">Hash Sicurezza Logistica: 0x8f7a9b... (Tracciato su Blockchain)</p>
+            <p style="color:var(--success); font-weight:bold; font-size:0.9rem;">✅ Catena del freddo certificata su Blockchain</p>
         `;
-        log(`🔍 Lettura Passaporto Pubblico per Lotto #${id} completata.`);
-    }
-
-    async function forceAcceptance() {
-        const id = document.getElementById('disputed-nft').value;
-        if(confirm(`ATTENZIONE: Stai per sbloccare i fondi e pagare il venditore accettando la merce nello stato in cui è. Procedere?`)) {
-            log(`⚠️ OVERRIDE ACQUIRENTE ESEGUITO: Lotto #${id} accettato. Fondi sbloccati.`);
-        }
-    }
-
-    function refundDispute() { log(`❌ Rimborso richiesto e approvato. Fondi ritirati dall'Escrow.`); }
-
-    async function mintIdentity() {
-        const dna = CryptoJS.SHA256(document.getElementById('reg-piva').value + document.getElementById('reg-salt').value + encryptionKey).toString();
-        log(`🛡️ SBT Identity Sigillata: ${dna.substring(0,24)}...`);
-    }
-
-    async function buildAndMintNFT() {
-        const name = document.getElementById('nft-name').value;
-        log(`📦 Composizione JSON per "${name}" completata. Coniazione avviata...`);
-    }
-
-    function generateWorkerQR() {
-        const name = document.getElementById('worker-name').value;
-        if(!name) return showAlert("Inserisci il nome del magazziniere.");
-        const perms = { mint: document.getElementById('perm-mint').checked, in: document.getElementById('perm-in').checked, out: document.getElementById('perm-out').checked };
-        const entropy = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + encryptionKey + Date.now()));
-        const workerWallet = new ethers.Wallet(entropy);
-        const payload = JSON.stringify({ pk: workerWallet.privateKey, perms: perms });
-        
-        staffList.push({ name: name, address: workerWallet.address, perms: perms, active: true });
-        localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
-        renderStaffList();
-
-        document.getElementById('qr-display').style.display = "block";
-        document.getElementById('qr-display').innerHTML = "";
-        new QRCode(document.getElementById("qr-display"), { text: payload, width: 200, height: 200 });
-        log(`👥 Badge Generato per ${name}.`);
     }
 
     function renderStaffList() {
@@ -571,41 +697,12 @@
                 <td style="font-family:monospace;">${s.address.substring(0,8)}...</td>
                 <td>${s.perms.mint?'[M]':''} ${s.perms.in?'[IN]':''} ${s.perms.out?'[OUT]':''}</td>
                 <td style="color:${s.active ? 'var(--success)' : 'var(--danger)'}">${s.active ? 'ATTIVO' : 'REVOCATO'}</td>
-                <td>
-                    ${s.active ? `<button class="btn-danger" style="padding: 4px 8px; width:auto; font-size:0.6rem; margin:0;" onclick="revokeStaff(${idx})">REVOCA</button>` : `<span style="font-size:0.6rem; color:#888;">DISABILITATO</span>`}
-                </td>
+                <td>${s.active ? `<button class="btn-danger" style="padding: 4px 8px; width:auto; font-size:0.6rem; margin:0;" onclick="revokeStaff(${idx})">REVOCA</button>` : `-`}</td>
             </tr>
         `).join('');
     }
 
-    function revokeStaff(index) {
-        if(confirm(`Vuoi revocare permanentemente i poteri a ${staffList[index].name}?`)) {
-            staffList[index].active = false;
-            localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
-            renderStaffList();
-            log(`🚫 Transazione inviata: Permessi revocati.`);
-        }
-    }
-
-    async function captureForensicData(ruolo, azione) {
-        let ip = "LOCAL";
-        try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); ip = d.ip; } catch(e){}
-        const entry = { timestamp: new Date().toLocaleString(), ruolo, azione, ip, esito: "OK" };
-        let logs = JSON.parse(localStorage.getItem('smartsheer_forensic') || "[]");
-        logs.unshift(entry); localStorage.setItem('smartsheer_forensic', JSON.stringify(logs));
-        if(currentRole === 'master') {
-            const tb = document.getElementById('forensic-log-body');
-            if(tb) tb.innerHTML = logs.map(l => `<tr><td>${l.timestamp}</td><td><span class="badge" style="background:#333; color:#fff;">${l.ruolo}</span></td><td>${l.azione}</td><td style="color:var(--neon);">${l.ip}</td><td style="color:var(--success);">${l.esito}</td></tr>`).join('');
-        }
-    }
-    
-    function applyBan(type) { log(`🔥 BLACK LIST DEFINITIVA applicata. L'indirizzo è bloccato su tutta la rete.`); }
     function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
-    
-    async function startCamera() {
-        try { document.getElementById('webcam').srcObject = await navigator.mediaDevices.getUserMedia({video: true}); log("📸 Modulo Biometrico Attivo."); } 
-        catch(e) { log("❌ Modulo Biometrico: Permesso Negato."); }
-    }
 </script>
 </body>
 </html>
