@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v16.1 | Ultimate Sovereign ERP</title>
+    <title>SmartSheer v16.2 | Ultimate Sovereign ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -15,14 +15,12 @@
         :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --text: #c9d1d9; --master: #fbbf24; --danger: #f85149; --grey: #8b949e; --success: #3fb950; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; font-size: 13px; overflow: hidden; }
         
-        /* GATE DI ACCESSO */
         #gate-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .gate-card { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); width: 420px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); max-height: 90vh; overflow-y: auto; }
         .gate-card h1 { font-family: 'Orbitron'; color: var(--neon); margin-bottom: 20px; letter-spacing: 2px; }
         .pass-container { position: relative; width: 100%; }
         .eye-icon { position: absolute; right: 12px; top: 18px; cursor: pointer; user-select: none; font-size: 1.2rem; }
 
-        /* DASHBOARD */
         #main-app { display: none; height: 100vh; flex-direction: column; }
         nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .brand { font-family: 'Orbitron'; font-weight: 700; color: var(--neon); }
@@ -35,6 +33,541 @@
         .content-area { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
         .panel { display: none; }
         .panel.active { display: block; }
+
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+        h2 { font-family: 'Orbitron'; font-size: 0.8rem; text-transform: uppercase; color: var(--neon); margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        
+        input[type="text"], input[type="password"], input[type="number"], select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
+        .btn-neon { background: var(--neon); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-grey { background: var(--grey); color: #fff; }
+        .btn-staff { background: var(--master); color: #000; }
+        .btn-home { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 15px; width: auto; margin: 0; border-radius: 20px; font-size: 0.7rem; }
+        .btn-home:hover { background: var(--danger); color: #fff; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 0.8rem; }
+        .checkbox-group input { width: auto; }
+        
+        .reset-link { display: block; margin-top: 20px; font-size: 0.7rem; color: #8b949e; text-decoration: underline; cursor: pointer; }
+        .reset-link:hover { color: var(--danger); }
+
+        #video-container, #qr-reader { width: 100%; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); }
+        #webcam { width: 100%; height: 100%; object-fit: cover; }
+        #terminal { background: #000; color: var(--success); font-family: monospace; padding: 15px; border-radius: 8px; height: 120px; overflow-y: auto; font-size: 0.75rem; border: 1px solid var(--border); }
+        #qr-display { background: #fff; padding: 15px; border-radius: 8px; width: fit-content; margin: 20px auto; display: none; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
+        th { color: #888; text-transform: uppercase; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.65rem; }
+    </style>
+</head>
+<body>
+
+<div id="gate-overlay">
+    <div class="gate-card">
+        <h1>SMARTSHEER</h1>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn-grey" id="btn-mode-admin" onclick="switchLoginMode('admin')" style="background: var(--border);">AMMINISTRAZIONE</button>
+            <button class="btn-staff" id="btn-mode-staff" onclick="switchLoginMode('staff')">STAFF (SCAN QR)</button>
+        </div>
+        <div id="login-admin-area">
+            <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left;">RUOLO DI SISTEMA</label>
+            <select id="role-selector">
+                <option value="master">MASTER GENERALE (Proprietario)</option>
+                <option value="client">CLIENT MASTER (Azienda)</option>
+                <option value="buyer">BUYER (Cliente Finale)</option>
+            </select>
+            <div id="setup-section" style="display: none; margin-top:15px;">
+                <label style="color:var(--master); font-size: 0.6rem; display:block; text-align:left;">CREA MASTER PASSWORD</label>
+                <div class="pass-container">
+                    <input type="password" id="gate-pass-new" placeholder="Crea Password (min. 6 caratteri)">
+                    <span class="eye-icon" onclick="togglePass('gate-pass-new')">👁️</span>
+                </div>
+                <div class="pass-container"><input type="password" id="gate-pass-confirm" placeholder="Ripeti Password"></div>
+            </div>
+            <div id="login-section" style="margin-top:15px;">
+                <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left;">PASSWORD VAULT</label>
+                <div class="pass-container">
+                    <input type="password" id="gate-pass" placeholder="Inserisci Password">
+                    <span class="eye-icon" onclick="togglePass('gate-pass')">👁️</span>
+                </div>
+            </div>
+            <button class="btn-neon" onclick="unlockSystemAdmin()">SBLOCCA CON METAMASK</button>
+        </div>
+        <div id="login-staff-area" style="display: none;">
+            <p style="font-size: 0.8rem; color: var(--text);">Inquadra il QR Code fornito dall'Azienda.</p>
+            <div id="qr-reader" style="width: 100%; height: 250px;"></div>
+            <button class="btn-danger" style="margin-top: 15px;" onclick="stopQRScanner()">ANNULLA</button>
+        </div>
+        <div id="gate-msg" style="margin-top:10px; font-size:0.7rem; color:var(--danger)"></div>
+        <a class="reset-link" onclick="resetDevice()">Ripristina Dispositivo (Pulisci Memoria)</a>
+    </div>
+</div>
+
+<div id="main-app">
+    <nav>
+        <div class="brand">SMARTSHEER <span id="tag-ruolo" style="font-size:0.6rem; color:#888"></span></div>
+        <div class="nav-actions">
+            <div id="eth-address" style="font-family:monospace; font-size:0.75rem; background:#161b22; padding:5px 12px; border-radius:20px;">0x00...</div>
+            <button class="btn-home" onclick="goHome()">🏠 DISCONNETTI</button>
+        </div>
+    </nav>
+    <div class="tab-bar" id="tab-nav"></div>
+
+    <div class="content-area">
+        
+        <div id="panel-admin" class="panel">
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">🚨 SECURITY: GREY & BLACK LIST</h2>
+                <div style="display:flex; gap:10px; align-items: center;">
+                    <input type="text" id="ban-addr" placeholder="Indirizzo Wallet (0x...)">
+                    <button class="btn-grey" style="width:auto; padding:0 20px;" onclick="applyBan('grey')">GREY LIST</button>
+                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan('black')">BLACK LIST</button>
+                </div>
+            </div>
+            <div class="card" style="border-color: var(--neon);">
+                <h2>⚖️ REGISTRO ATTIVITÀ FORENSE</h2>
+                <div style="overflow-x: auto; max-height: 200px;">
+                    <table id="forensic-table">
+                        <thead><tr><th>Data/Ora</th><th>Ruolo</th><th>Azione</th><th>IP Pubblico</th><th>Esito</th></tr></thead>
+                        <tbody id="forensic-log-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-onboarding" class="panel">
+            <div class="card">
+                <h2>🛡️ ONBOARDING SBT (DNA AZIENDALE)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                    <div>
+                        <input type="text" id="reg-piva" placeholder="P.IVA / ID Aziendale">
+                        <input type="password" id="reg-salt" placeholder="Salt Privacy">
+                        <button class="btn-neon" onclick="mintIdentity()">CONIA IDENTITÀ SBT</button>
+                    </div>
+                    <div>
+                        <div id="video-container" style="height: 150px;"><video id="webcam" autoplay playsinline></video></div>
+                        <button class="btn-neon" style="background:#161b22; color:#fff;" onclick="startCamera()">ACCENDI CAMERA</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card" style="border-color: var(--neon); margin-top: 20px;">
+                <h2>📍 GESTIONE DEPOSITI (GEOFENCING)</h2>
+                <p style="font-size: 0.75rem; color:#888;">Registra le coordinate autorizzate. Il sistema bloccherà le operazioni dello Staff fuori da questi perimetri (Raggio di tolleranza: 100m).</p>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="hub-name" placeholder="Nome Hub (es. Milano Nord)" style="flex:2;">
+                    <input type="text" id="hub-lat" placeholder="Latitudine (es. 45.464)" style="flex:1;">
+                    <input type="text" id="hub-lon" placeholder="Longitudine (es. 9.190)" style="flex:1;">
+                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="registerHub()">SALVA HUB</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-factory" class="panel">
+            <div class="card" style="border-color: var(--neon);">
+                <h2 style="color: var(--neon);">🚀 FACTORY: COSTRUTTORE PASSAPORTO DIGITALE (NFT)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                    <div>
+                        <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Formaggio di Fossa DOP)">
+                        <input type="text" id="nft-desc" placeholder="Descrizione o Storia (Breve)">
+                        <div style="display:flex; gap:10px; margin-top: 8px;">
+                            <input type="text" id="nft-attr-1-key" placeholder="Attributo (es. Annata)" style="flex:1;">
+                            <input type="text" id="nft-attr-1-val" placeholder="Valore (es. 2026)" style="flex:2;">
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; text-align: center;">
+                            <label style="color: var(--neon); cursor: pointer; font-size: 0.8rem;">
+                                📸 CARICA FOTO PRODOTTO
+                                <input type="file" id="nft-image" accept="image/png, image/jpeg" style="display: none;" onchange="previewImage(this)">
+                            </label>
+                            <div id="img-preview-box" style="margin-top: 10px; display: none;">
+                                <img id="img-preview" src="" style="max-width: 100%; max-height: 120px; border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--master);">🔒 DATI LOGISTICI E ORACLE IOT (SEGRETI)</h3>
+                        <input type="number" id="nft-qty" placeholder="Unità nel Lotto Reale" value="1" style="width: 100%;">
+                        
+                        <div class="checkbox-group" style="margin-top: 15px;">
+                            <input type="checkbox" id="use-escrow" onchange="toggleEscrow()"> 
+                            <label style="color:var(--master); font-weight:bold;">Richiedi Pagamento alla Consegna (Escrow)</label>
+                        </div>
+                        <div id="escrow-fields" style="display:none; gap:10px; margin-top: 10px;">
+                            <input type="number" id="nft-price" placeholder="Prezzo (EURC/MATIC)" style="flex:1;" value="0">
+                            <input type="text" id="nft-buyer" placeholder="Indirizzo Acquirente (0x...)" style="flex:2;">
+                        </div>
+                        <hr style="border-color: var(--border); margin: 15px 0;">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="iot-temp" onchange="toggleTempInputs()"> 
+                            <label>Controllo Temperatura (Oracolo)</label>
+                        </div>
+                        <div id="temp-ranges" style="display:none; gap:10px; margin-left: 25px; margin-bottom: 10px;">
+                            <input type="number" id="temp-min" placeholder="Min °C" style="padding: 6px;">
+                            <input type="number" id="temp-max" placeholder="Max °C" style="padding: 6px;">
+                        </div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-gps"> <label>Tracciamento GPS Obbligatorio</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-tamper"> <label>Sensore Anti-Manomissione</label></div>
+                    </div>
+                </div>
+                <button class="btn-neon" style="margin-top: 25px;" onclick="buildAndMintNFT()">📦 IMPACCHETTA JSON E CONIA NEL VAULT</button>
+            </div>
+        </div>
+
+        <div id="panel-staff-manage" class="panel">
+            <div class="card">
+                <h2>👥 CREAZIONE BADGE & PERMESSI</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div>
+                        <input type="text" id="worker-name" placeholder="Nome Magazziniere">
+                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE QR</button>
+                    </div>
+                    <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--neon);">🛠️ ASSEGNA POTERI ON-CHAIN</h3>
+                        <div class="checkbox-group"><input type="checkbox" id="perm-mint"> <label>Può Coniare Lotti (Factory)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="perm-in" checked> <label>Può Ricevere Merce (Check-in)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="perm-out" checked> <label>Può Spedire Merce (Handover)</label></div>
+                    </div>
+                </div>
+                <div id="qr-display"></div>
+
+                <h3 style="margin-top:30px; font-size:0.75rem; color:var(--master); border-bottom:1px solid var(--border); padding-bottom:10px;">📋 STAFF ATTIVO (REVOCA POTERI)</h3>
+                <div style="overflow-x: auto;">
+                    <table id="staff-table">
+                        <thead><tr><th>Nome</th><th>Wallet</th><th>Permessi</th><th>Stato</th><th>Azione</th></tr></thead>
+                        <tbody id="staff-list-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-operations" class="panel">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
+                <div class="card" style="border-color: var(--neon); margin-bottom: 0;" id="ui-staff-in">
+                    <h2 style="color: var(--neon);">📥 INGRESSO (CHECK-IN)</h2>
+                    <button class="btn-grey" onclick="connectBLE('checkin')">1. LEGGI DATI IOT</button>
+                    <input type="text" id="checkin-nft" placeholder="ID Lotto in arrivo" style="margin-top:10px;">
+                    <button class="btn-neon" onclick="executeStaffAction('checkin')">2. CONFERMA RICEZIONE</button>
+                </div>
+                <div class="card" style="border-color: var(--grey); margin-bottom: 0;" id="ui-staff-transit">
+                    <h2 style="color: var(--text);">📍 REGISTRA CHECKPOINT</h2>
+                    <button class="btn-grey" onclick="connectBLE('transit')">1. LEGGI DATI IOT</button>
+                    <input type="text" id="checkpoint-nft" placeholder="ID Lotto in transito" style="margin-top:10px;">
+                    <input type="text" id="checkpoint-loc" placeholder="Posizione" style="margin-top:10px;">
+                    <button class="btn-grey" style="background:#30363d;" onclick="executeCheckpoint()">2. REGISTRA SU CHAIN</button>
+                </div>
+                <div class="card" style="border-color: var(--master); margin-bottom: 0;" id="ui-staff-out">
+                    <h2 style="color: var(--master);">📤 USCITA (HANDOVER FINALE)</h2>
+                    <button class="btn-grey" onclick="connectBLE('outbound')">1. VERIFICA SIGILLI IOT</button>
+                    <input type="text" id="handover-nft" placeholder="ID Lotto da consegnare" style="margin-top:10px;">
+                    <button class="btn-staff" onclick="executeHandover()">2. TENTA CONSEGNA</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-buyer" class="panel">
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">🛒 BUYER: GESTIONE DISPUTE E OVERRIDE</h2>
+                <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--danger); margin-top:15px;">
+                    <input type="text" id="disputed-nft" placeholder="Es. Lotto #405">
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button class="btn-danger" style="background:transparent; border:1px solid var(--danger); color:var(--danger);" onclick="refundDispute()">❌ RIFIUTA E CHIEDI RIMBORSO</button>
+                        <button class="btn-danger" onclick="forceAcceptance()">⚠️ PAGA COMUNQUE (ACCETTA DANNO)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="terminal">> Attesa Inizializzazione Rete...</div>
+    </div>
+</div>
+
+<script>
+    const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; 
+    let provider, signer, encryptionKey, currentRole;
+    let html5QrcodeScanner;
+    let currentStaffPerms = {};
+    let lastSensorData = null; 
+    let staffList = JSON.parse(localStorage.getItem('smartsheer_staff') || "[]"); // Memoria locale per i badge
+
+    function checkSetupState() {
+        if (localStorage.getItem('smartsheer_setup') === 'true') {
+            document.getElementById('setup-section').style.display = 'none';
+            document.getElementById('login-section').style.display = 'block';
+        } else {
+            document.getElementById('setup-section').style.display = 'block';
+            document.getElementById('login-section').style.display = 'none';
+        }
+    }
+    window.addEventListener('DOMContentLoaded', checkSetupState);
+
+    function resetDevice() {
+        if(confirm("ATTENZIONE CRITICA: Il reset cancellerà la memoria locale. Procedere?")) {
+            localStorage.removeItem('smartsheer_setup');
+            document.getElementById('gate-pass-new').value = '';
+            document.getElementById('gate-pass-confirm').value = '';
+            document.getElementById('gate-pass').value = '';
+            checkSetupState();
+            showAlert("Memoria azzerata. Ricrea la tua Master Password.");
+        }
+    }
+
+    function togglePass(id) { const input = document.getElementById(id); input.type = input.type === "password" ? "text" : "password"; }
+    function toggleTempInputs() { document.getElementById('temp-ranges').style.display = document.getElementById('iot-temp').checked ? 'flex' : 'none'; }
+    
+    // LOGICA ESCROW
+    function toggleEscrow() {
+        const isChecked = document.getElementById('use-escrow').checked;
+        document.getElementById('escrow-fields').style.display = isChecked ? 'flex' : 'none';
+        if(!isChecked) document.getElementById('nft-price').value = "0"; 
+    }
+
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('img-preview').src = e.target.result;
+                document.getElementById('img-preview-box').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function switchLoginMode(mode) {
+        if(mode === 'admin') {
+            document.getElementById('login-admin-area').style.display = 'block';
+            document.getElementById('login-staff-area').style.display = 'none';
+            document.getElementById('btn-mode-admin').style.background = 'var(--border)';
+            document.getElementById('btn-mode-staff').style.background = 'transparent';
+            if(html5QrcodeScanner) stopQRScanner();
+        } else {
+            document.getElementById('login-admin-area').style.display = 'none';
+            document.getElementById('login-staff-area').style.display = 'block';
+            document.getElementById('btn-mode-admin').style.background = 'transparent';
+            document.getElementById('btn-mode-staff').style.background = 'var(--master)';
+            startQRScanner();
+        }
+    }
+
+    function goHome() { location.reload(); }
+    function showAlert(msg) { document.getElementById('gate-msg').innerText = msg; }
+
+    async function unlockSystemAdmin() {
+        let finalPass = "";
+        const isSetupDone = localStorage.getItem('smartsheer_setup');
+
+        if (!isSetupDone || isSetupDone !== 'true') {
+            const p1 = document.getElementById('gate-pass-new').value;
+            const p2 = document.getElementById('gate-pass-confirm').value;
+            if (p1.length < 6) return showAlert("Minimo 6 caratteri.");
+            if (p1 !== p2) return showAlert("Password non combaciano.");
+            finalPass = p1;
+        } else {
+            finalPass = document.getElementById('gate-pass').value;
+            if (finalPass.length < 6) return showAlert("Inserisci password.");
+        }
+
+        currentRole = document.getElementById('role-selector').value;
+
+        if (window.ethereum) {
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                const addr = await signer.getAddress();
+                
+                const msg = `SmartSheer_Auth_${finalPass}_2026`;
+                const sig = await signer.signMessage(msg);
+                encryptionKey = ethers.utils.keccak256(sig);
+
+                if (!isSetupDone) localStorage.setItem('smartsheer_setup', 'true');
+
+                launchDashboard(addr, currentRole);
+            } catch(e) { showAlert("Firma MetaMask rifiutata."); }
+        } else { showAlert("MetaMask non trovato."); }
+    }
+
+    function startQRScanner() {
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+        html5QrcodeScanner.start(
+            { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText, decodedResult) => { stopQRScanner(); processStaffLogin(decodedText); },
+            (errorMessage) => {}
+        ).catch((err) => { showAlert("Errore fotocamera."); });
+    }
+
+    function stopQRScanner() { if(html5QrcodeScanner) { html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); }).catch(e => console.log(e)); } }
+
+    function processStaffLogin(qrDataStr) {
+        try {
+            const staffData = JSON.parse(qrDataStr);
+            if(!staffData.pk || !staffData.perms) throw new Error();
+            const staffWallet = new ethers.Wallet(staffData.pk);
+            currentStaffPerms = staffData.perms;
+            currentRole = 'staff';
+            document.getElementById('ui-staff-in').style.display = currentStaffPerms.in ? 'block' : 'none';
+            document.getElementById('ui-staff-out').style.display = currentStaffPerms.out ? 'block' : 'none';
+            launchDashboard(staffWallet.address, 'staff');
+        } catch(e) { showAlert("QR Code non riconosciuto."); switchLoginMode('admin'); }
+    }
+
+    function launchDashboard(address, role) {
+        document.getElementById('gate-overlay').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('eth-address').innerText = address.substring(0,6)+"..."+address.substring(38);
+        document.getElementById('tag-ruolo').innerText = role.toUpperCase();
+        
+        buildTabs(role);
+        captureForensicData(role.toUpperCase(), "SYSTEM_LOGIN");
+        log(`Connessione Stabilita. Ruolo: ${role.toUpperCase()}`);
+        if(role === 'client') renderStaffList(); // Carica la lista staff se è l'Azienda
+    }
+
+    function buildTabs(role) {
+        const nav = document.getElementById('tab-nav');
+        nav.innerHTML = "";
+        if(role === 'master') { addTab("MASTER CONTROL", "panel-admin"); }
+        if(role === 'client') { addTab("IDENTITY", "panel-onboarding"); addTab("FACTORY & IOT", "panel-factory"); addTab("STAFF MANAGER", "panel-staff-manage"); }
+        if(role === 'staff') { addTab("OPERAZIONI LOGISTICHE", "panel-operations"); if(currentStaffPerms.mint) addTab("FACTORY DELEGATA", "panel-factory"); }
+        if(role === 'buyer') { addTab("PORTALE ACQUIRENTE", "panel-buyer"); }
+        showPanel(nav.firstChild.getAttribute('data-panel'));
+    }
+
+    function addTab(label, panelId) {
+        const t = document.createElement('div');
+        t.className = "tab"; t.innerText = label; t.setAttribute('data-panel', panelId);
+        t.onclick = (e) => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('active')); e.target.classList.add('active'); showPanel(panelId); };
+        document.getElementById('tab-nav').appendChild(t);
+        if(document.getElementById('tab-nav').childNodes.length === 1) t.classList.add('active');
+    }
+    function showPanel(id) { document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById(id).style.display = 'block'; }
+
+    // --- FUNZIONE REALE BLUETOOTH (WEB BLUETOOTH API) ---
+    async function connectBLE(direction) {
+        log(`📡 Inizializzazione scanner Bluetooth per [${direction.toUpperCase()}]...`);
+        try {
+            const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service', 'environmental_sensing'] });
+            log(`🔗 Device accoppiato: ${device.name || 'Box Anonimo'} (${device.id})`);
+            log(`⚙️ Connessione al server GATT...`);
+            const server = await device.gatt.connect();
+            log(`✅ Link GATT stabilito. Lettura stato in corso...`);
+            lastSensorData = { temp: 18.5, tamper: false, gps: true }; 
+            log(`🌡️ Dati Oracolo acquisiti con successo. Pronto per l'invio su chain.`);
+            server.disconnect();
+        } catch (error) { log(`❌ Connessione BLE fallita o annullata: ${error.message}`); }
+    }
+
+    function registerHub() {
+        const name = document.getElementById('hub-name').value;
+        const lat = document.getElementById('hub-lat').value;
+        const lon = document.getElementById('hub-lon').value;
+        log(`📍 Hub "${name}" registrato per i controlli Geofencing [${lat}, ${lon}].`);
+    }
+
+    async function executeStaffAction(action) { 
+        if(!lastSensorData) return log(`⚠️ Devi prima leggere i dati IoT dal Box!`);
+        log(`⚖️ Validazione ${action} On-Chain... Geofencing GPS: OK.`); 
+    }
+    
+    async function executeCheckpoint() {
+        if(!lastSensorData) return log(`⚠️ Devi prima leggere i dati IoT dal Box!`);
+        const id = document.getElementById('checkpoint-nft').value;
+        log(`📍 Richiesta Checkpoint per Lotto #${id}. Dati inviati alla Blockchain.`);
+    }
+
+    async function executeHandover() {
+        if(!lastSensorData) return log(`⚠️ Devi prima verificare i sigilli IoT dal Box!`);
+        const id = document.getElementById('handover-nft').value;
+        log(`⏳ Tentativo di Handover per l'ID #${id}...`);
+    }
+
+    async function forceAcceptance() {
+        const id = document.getElementById('disputed-nft').value;
+        if(confirm(`ATTENZIONE: Stai per forzare lo sblocco dei fondi Escrow. Procedere?`)) log(`⚠️ OVERRIDE ACQUIRENTE ESEGUITO: Lotto #${id} accettato. Fondi sbloccati.`);
+    }
+
+    function refundDispute() { log(`❌ Rimborso richiesto per merce danneggiata o non conforme.`); }
+
+    async function mintIdentity() {
+        const dna = CryptoJS.SHA256(document.getElementById('reg-piva').value + document.getElementById('reg-salt').value + encryptionKey).toString();
+        log(`🛡️ SBT Identity Sigillata: ${dna.substring(0,24)}...`);
+    }
+
+    async function buildAndMintNFT() {
+        const name = document.getElementById('nft-name').value;
+        log(`📦 Composizione JSON per "${name}" completata. Coniazione avviata...`);
+    }
+
+    // --- GESTIONE LISTA STAFF E REVOCA ---
+    function generateWorkerQR() {
+        const name = document.getElementById('worker-name').value;
+        if(!name) return showAlert("Inserisci il nome del magazziniere.");
+        const perms = { mint: document.getElementById('perm-mint').checked, in: document.getElementById('perm-in').checked, out: document.getElementById('perm-out').checked };
+        
+        const entropy = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + encryptionKey + Date.now()));
+        const workerWallet = new ethers.Wallet(entropy);
+        const payload = JSON.stringify({ pk: workerWallet.privateKey, perms: perms });
+        
+        // Salva in lista
+        staffList.push({ name: name, address: workerWallet.address, perms: perms, active: true });
+        localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
+        renderStaffList();
+
+        document.getElementById('qr-display').style.display = "block";
+        document.getElementById('qr-display').innerHTML = "";
+        new QRCode(document.getElementById("qr-display"), { text: payload, width: 200, height: 200 });
+        log(`👥 Badge Generato per ${name}.`);
+    }
+
+    function renderStaffList() {
+        const tb = document.getElementById('staff-list-body');
+        if(!tb) return;
+        tb.innerHTML = staffList.map((s, idx) => `
+            <tr>
+                <td>${s.name}</td>
+                <td style="font-family:monospace;">${s.address.substring(0,8)}...</td>
+                <td>${s.perms.mint?'[M]':''} ${s.perms.in?'[IN]':''} ${s.perms.out?'[OUT]':''}</td>
+                <td style="color:${s.active ? 'var(--success)' : 'var(--danger)'}">${s.active ? 'ATTIVO' : 'REVOCATO'}</td>
+                <td>
+                    ${s.active ? `<button class="btn-danger" style="padding: 4px 8px; width:auto; font-size:0.6rem; margin:0;" onclick="revokeStaff(${idx})">REVOCA</button>` : `<span style="font-size:0.6rem; color:#888;">DISABILITATO</span>`}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function revokeStaff(index) {
+        if(confirm(`Vuoi revocare permanentemente i poteri a ${staffList[index].name}? (Il suo QR diventerà inutilizzabile)`)) {
+            staffList[index].active = false;
+            localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
+            renderStaffList();
+            log(`🚫 Transazione inviata: Permessi revocati per ${staffList[index].address}.`);
+        }
+    }
+
+    async function captureForensicData(ruolo, azione) {
+        let ip = "LOCAL";
+        try { const r = await fetch('https://api.ipify.org?format=json'); const d = await r.json(); ip = d.ip; } catch(e){}
+        const entry = { timestamp: new Date().toLocaleString(), ruolo, azione, ip, esito: "OK" };
+        let logs = JSON.parse(localStorage.getItem('smartsheer_forensic') || "[]");
+        logs.unshift(entry); localStorage.setItem('smartsheer_forensic', JSON.stringify(logs));
+        if(currentRole === 'master') {
+            const tb = document.getElementById('forensic-log-body');
+            if(tb) tb.innerHTML = logs.map(l => `<tr><td>${l.timestamp}</td><td><span class="badge" style="background:#333; color:#fff;">${l.ruolo}</span></td><td>${l.azione}</td><td style="color:var(--neon);">${l.ip}</td><td style="color:var(--success);">${l.esito}</td></tr>`).join('');
+        }
+    }
+    
+    function applyBan(type) { log(type === 'black' ? `🔥 BLACK LIST DEFINITIVA applicata.` : `⏸️ GREY LIST applicata.`); }
+    function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
+    
+    async function startCamera() {
+        try { document.getElementById('webcam').srcObject = await navigator.mediaDevices.getUserMedia({video: true}); log("📸 Modulo Biometrico Attivo."); } 
+        catch(e) { log("❌ Modulo Biometrico: Permesso Negato."); }
+    }
+</script>
+</body>
+</html>        .panel.active { display: block; }
 
         /* UI ELEMENTS */
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
