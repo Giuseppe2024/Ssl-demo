@@ -3,217 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMARTSHEER v5.0 | Sovereign Logistics ERP</title>
-    
+    <title>SmartSheer v7.0 | Secure Gateway</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --master: #fbbf24; --worker: #8247e5; --danger: #f85149; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #c9d1d9; margin: 0; font-size: 13px; }
+        :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --master: #fbbf24; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: #c9d1d9; margin: 0; overflow: hidden; }
+
+        /* --- IL TORNELLO (GATE) --- */
+        #gate-overlay { 
+            position: fixed; inset: 0; background: var(--bg); z-index: 10000; 
+            display: flex; align-items: center; justify-content: center;
+            background-image: radial-gradient(circle at center, #111 0%, #000 100%);
+        }
+        .gate-card { 
+            background: var(--card); padding: 40px; border-radius: 15px; 
+            border: 1px solid var(--border); width: 100%; max-width: 420px; 
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.1); text-align: center;
+        }
+        .gate-card h1 { font-family: 'Orbitron'; color: var(--neon); font-size: 1.5rem; margin-bottom: 25px; }
         
-        /* Navigation Bar */
-        nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        .logo { font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 2px; color: var(--neon); }
-        .status-pill { background: #161b22; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--neon); font-family: monospace; font-size: 0.75rem; }
+        input, select { 
+            width: 100%; padding: 14px; margin: 10px 0; background: #010409; 
+            border: 1px solid var(--border); color: #fff; border-radius: 8px; font-size: 0.9rem;
+        }
+        input:focus { border-color: var(--neon); outline: none; }
 
-        /* Main Container */
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
-        .card { background: var(--card); border-radius: 10px; padding: 25px; border: 1px solid var(--border); margin-bottom: 20px; position: relative; }
-        .full { grid-column: span 2; }
+        .btn-gate { 
+            width: 100%; padding: 16px; background: var(--neon); color: #000; 
+            border: none; border-radius: 8px; font-weight: 800; cursor: pointer; 
+            text-transform: uppercase; margin-top: 15px; transition: 0.3s;
+        }
+        .btn-gate:hover { box-shadow: 0 0 20px rgba(0, 242, 255, 0.5); transform: translateY(-2px); }
+
+        /* --- DASHBOARD MODULARE --- */
+        #main-app { display: none; height: 100vh; flex-direction: column; }
+        nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         
-        /* Typography & Controls */
-        h2 { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; text-transform: uppercase; margin-top: 0; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
-        button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: 0.2s; margin-top: 10px; }
-        .btn-neon { background: var(--neon); color: #000; }
-        .btn-worker { background: var(--worker); color: #fff; }
-        
-        /* Staff & Hub Management */
-        .badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-right: 5px; }
-        .badge-master { background: var(--master); color: #000; }
-        .badge-worker { background: var(--worker); color: #fff; }
+        .tab-bar { display: flex; background: #161b22; padding: 10px 20px; gap: 10px; border-bottom: 1px solid var(--border); }
+        .tab { padding: 10px 20px; cursor: pointer; border-radius: 5px; font-size: 0.8rem; font-weight: 600; color: #888; transition: 0.3s; }
+        .tab.active { background: #30363d; color: var(--neon); border-bottom: 2px solid var(--neon); }
 
-        /* Terminal Log */
-        #terminal { background: #000; color: #3fb950; font-family: 'Courier New', monospace; padding: 15px; border-radius: 8px; height: 140px; overflow-y: auto; font-size: 0.7rem; border: 1px solid var(--border); grid-column: span 2; }
+        .content-area { flex: 1; padding: 30px; overflow-y: auto; }
+        .panel { display: none; }
+        .panel.active { display: block; }
 
-        /* QR Overlay */
-        #qr-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #qrcode { background: #fff; padding: 20px; border-radius: 10px; }
-
-        /* IoT Telemetry View */
-        .telemetry-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-        .tel-item { background: #161b22; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid var(--border); }
-        .tel-val { display: block; font-size: 1.1rem; font-weight: 700; color: var(--neon); }
+        .card { background: var(--card); border: 1px solid var(--border); padding: 25px; border-radius: 12px; margin-bottom: 20px; }
+        #log { background: #000; color: #3fb950; font-family: monospace; padding: 15px; border-radius: 8px; font-size: 0.7rem; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-<div id="qr-overlay" onclick="this.style.display='none'">
-    <h2 style="color:var(--neon)">SCANSIONA PER LOGIN STAFF</h2>
-    <div id="qrcode"></div>
-    <p style="margin-top:20px; color:#fff">Questo codice contiene la Chiave Derivata Temporanea.</p>
+<div id="gate-overlay">
+    <div class="gate-card">
+        <h1>SMARTSHEER 2026</h1>
+        <p style="font-size: 0.8rem; color: #8b949e; margin-bottom: 20px;">Sincronizza Identità & Sblocca Vault</p>
+        
+        <label style="display:block; text-align:left; font-size: 0.7rem; color: var(--neon);">1. SELEZIONA RUOLO</label>
+        <select id="role-selector">
+            <option value="none">-- Scegli la tua funzione --</option>
+            <option value="admin">MASTER GENERALE (Proprietario)</option>
+            <option value="client">CLIENT MASTER (Azienda)</option>
+            <option value="staff">STAFF (Magazziniere)</option>
+        </select>
+
+        <label style="display:block; text-align:left; font-size: 0.7rem; color: var(--neon); margin-top:15px;">2. PASSWORD DI DECRIPTAZIONE</label>
+        <input type="password" id="master-pass" placeholder="Inserisci la tua Master Password">
+
+        <button class="btn-gate" onclick="unlockSystem()">COLLEGA METAMASK & SBLOCCA</button>
+        
+        <div id="gate-status" style="margin-top:15px; font-size:0.7rem; color:#f85149;"></div>
+    </div>
 </div>
 
-<nav>
-    <div class="logo">SMARTSHEER <span style="font-weight:300; font-size:0.6rem">v5.0 ERP</span></div>
-    <div id="wallet-status" class="status-pill">WALLET DISCONNESSO</div>
-</nav>
+<div id="main-app">
+    <nav>
+        <div style="font-family:'Orbitron'; font-weight:700; color:var(--neon)">SMARTSHEER <span id="tag-ruolo" style="font-size:0.6rem; color:#8b949e"></span></div>
+        <div id="user-address" style="font-family:monospace; font-size:0.75rem; background:#161b22; padding:5px 12px; border-radius:20px;"></div>
+    </nav>
 
-<div class="container">
+    <div class="tab-bar" id="nav-tabs">
+        </div>
 
-    <section class="card">
-        <h2>👑 MASTER CONTROL PANEL</h2>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div>
-                <h3>👥 Gestione Staff</h3>
-                <input type="text" id="staff-name" placeholder="Nome Magazziniere">
-                <button class="btn-worker" onclick="generaAccessoStaff()">GENERA QR LOGIN STAFF</button>
-            </div>
-            <div>
-                <h3>🏢 Hub Logistici</h3>
-                <input type="text" id="hub-address" placeholder="Indirizzo (Via, Città)">
-                <button class="btn-neon" onclick="mappaMagazzino()">MAPPA NUOVO HUB</button>
+    <div class="content-area" id="main-content">
+        <div id="panel-onboarding" class="panel">
+            <div class="card">
+                <h2>🛡️ Registrazione Identità (SBT)</h2>
+                <p>Nessun Soulbound Token trovato. Crea ora la tua Identità Aziendale.</p>
+                <input type="text" id="reg-piva" placeholder="P.IVA Aziendale">
+                <button class="btn-gate" onclick="mintIdentitySBT()">CONIA SBT IDENTITÀ</button>
             </div>
         </div>
-        
-        <div style="margin-top:25px;">
-            <h3>📦 FACTORY: CONIAZIONE NFT</h3>
-            <input type="text" id="nft-prod" placeholder="Prodotto (es. Rolex Submariner)">
-            <input type="text" id="nft-batch" placeholder="Serie/Lotto (es. 2026-X)">
-            <input type="number" id="nft-qty" placeholder="Quantità Unità" value="1">
-            <button class="btn-neon" onclick="coniaLottoDynamic()">CONIA E SIGILLA CARICO</button>
-        </div>
-    </section>
 
-    <section class="card">
-        <h2>📡 IOT ORACLE BRIDGE</h2>
-        <button id="ble-btn" class="btn-worker" style="background:#005cc5" onclick="connettiBoxBLE()">CONNETTI BOX BLUETOOTH</button>
-        
-        <div class="telemetry-grid">
-            <div class="tel-item"><span>TEMP</span><span id="tel-temp" class="tel-val">--°C</span></div>
-            <div class="tel-item"><span>TAMPER</span><span id="tel-tamper" class="tel-val">SAFE</span></div>
-            <div class="tel-item"><span>GPS</span><span id="tel-gps" class="tel-val">--</span></div>
+        <div id="panel-factory" class="panel">
+            <div class="card">
+                <h2>🚀 Factory: Generazione NFT</h2>
+                <input type="text" id="nft-name" placeholder="Nome (es. Rolex)">
+                <input type="number" id="nft-qty" placeholder="Quantità">
+                <button class="btn-gate" onclick="coniaLotto()">GENERA CARICO NEL VAULT</button>
+            </div>
         </div>
 
-        <div style="margin-top:20px; border-top: 1px solid var(--border); padding-top:15px;">
-            <h3>🤝 VERDETTO DI CONSEGNA</h3>
-            <input type="text" id="token-id-handover" placeholder="Inserisci ID NFT da passare">
-            <button class="btn-neon" style="background:var(--master); color:#000" onclick="eseguiHandover()">ESSEGUI VERDETTO SENSORI</button>
+        <div id="panel-staff" class="panel">
+            <div class="card">
+                <h2>👥 Gestione Team</h2>
+                <input type="text" id="worker-name" placeholder="Nome Magazziniere">
+                <button class="btn-gate" style="background:var(--master)" onclick="createWorkerQR()">GENERA QR LOGIN</button>
+            </div>
         </div>
-    </section>
+    </div>
 
-    <div id="terminal">> Inizializzazione protocolli Zero-Knowledge...</div>
-
+    <div id="log">> Sistema pronto. Log di sicurezza attivo.</div>
 </div>
 
 <script>
-    let provider, signer, contract;
-    let masterSeed = ""; // Generato deterministicamente dalla firma del Master
-    const contractAddress = "0xC4E8c1B742DE3e184171C2Ec91fb2A709c8c99a8";
-    const abi = [
-        "function registraOperatore(string name, string pivaHash, string role) public",
-        "function coniaLotto(address to, uint256 qty, string name) public",
-        "function safeTransferFrom(address from, address to, uint256 tokenId) public",
-        "function balanceOf(address owner) public view returns (uint256)"
-    ];
+    let currentRole = "";
+    let userWallet = "";
+    let encryptionKey = ""; // Questa sarà la nostra Master Key generata
 
-    async function init() {
+    async function unlockSystem() {
+        const role = document.getElementById('role-selector').value;
+        const pass = document.getElementById('master-pass').value;
+
+        if (role === "none" || pass.length < 4) {
+            document.getElementById('gate-status').innerText = "Errore: Seleziona ruolo e password valida.";
+            return;
+        }
+
         if (window.ethereum) {
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            const accounts = await provider.send("eth_requestAccounts", []);
-            signer = provider.getSigner();
-            document.getElementById('wallet-status').innerText = `MASTER: ${accounts[0].substring(0,8)}...`;
-            
-            // GENERAZIONE SEED PRIVACY (HD WALLET)
-            // Il Master firma un messaggio fisso per generare l'entropia del sistema
-            const msg = "SmartSheer_Sovereign_Identity_2026";
-            const signature = await signer.signMessage(msg);
-            masterSeed = ethers.utils.keccak256(signature);
-            log("✅ Master Seed generato off-chain. Privacy HD Wallet Attiva.");
-            
-            contract = new ethers.Contract(contractAddress, abi, signer);
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const accounts = await provider.send("eth_requestAccounts", []);
+                userWallet = accounts[0];
+                const signer = provider.getSigner();
+
+                // LA MAGIA: Firma deterministica basata sulla password
+                // Questo crea il nostro "Seme" di privacy che non esiste sulla blockchain
+                const msg = `SmartSheer_Auth_${pass}_2026`;
+                const signature = await signer.signMessage(msg);
+                encryptionKey = ethers.utils.keccak256(signature);
+
+                document.getElementById('gate-overlay').style.display = "none";
+                document.getElementById('main-app').style.display = "flex";
+                setupDashboard(role);
+                
+                log(`Sblocco effettuato come ${role.toUpperCase()}.`);
+                log(`Vault Key Derivata: ${encryptionKey.substring(0,10)}...`);
+
+            } catch (err) {
+                document.getElementById('gate-status').innerText = "MetaMask: Accesso negato o firma annullata.";
+            }
         }
     }
 
-    // --- FUNZIONE: GENERAZIONE QR PER STAFF (PRIVACY HD) ---
-    function generaAccessoStaff() {
-        const staffName = document.getElementById('staff-name').value;
-        if(!staffName) return alert("Inserisci nome magazziniere");
-
-        // Deriviamo una chiave privata unica per Mario partendo dal Master Seed
-        // Indice deterministico basato sul nome (per semplicità in questo esempio)
-        const staffEntropy = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(staffName + masterSeed));
-        const workerWallet = new ethers.Wallet(staffEntropy);
+    function setupDashboard(role) {
+        currentRole = role;
+        document.getElementById('tag-ruolo').innerText = role.toUpperCase();
+        document.getElementById('user-address').innerText = userWallet;
         
-        // Mostriamo il QR con la chiave privata (da scansionare sul tablet del magazzino)
-        document.getElementById('qrcode').innerHTML = "";
-        new QRCode(document.getElementById("qrcode"), workerWallet.privateKey);
-        document.getElementById('qr-overlay').style.display = 'flex';
-        
-        log(`👥 Staff Keygen: Generata chiave per ${staffName}. Indirizzo: ${workerWallet.address}`);
-    }
+        const tabs = document.getElementById('nav-tabs');
+        tabs.innerHTML = "";
 
-    // --- FUNZIONE: CONIAZIONE DINAMICA ---
-    async function coniaLottoDynamic() {
-        const prod = document.getElementById('nft-prod').value;
-        const batch = document.getElementById('nft-batch').value;
-        const qty = document.getElementById('nft-qty').value;
-        const fullName = `${prod} #${batch}`;
-
-        log(`🚀 Coniazione di ${qty} NFT: ${fullName}...`);
-        try {
-            const masterAddr = await signer.getAddress();
-            const tx = await contract.coniaLotto(masterAddr, qty, fullName);
-            await tx.wait();
-            log(`✅ Lotto ${fullName} registrato sulla Blockchain.`);
-        } catch(e) { log("❌ Errore: " + e.message); }
-    }
-
-    // --- FUNZIONE: BLUETOOTH IOT BRIDGE (L'ORACOLO) ---
-    let realData = { temp: 0, tamper: false, gps: "" };
-
-    async function connettiBoxBLE() {
-        try {
-            log("📡 Ricerca Box SmartSheer in corso...");
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [{ namePrefix: 'SmartSheer' }],
-                optionalServices: ['4fafc201-1fb5-459e-8fcc-c5c9c331914b']
-            });
-            const server = await device.gatt.connect();
-            log("✅ Box Connesso. Ricezione Telemetria...");
-            // Logica di sottoscrizione notifiche BLE qui...
-            document.getElementById('ble-btn').innerText = "BOX CONNESSO";
-            document.getElementById('ble-btn').style.background = "#2ea043";
-        } catch(e) { log("❌ BLE Error: " + e.message); }
-    }
-
-    // --- FUNZIONE: IL VERDETTO (PASSAGGIO NFT) ---
-    async function eseguiHandover() {
-        const tokenId = document.getElementById('token-id-handover').value;
-        log(`⚖️ Analisi Verdetto per NFT #${tokenId}...`);
-        
-        // SIMULAZIONE ORACOLO: Se la temperatura è ok e non c'è tamper
-        const isSafe = true; // Qui andrebbe il controllo reale dei dati BLE
-
-        if(isSafe) {
-            log("✅ Condizioni rispettate. Firma trasferimento...");
-            // Qui il magazziniere firma, il Relayer (Master) invia
-            // await contract.safeTransferFrom(...)
-        } else {
-            log("🚨 VIOLAZIONE RILEVATA! Il passaggio di proprietà è bloccato.");
+        if(role === "client") {
+            addTab("IDENTITÀ", "panel-onboarding");
+            addTab("FACTORY NFT", "panel-factory");
+            addTab("GESTIONE STAFF", "panel-staff");
+            showPanel("panel-onboarding");
         }
+        // Aggiungi qui gli altri ruoli...
+    }
+
+    function addTab(label, panelId) {
+        const t = document.createElement("div");
+        t.className = "tab";
+        t.innerText = label;
+        t.onclick = (e) => {
+            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+            e.target.classList.add('active');
+            showPanel(panelId);
+        };
+        document.getElementById('nav-tabs').appendChild(t);
+    }
+
+    function showPanel(id) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
     }
 
     function log(m) {
-        const l = document.getElementById('terminal');
+        const l = document.getElementById('log');
         l.innerHTML += `<br>> ${m}`;
-        l.scrollTop = l.scrollHeight;
     }
-
-    window.onload = init;
 </script>
 </body>
 </html>
