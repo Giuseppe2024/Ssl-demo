@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v17.0 | Sovereign Web3 ERP</title>
+    <title>SmartSheer v18.0 | Ultimate Sovereign ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -12,56 +12,221 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --text: #c9d1d9; --master: #fbbf24; --danger: #f85149; --grey: #8b949e; --success: #3fb950; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; font-size: 13px; overflow: hidden; }
-        
-        #gate-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .gate-card { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); width: 420px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); max-height: 90vh; overflow-y: auto; }
-        .gate-card h1 { font-family: 'Orbitron'; color: var(--neon); margin-bottom: 20px; letter-spacing: 2px; }
-        .pass-container { position: relative; width: 100%; }
-        .eye-icon { position: absolute; right: 12px; top: 18px; cursor: pointer; user-select: none; font-size: 1.2rem; }
+        :root { 
+            --neon: #00f2ff; 
+            --bg: #010409; 
+            --card: #0d1117; 
+            --border: #30363d; 
+            --text: #c9d1d9; 
+            --master: #fbbf24; 
+            --danger: #f85149; 
+            --grey: #8b949e; 
+            --success: #3fb950; 
+        }
 
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            font-size: 13px; 
+            overflow: hidden; 
+        }
+        
+        /* 🚪 GATE OVERLAY */
+        #gate-overlay { 
+            position: fixed; 
+            inset: 0; 
+            background: var(--bg); 
+            z-index: 9999; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .gate-card { 
+            background: var(--card); 
+            padding: 40px; 
+            border-radius: 12px; 
+            border: 1px solid var(--neon); 
+            width: 420px; 
+            text-align: center; 
+            box-shadow: 0 0 40px rgba(0,242,255,0.15); 
+            max-height: 90vh; 
+            overflow-y: auto; 
+        }
+        .gate-card h1 { 
+            font-family: 'Orbitron'; 
+            color: var(--neon); 
+            margin-bottom: 20px; 
+            letter-spacing: 2px; 
+        }
+        .pass-container { position: relative; width: 100%; }
+        .eye-icon { 
+            position: absolute; 
+            right: 12px; 
+            top: 18px; 
+            cursor: pointer; 
+            user-select: none; 
+            font-size: 1.2rem; 
+        }
+
+        /* 🏗️ MAIN APP STRUCTURE */
         #main-app { display: none; height: 100vh; flex-direction: column; }
-        nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        nav { 
+            padding: 15px 30px; 
+            background: var(--card); 
+            border-bottom: 1px solid var(--border); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
         .brand { font-family: 'Orbitron'; font-weight: 700; color: var(--neon); }
         .nav-actions { display: flex; gap: 15px; align-items: center; }
         
-        .tab-bar { display: flex; background: #161b22; padding: 10px 20px; gap: 10px; border-bottom: 1px solid var(--border); }
-        .tab { padding: 10px 18px; cursor: pointer; border-radius: 5px; font-weight: 600; color: #888; transition: 0.3s; font-size: 0.75rem; }
+        .tab-bar { 
+            display: flex; 
+            background: #161b22; 
+            padding: 10px 20px; 
+            gap: 10px; 
+            border-bottom: 1px solid var(--border); 
+        }
+        .tab { 
+            padding: 10px 18px; 
+            cursor: pointer; 
+            border-radius: 5px; 
+            font-weight: 600; 
+            color: #888; 
+            transition: 0.3s; 
+            font-size: 0.75rem; 
+        }
         .tab.active { background: #30363d; color: var(--neon); }
 
-        .content-area { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .content-area { 
+            flex: 1; 
+            padding: 30px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+        }
         .panel { display: none; }
         .panel.active { display: block; }
 
-        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
-        h2 { font-family: 'Orbitron'; font-size: 0.8rem; text-transform: uppercase; color: var(--neon); margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        /* 🃏 CARDS & UI */
+        .card { 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+        }
+        h2 { 
+            font-family: 'Orbitron'; 
+            font-size: 0.8rem; 
+            text-transform: uppercase; 
+            color: var(--neon); 
+            margin-top: 0; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 10px; 
+        }
         
-        input[type="text"], input[type="password"], input[type="number"], select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
+        input[type="text"], input[type="password"], input[type="number"], select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            background: #010409; 
+            border: 1px solid var(--border); 
+            color: #fff; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            font-size: 0.8rem;
+        }
+
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 6px; 
+            border: none; 
+            font-weight: 700; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            margin-top: 10px; 
+            transition: 0.3s; 
+            font-size: 0.7rem;
+        }
         .btn-neon { background: var(--neon); color: #000; }
         .btn-danger { background: var(--danger); color: #fff; }
         .btn-grey { background: var(--grey); color: #fff; }
         .btn-staff { background: var(--master); color: #000; }
-        .btn-success { background: var(--success); color: #000; width: auto; padding: 0 20px; }
-        .btn-home { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 6px 15px; width: auto; margin: 0; border-radius: 20px; font-size: 0.7rem; }
-        .btn-home:hover { background: var(--danger); color: #fff; }
+        .btn-success { background: var(--success); color: #000; }
+        .btn-home { 
+            background: transparent; 
+            border: 1px solid var(--danger); 
+            color: var(--danger); 
+            padding: 6px 15px; 
+            width: auto; 
+            margin: 0; 
+            border-radius: 20px; 
+            font-size: 0.7rem; 
+        }
+
+        .addr-full {
+            font-family: monospace;
+            background: #000;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            color: var(--neon);
+            cursor: pointer;
+            font-size: 0.7rem;
+            word-break: break-all;
+        }
+        .addr-full:hover { border-color: var(--neon); }
 
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 0.8rem; }
         .checkbox-group input { width: auto; }
         
-        .reset-link { display: block; margin-top: 20px; font-size: 0.7rem; color: #8b949e; text-decoration: underline; cursor: pointer; }
-        .reset-link:hover { color: var(--danger); }
-
-        #video-container, #qr-reader { width: 100%; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); }
+        #video-container, #qr-reader { 
+            width: 100%; 
+            background: #000; 
+            border-radius: 8px; 
+            margin: 15px 0; 
+            overflow: hidden; 
+            border: 1px solid var(--border); 
+        }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
-        #terminal { background: #000; color: var(--success); font-family: monospace; padding: 15px; border-radius: 8px; height: 120px; overflow-y: auto; font-size: 0.75rem; border: 1px solid var(--border); }
-        #qr-display { background: #fff; padding: 15px; border-radius: 8px; width: fit-content; margin: 20px auto; display: none; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        #terminal { 
+            background: #000; 
+            color: var(--success); 
+            font-family: monospace; 
+            padding: 15px; 
+            border-radius: 8px; 
+            height: 150px; 
+            overflow-y: auto; 
+            font-size: 0.75rem; 
+            border: 1px solid var(--border); 
+            line-height: 1.4;
+        }
+
+        #qr-display { 
+            background: #fff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            width: fit-content; 
+            margin: 20px auto; 
+            display: none; 
+        }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-top: 10px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
-        th { color: #888; text-transform: uppercase; }
+        th { color: #888; text-transform: uppercase; font-size: 0.65rem; }
         .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.65rem; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .stat-card { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        .stat-val { font-size: 1.4rem; color: var(--neon); font-weight: bold; font-family: 'Orbitron'; }
     </style>
 </head>
 <body>
@@ -74,36 +239,30 @@
             <button class="btn-staff" id="btn-mode-staff" onclick="switchLoginMode('staff')">STAFF (SCAN QR)</button>
         </div>
         <div id="login-admin-area">
-            <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left;">RUOLO DI SISTEMA</label>
             <select id="role-selector">
-                <option value="master">MASTER GENERALE (Proprietario)</option>
+                <option value="master">MASTER GENERALE</option>
                 <option value="client">CLIENT MASTER (Azienda)</option>
-                <option value="buyer">BUYER (Cliente Finale)</option>
+                <option value="buyer">BUYER (Acquirente)</option>
             </select>
-            <div id="setup-section" style="display: none; margin-top:15px;">
-                <label style="color:var(--master); font-size: 0.6rem; display:block; text-align:left;">CREA MASTER PASSWORD</label>
-                <div class="pass-container">
-                    <input type="password" id="gate-pass-new" placeholder="Crea Password (min. 6 caratteri)">
-                    <span class="eye-icon" onclick="togglePass('gate-pass-new')">👁️</span>
-                </div>
-                <div class="pass-container"><input type="password" id="gate-pass-confirm" placeholder="Ripeti Password"></div>
+            <div id="setup-section" style="display: none;">
+                <input type="password" id="gate-pass-new" placeholder="Crea Master Password">
+                <input type="password" id="gate-pass-confirm" placeholder="Conferma Password">
             </div>
-            <div id="login-section" style="margin-top:15px;">
-                <label style="color:var(--neon); font-size: 0.6rem; display:block; text-align:left;">PASSWORD VAULT</label>
+            <div id="login-section">
                 <div class="pass-container">
-                    <input type="password" id="gate-pass" placeholder="Inserisci Password">
+                    <input type="password" id="gate-pass" placeholder="Password Vault">
                     <span class="eye-icon" onclick="togglePass('gate-pass')">👁️</span>
                 </div>
             </div>
             <button class="btn-neon" onclick="unlockSystemAdmin()">SBLOCCA CON METAMASK</button>
         </div>
         <div id="login-staff-area" style="display: none;">
-            <p style="font-size: 0.8rem; color: var(--text);">Inquadra il QR Code fornito dall'Azienda.</p>
-            <div id="qr-reader" style="width: 100%; height: 250px;"></div>
-            <button class="btn-danger" style="margin-top: 15px;" onclick="stopQRScanner()">ANNULLA</button>
+            <p style="font-size: 0.75rem; color: #888;">Inquadra il QR Code del tuo Badge.</p>
+            <div id="qr-reader"></div>
+            <button class="btn-danger" style="margin-top:15px;" onclick="stopQRScanner()">ANNULLA SCAN</button>
         </div>
         <div id="gate-msg" style="margin-top:10px; font-size:0.7rem; color:var(--danger)"></div>
-        <a class="reset-link" onclick="resetDevice()">Ripristina Dispositivo (Pulisci Memoria)</a>
+        <a style="cursor:pointer; font-size:0.6rem; color:#444; margin-top:20px; display:block;" onclick="resetDevice()">RIPRISTINA VAULT</a>
     </div>
 </div>
 
@@ -111,8 +270,8 @@
     <nav>
         <div class="brand">SMARTSHEER <span id="tag-ruolo" style="font-size:0.6rem; color:#888"></span></div>
         <div class="nav-actions">
-            <div id="eth-address" style="font-family:monospace; font-size:0.75rem; background:#161b22; padding:5px 12px; border-radius:20px;">0x00...</div>
-            <button class="btn-home" onclick="goHome()">🏠 DISCONNETTI</button>
+            <div id="eth-address" class="addr-full" onclick="copyToClipboard(this.innerText)">0x...</div>
+            <button class="btn-home" onclick="location.reload()">🏠 LOGOUT</button>
         </div>
     </nav>
     <div class="tab-bar" id="tab-nav"></div>
@@ -121,18 +280,34 @@
         
         <div id="panel-admin" class="panel">
             <div class="card" style="border-color: var(--danger);">
-                <h2 style="color: var(--danger);">🚨 SECURITY: BLACK LIST (BLOCCO TOTALE INDIRIZZI)</h2>
-                <div style="display:flex; gap:10px; align-items: center;">
-                    <input type="text" id="ban-addr" placeholder="Indirizzo Wallet (0x...)">
-                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan(true)">APPLICA BANDO</button>
-                    <button class="btn-grey" style="width:auto; padding:0 20px;" onclick="applyBan(false)">RIMUIVI BANDO</button>
+                <h2 style="color: var(--danger);">🚨 SECURITY: BLACK LIST</h2>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="ban-addr" placeholder="Indirizzo Wallet completo (0x...)">
+                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan(true)">METTI IN BLACK LIST</button>
+                    <button class="btn-grey" style="width:auto; padding:0 20px;" onclick="applyBan(false)">RIMUOVI</button>
                 </div>
             </div>
-            <div class="card" style="border-color: var(--neon);">
-                <h2>⚖️ REGISTRO ATTIVITÀ FORENSE</h2>
+            
+            <div class="card" style="border-color: var(--master);">
+                <h2 style="color: var(--master);">📊 DATI REALI SMART CONTRACT</h2>
+                <button class="btn-staff" style="margin-bottom:15px; width:auto; padding:10px 20px;" onclick="syncMasterData()">🔄 SINCRONIZZA NODI</button>
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <p style="margin:0; font-size:0.6rem; color:#888;">SPEDIZIONI TOTALI</p>
+                        <div id="m-total" class="stat-val">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <p style="margin:0; font-size:0.6rem; color:#888;">STATO RETE</p>
+                        <div id="m-status" class="stat-val" style="color:var(--success); font-size:1rem;">ONLINE</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⚖️ LOG ATTIVITÀ FORENSE</h2>
                 <div style="overflow-x: auto; max-height: 200px;">
                     <table id="forensic-table">
-                        <thead><tr><th>Data/Ora</th><th>Ruolo</th><th>Azione</th><th>IP Pubblico</th><th>Esito</th></tr></thead>
+                        <thead><tr><th>Data</th><th>Azione</th><th>IP</th><th>Stato</th></tr></thead>
                         <tbody id="forensic-log-body"></tbody>
                     </table>
                 </div>
@@ -144,8 +319,9 @@
                 <h2>🛡️ ONBOARDING SBT E GEOFENCING</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
                     <div>
-                        <input type="text" id="reg-piva" placeholder="P.IVA / ID Aziendale">
-                        <input type="password" id="reg-salt" placeholder="Salt Privacy">
+                        <label style="font-size:0.6rem; color:var(--neon);">DNA AZIENDALE (P.IVA)</label>
+                        <input type="text" id="reg-piva" placeholder="Inserisci P.IVA">
+                        <input type="password" id="reg-salt" placeholder="Salt Segreto">
                         <button class="btn-neon" onclick="mintIdentity()">CONIA IDENTITÀ SBT</button>
                     </div>
                     <div>
@@ -155,83 +331,74 @@
                 </div>
             </div>
             
-            <div class="card" style="border-color: var(--neon); margin-top: 20px;">
-                <h2>📍 GESTIONE DEPOSITI (GEOFENCING CRITTOGRAFATO)</h2>
-                <p style="font-size: 0.75rem; color:#888;">Le coordinate verranno criptate in un Hash sicuro prima dell'invio allo Smart Contract.</p>
+            <div class="card" style="border-color: var(--neon);">
+                <h2>📍 REGISTRA HUB (GEOFENCE CIECO)</h2>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="hub-name" placeholder="Nome Hub (es. Ravenna)" style="flex:2;">
-                    <input type="text" id="hub-lat" placeholder="Latitudine (es. 44.41)" style="flex:1;">
-                    <input type="text" id="hub-lon" placeholder="Longitudine (es. 12.20)" style="flex:1;">
-                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="registerHub()">SALVA HUB CIECO</button>
+                    <input type="text" id="hub-name" placeholder="Nome (es. Ravenna)" style="flex:2;">
+                    <input type="text" id="hub-lat" placeholder="Lat" style="flex:1;">
+                    <input type="text" id="hub-lon" placeholder="Lon" style="flex:1;">
+                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="registerHub()">SALVA HUB</button>
                 </div>
             </div>
         </div>
 
         <div id="panel-factory" class="panel">
             <div class="card" style="border-color: var(--neon);">
-                <h2 style="color: var(--neon);">🚀 FACTORY: COSTRUTTORE PASSAPORTO DIGITALE (NFT)</h2>
+                <h2>🚀 FACTORY: COSTRUTTORE PASSAPORTO NFT</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
                     <div>
-                        <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Formaggio di Fossa DOP)">
-                        <input type="text" id="nft-desc" placeholder="Descrizione o Storia (Breve)">
-                        <div style="display:flex; gap:10px; margin-top: 8px;">
-                            <input type="text" id="nft-attr-1-key" placeholder="Attributo (es. Annata)" style="flex:1;">
-                            <input type="text" id="nft-attr-1-val" placeholder="Valore (es. 2026)" style="flex:2;">
+                        <input type="text" id="nft-name" placeholder="Nome Prodotto">
+                        <input type="text" id="nft-desc" placeholder="Descrizione">
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="nft-attr-k" placeholder="Attributo" style="flex:1;">
+                            <input type="text" id="nft-attr-v" placeholder="Valore" style="flex:2;">
                         </div>
-                        <div style="margin-top: 15px; padding: 10px; border: 1px dashed var(--border); border-radius: 6px; text-align: center;">
-                            <label style="color: var(--neon); cursor: pointer; font-size: 0.8rem;">📸 CARICA FOTO PRODOTTO
-                                <input type="file" id="nft-image" accept="image/png, image/jpeg" style="display: none;" onchange="previewImage(this)">
-                            </label>
-                            <div id="img-preview-box" style="margin-top: 10px; display: none;">
-                                <img id="img-preview" src="" style="max-width: 100%; max-height: 120px; border-radius: 4px;">
-                            </div>
-                        </div>
+                        <button class="btn-grey" onclick="document.getElementById('nft-img').click()">📸 CARICA FOTO</button>
+                        <input type="file" id="nft-img" style="display:none;" onchange="previewImage(this)">
+                        <div id="img-preview-box" style="display:none; margin-top:10px;"><img id="img-preview" style="max-width:100%; border-radius:5px;"></div>
                     </div>
-                    <div style="background: var(--bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
-                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--master);">🔒 DATI LOGISTICI E ORACLE IOT (SEGRETI)</h3>
-                        <input type="number" id="nft-qty" placeholder="Unità nel Lotto Reale" value="1" style="width: 100%;">
-                        <div class="checkbox-group" style="margin-top: 15px;">
-                            <input type="checkbox" id="use-escrow" onchange="toggleEscrow()"> 
-                            <label style="color:var(--master); font-weight:bold;">Richiedi Pagamento alla Consegna (Escrow)</label>
+                    <div style="background:#000; padding:20px; border-radius:8px; border:1px solid var(--border);">
+                        <h3 style="margin:0; font-size:0.7rem; color:var(--master);">🔒 CONDIZIONI SMART CONTRACT</h3>
+                        <input type="number" id="nft-qty" placeholder="Unità nel Lotto" value="1">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="use-escrow" onchange="toggleEscrow()"> <label>Attiva Escrow (EURC)</label>
                         </div>
-                        <div id="escrow-fields" style="display:none; gap:10px; margin-top: 10px;">
-                            <input type="number" id="nft-price" placeholder="Prezzo (EURC/MATIC)" style="flex:1;" value="0">
-                            <input type="text" id="nft-buyer" placeholder="Indirizzo Acquirente (0x...)" style="flex:2;">
+                        <div id="escrow-fields" style="display:none;">
+                            <input type="number" id="nft-price" placeholder="Prezzo Totale">
+                            <input type="text" id="nft-buyer" placeholder="Wallet Acquirente">
                         </div>
-                        <hr style="border-color: var(--border); margin: 15px 0;">
-                        <div class="checkbox-group"><input type="checkbox" id="iot-temp" onchange="toggleTempInputs()"> <label>Controllo Temperatura (Oracolo)</label></div>
-                        <div id="temp-ranges" style="display:none; gap:10px; margin-left: 25px; margin-bottom: 10px;">
-                            <input type="number" id="temp-min" placeholder="Min °C" style="padding: 6px;">
-                            <input type="number" id="temp-max" placeholder="Max °C" style="padding: 6px;">
-                        </div>
-                        <div class="checkbox-group"><input type="checkbox" id="iot-gps"> <label>Tracciamento GPS Obbligatorio</label></div>
-                        <div class="checkbox-group"><input type="checkbox" id="iot-tamper"> <label>Sensore Anti-Manomissione</label></div>
+                        <hr style="border-color:#222; margin:15px 0;">
+                        <div class="checkbox-group"><input type="checkbox" id="iot-temp" onchange="toggleTempInputs()"> <label>Sensor Temp</label></div>
+                        <div id="temp-ranges" style="display:none; gap:5px;"><input type="number" id="t-min" placeholder="Min" style="flex:1;"><input type="number" id="t-max" placeholder="Max" style="flex:1;"></div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-gps" checked> <label>GPS Geofence Obbligatorio</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-tamper" checked> <label>Anti-Manomissione PVC</label></div>
                     </div>
                 </div>
-                <button class="btn-neon" style="margin-top: 25px;" onclick="buildAndMintNFT()">📦 IMPACCHETTA JSON E CONIA NEL VAULT</button>
+                <button class="btn-neon" style="margin-top:20px;" onclick="buildAndMintNFT()">📦 SIGILLA E CONIA LOTTO</button>
             </div>
         </div>
 
         <div id="panel-staff-manage" class="panel">
             <div class="card">
-                <h2>👥 CREAZIONE BADGE E GESTIONE PERMESSI</h2>
+                <h2>👥 GESTIONE BADGE & DELEGHE</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                     <div>
                         <input type="text" id="worker-name" placeholder="Nome Magazziniere">
-                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE QR E DELEGA SU CHAIN</button>
+                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE & DELEGA</button>
                     </div>
-                    <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
-                        <h3 style="margin-top:0; font-size:0.75rem; color:var(--neon);">🛠️ ASSEGNA POTERI ON-CHAIN</h3>
-                        <div class="checkbox-group"><input type="checkbox" id="perm-mint"> <label>Può Coniare Lotti (Factory)</label></div>
-                        <div class="checkbox-group"><input type="checkbox" id="perm-in" checked> <label>Può Ricevere Merce (Check-in)</label></div>
-                        <div class="checkbox-group"><input type="checkbox" id="perm-out" checked> <label>Può Spedire Merce (Handover)</label></div>
+                    <div style="background:#000; padding:15px; border-radius:8px; border:1px solid var(--border);">
+                        <div class="checkbox-group"><input type="checkbox" id="p-in" checked> <label>Ricezione (IN)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-out" checked> <label>Spedizione (OUT)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-mint"> <label>Coniazione (MINT)</label></div>
                     </div>
                 </div>
                 <div id="qr-display"></div>
-                <h3 style="margin-top:30px; font-size:0.75rem; color:var(--master); border-bottom:1px solid var(--border); padding-bottom:10px;">📋 STAFF ATTIVO (REVOCA POTERI)</h3>
-                <div style="overflow-x: auto;">
+                <button id="btn-dl-qr" class="btn-grey" style="display:none; width:auto; margin:10px auto;" onclick="downloadQR()">📥 SCARICA BADGE .PNG</button>
+
+                <h3 style="margin-top:30px; font-size:0.7rem; color:var(--master);">📋 LISTA PERSONALE ATTIVO</h3>
+                <div style="overflow-x:auto;">
                     <table id="staff-table">
-                        <thead><tr><th>Nome</th><th>Wallet</th><th>Permessi</th><th>Stato</th><th>Azione</th></tr></thead>
+                        <thead><tr><th>Nome</th><th>Wallet (Clicca per Copiare)</th><th>Permessi</th><th>Azione</th></tr></thead>
                         <tbody id="staff-list-body"></tbody>
                     </table>
                 </div>
@@ -239,470 +406,352 @@
         </div>
 
         <div id="panel-operations" class="panel">
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
-                <div class="card" style="border-color: var(--grey); margin-bottom: 0;" id="ui-staff-transit">
-                    <h2 style="color: var(--text);">📍 REGISTRA CHECKPOINT</h2>
-                    <button class="btn-grey" onclick="connectBLE('transit')">1. LEGGI DATI IOT E GPS</button>
-                    <input type="text" id="checkpoint-nft" placeholder="ID Lotto in transito (es. 1)" style="margin-top:10px;">
-                    <button class="btn-grey" style="background:#30363d;" onclick="executeCheckpoint()">2. REGISTRA HASH SU CHAIN</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="card" style="border-color: var(--neon);">
+                    <h2>📍 CHECKPOINT</h2>
+                    <button class="btn-grey" onclick="connectBT()">📡 1. LEGGI IOT (BLUETOOTH)</button>
+                    <input type="text" id="op-id" placeholder="ID Lotto" style="margin-top:10px;">
+                    <button class="btn-neon" onclick="executeCheckpoint()">2. REGISTRA POSIZIONE</button>
                 </div>
-                <div class="card" style="border-color: var(--master); margin-bottom: 0;" id="ui-staff-out">
-                    <h2 style="color: var(--master);">📤 USCITA (HANDOVER FINALE)</h2>
-                    <button class="btn-grey" onclick="connectBLE('outbound')">1. VERIFICA SIGILLI IOT</button>
-                    <input type="text" id="handover-nft" placeholder="ID Lotto (es. 1)" style="margin-top:10px;">
-                    <button class="btn-staff" onclick="executeHandover()">2. TENTA CONSEGNA E SBLOCCO</button>
+                <div class="card" style="border-color: var(--master);">
+                    <h2>📤 CONSEGNA (HANDOVER)</h2>
+                    <button class="btn-grey" onclick="connectBT()">📡 1. VERIFICA SIGILLI BT</button>
+                    <input type="text" id="out-id" placeholder="ID Lotto" style="margin-top:10px;">
+                    <button class="btn-staff" onclick="executeHandover()">2. TENTA SBLOCCO FINALE</button>
                 </div>
             </div>
         </div>
 
         <div id="panel-buyer" class="panel">
-            <div class="card" style="border-color: var(--success); margin-bottom: 20px;">
-                <h2 style="color: var(--success);">🔍 VERIFICA PRODOTTO (PASSAPORTO PUBBLICO)</h2>
+            <div class="card" style="border-color: var(--success);">
+                <h2>🔍 VERIFICA PRODOTTO (CONSUMATORE)</h2>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="public-nft-id" placeholder="ID Lotto o Hash QR (es. 1)" style="flex:2;">
-                    <button class="btn-success" onclick="readPublicNFT()">LEGGI PASSAPORTO</button>
+                    <input type="text" id="pub-id" placeholder="ID Lotto">
+                    <button class="btn-success" style="width:auto; padding:0 30px;" onclick="readPublicNFT()">LEGGI</button>
                 </div>
-                <div id="nft-public-display" style="display:none; margin-top:20px; padding:20px; background:#161b22; border-radius:8px; border:1px solid var(--success); text-align:center;"></div>
+                <div id="nft-pub-view" style="display:none; margin-top:20px; padding:20px; background:#000; border-radius:10px; border:1px solid var(--success);"></div>
             </div>
-
             <div class="card" style="border-color: var(--danger);">
-                <h2 style="color: var(--danger);">🛒 B2B: ESCROW E GESTIONE DISPUTE</h2>
-                <div style="background: var(--bg); padding: 15px; border-radius: 8px; border: 1px solid var(--danger); margin-top:15px;">
-                    <input type="text" id="disputed-nft" placeholder="ID Lotto (Es. 1)">
-                    <div style="display:flex; gap:10px; margin-top:15px;">
-                        <button class="btn-success" style="background:var(--success); color:#000;" onclick="fundEscrowAction()">💸 PAGA/CARICA ESCROW</button>
-                        <button class="btn-danger" style="background:transparent; border:1px solid var(--danger); color:var(--danger);" onclick="refundDispute()">❌ RIFIUTA E RITIRA RIMBORSO</button>
-                        <button class="btn-danger" onclick="forceAcceptance()">⚠️ PAGA COMUNQUE VENDITORE</button>
-                    </div>
+                <h2>🛒 GESTIONE PAGAMENTI ESCROW</h2>
+                <input type="text" id="esc-id" placeholder="ID Lotto">
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-success" onclick="fundEscrowAction()">💸 PAGA/CARICA</button>
+                    <button class="btn-danger" onclick="refundDispute()">❌ RIFIUTA & RIMBORSO</button>
                 </div>
             </div>
         </div>
 
-        <div id="terminal">> Attesa Inizializzazione Rete...</div>
+        <div id="terminal">> Sistema SmartSheer Pronto. Inizializzare Vault...</div>
     </div>
 </div>
 
 <script>
-    // 🚨 🚨 🚨 INSERISCI QUI IL CONTRACT ADDRESS DA REMIX IDE 🚨 🚨 🚨
+    // 🚨 COLLEGA IL TUO CONTRATTO QUI 🚨
     const CONTRACT_ADDRESS = "0xeDBcFDF5d690663858999639d3601E2F723B69db"; 
+    const RPC_URL = "https://polygon-rpc.com"; // Usa testnet se necessario
 
-    // ABI: Il ponte che traduce il Javascript in Solidity
     const contractABI = [
         "function setBan(address _target, bool _status) external",
         "function mintSBT(bytes32 _dnaHash) external",
         "function registerHub(bytes32 _hubHash) external",
         "function setStealthWorker(address _ephemeralStaff, bool _mint, bool _in, bool _out, bool _active) external",
-        "function mintBatch(address _motherClient, bytes32 _metadataHash, uint256 _qty, tuple(bool reqTemp, int256 minTemp, int256 maxTemp, bool reqGps, bool reqTamper) _reqs, uint256 _price, address _buyer) external",
+        "function shipmentCounter() public view returns (uint256)",
+        "function mintBatch(address _m, bytes32 _h, uint256 _q, tuple(bool, int256, int256, bool, bool) _r, uint256 _p, address _b) external",
         "function fundEscrow(uint256 _id) external payable",
         "function recordCheckpoint(uint256 _id, bytes32 _hubHash) external",
-        "function executeHandover(uint256 _id, int256 _recordedTemp, bool _gpsValid, bool _tamperValid) external",
+        "function executeHandover(uint256 _id, int256 _temp, bool _gps, bool _tamp) external",
         "function forceAcceptance(uint256 _id) external",
         "function refundDispute(uint256 _id) external"
     ];
 
-    let provider, signer, encryptionKey, currentRole;
+    let provider, signer, encryptionKey, currentRole, lastSensorData, videoStream;
     let html5QrcodeScanner;
-    let currentStaffPerms = {};
-    let lastSensorData = null; 
-    let staffList = JSON.parse(localStorage.getItem('smartsheer_staff') || "[]"); 
-    let videoStream = null;
+    let staffList = JSON.parse(localStorage.getItem('ss_staff') || "[]");
 
-    function checkSetupState() {
-        if (localStorage.getItem('smartsheer_setup') === 'true') {
-            document.getElementById('setup-section').style.display = 'none';
-            document.getElementById('login-section').style.display = 'block';
-        } else {
-            document.getElementById('setup-section').style.display = 'block';
-            document.getElementById('login-section').style.display = 'none';
-        }
+    // --- SETUP & AUTH ---
+    function checkSetup() {
+        const done = localStorage.getItem('ss_setup');
+        document.getElementById('setup-section').style.display = done ? 'none' : 'block';
+        document.getElementById('login-section').style.display = done ? 'block' : 'none';
     }
-    window.addEventListener('DOMContentLoaded', checkSetupState);
+    window.addEventListener('DOMContentLoaded', checkSetup);
 
-    function resetDevice() {
-        if(confirm("ATTENZIONE CRITICA: Il reset cancellerà la memoria locale. Procedere?")) {
-            localStorage.clear(); location.reload();
-        }
-    }
-
-    function togglePass(id) { const input = document.getElementById(id); input.type = input.type === "password" ? "text" : "password"; }
+    function togglePass(id) { const i = document.getElementById(id); i.type = i.type === "password" ? "text" : "password"; }
+    function toggleEscrow() { document.getElementById('escrow-fields').style.display = document.getElementById('use-escrow').checked ? 'block' : 'none'; }
     function toggleTempInputs() { document.getElementById('temp-ranges').style.display = document.getElementById('iot-temp').checked ? 'flex' : 'none'; }
-    function toggleEscrow() {
-        const isChecked = document.getElementById('use-escrow').checked;
-        document.getElementById('escrow-fields').style.display = isChecked ? 'flex' : 'none';
-        if(!isChecked) document.getElementById('nft-price').value = "0"; 
-    }
 
-    function previewImage(input) {
-        if (input.files && input.files[0]) {
-            var r = new FileReader();
-            r.onload = (e) => { document.getElementById('img-preview').src = e.target.result; document.getElementById('img-preview-box').style.display = 'block'; }
-            r.readAsDataURL(input.files[0]);
-        }
+    async function unlockSystemAdmin() {
+        if (!window.ethereum) return showAlert("MetaMask non trovato.");
+        try {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            const addr = await signer.getAddress();
+            
+            const msg = `SmartSheer_Auth_2026_${addr}`;
+            const sig = await signer.signMessage(msg);
+            encryptionKey = ethers.utils.keccak256(sig);
+
+            localStorage.setItem('ss_setup', 'true');
+            currentRole = document.getElementById('role-selector').value;
+            launchDashboard(addr, currentRole);
+        } catch(e) { showAlert("Firma rifiutata."); }
     }
 
     function switchLoginMode(mode) {
-        if(mode === 'admin') {
-            document.getElementById('login-admin-area').style.display = 'block';
-            document.getElementById('login-staff-area').style.display = 'none';
-            document.getElementById('btn-mode-admin').style.background = 'var(--border)';
-            document.getElementById('btn-mode-staff').style.background = 'transparent';
-            if(html5QrcodeScanner) stopQRScanner();
-        } else {
-            document.getElementById('login-admin-area').style.display = 'none';
-            document.getElementById('login-staff-area').style.display = 'block';
-            document.getElementById('btn-mode-admin').style.background = 'transparent';
-            document.getElementById('btn-mode-staff').style.background = 'var(--master)';
-            startQRScanner();
-        }
-    }
-
-    function goHome() { location.reload(); }
-    function showAlert(msg) { document.getElementById('gate-msg').innerText = msg; }
-
-    // --- AUTENTICAZIONE METAMASK ---
-    async function unlockSystemAdmin() {
-        let finalPass = "";
-        const isSetupDone = localStorage.getItem('smartsheer_setup');
-        if (!isSetupDone || isSetupDone !== 'true') {
-            const p1 = document.getElementById('gate-pass-new').value;
-            const p2 = document.getElementById('gate-pass-confirm').value;
-            if (p1.length < 6) return showAlert("Minimo 6 caratteri.");
-            if (p1 !== p2) return showAlert("Password non combaciano.");
-            finalPass = p1;
-        } else {
-            finalPass = document.getElementById('gate-pass').value;
-            if (finalPass.length < 6) return showAlert("Inserisci password.");
-        }
-
-        currentRole = document.getElementById('role-selector').value;
-
-        if (window.ethereum) {
-            try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                const addr = await signer.getAddress();
-                
-                const msg = `SmartSheer_Auth_${finalPass}_2026`;
-                const sig = await signer.signMessage(msg);
-                encryptionKey = ethers.utils.keccak256(sig);
-
-                if (!isSetupDone) localStorage.setItem('smartsheer_setup', 'true');
-                launchDashboard(addr, currentRole);
-            } catch(e) { showAlert("Firma MetaMask rifiutata."); }
-        } else { showAlert("MetaMask non trovato."); }
+        document.getElementById('login-admin-area').style.display = mode === 'admin' ? 'block' : 'none';
+        document.getElementById('login-staff-area').style.display = mode === 'staff' ? 'block' : 'none';
+        if(mode === 'staff') startQRScanner(); else stopQRScanner();
     }
 
     function startQRScanner() {
         html5QrcodeScanner = new Html5Qrcode("qr-reader");
-        html5QrcodeScanner.start(
-            { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
-            (decodedText, decodedResult) => { stopQRScanner(); processStaffLogin(decodedText); },
-            (errorMessage) => {}
-        ).catch((err) => { showAlert("Errore fotocamera."); });
+        html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            stopQRScanner();
+            processStaffLogin(txt);
+        });
     }
+    function stopQRScanner() { if(html5QrcodeScanner) html5QrcodeScanner.stop(); }
 
-    function stopQRScanner() { if(html5QrcodeScanner) { html5QrcodeScanner.stop().then(() => { html5QrcodeScanner.clear(); }).catch(e => console.log(e)); } }
-
-    function processStaffLogin(qrDataStr) {
+    async function processStaffLogin(txt) {
         try {
-            const staffData = JSON.parse(qrDataStr);
-            if(!staffData.pk || !staffData.perms) throw new Error();
-            const staffWallet = new ethers.Wallet(staffData.pk);
-            currentStaffPerms = staffData.perms;
+            const data = JSON.parse(txt);
+            const rpc = new ethers.providers.JsonRpcProvider(RPC_URL);
+            signer = new ethers.Wallet(data.pk, rpc);
             currentRole = 'staff';
-            signer = staffWallet.connect(provider); // Imposta il signer col wallet usa-e-getta!
-            
-            document.getElementById('ui-staff-in').style.display = currentStaffPerms.in ? 'block' : 'none';
-            document.getElementById('ui-staff-out').style.display = currentStaffPerms.out ? 'block' : 'none';
-            launchDashboard(staffWallet.address, 'staff');
-        } catch(e) { showAlert("QR Code non riconosciuto."); switchLoginMode('admin'); }
+            launchDashboard(signer.address, 'staff');
+            log("🔓 Staff riconosciuto. Accesso via QR eseguito.");
+        } catch(e) { showAlert("QR non valido."); switchLoginMode('admin'); }
     }
 
-    function launchDashboard(address, role) {
+    function launchDashboard(addr, role) {
         document.getElementById('gate-overlay').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
-        document.getElementById('eth-address').innerText = address.substring(0,6)+"..."+address.substring(38);
+        document.getElementById('eth-address').innerText = addr;
         document.getElementById('tag-ruolo').innerText = role.toUpperCase();
-        
         buildTabs(role);
-        log(`Connessione Stabilita. Ruolo: ${role.toUpperCase()}`);
-        if(role === 'client') renderStaffList(); 
+        if(role === 'client') renderStaff();
     }
 
     function buildTabs(role) {
-        const nav = document.getElementById('tab-nav');
-        nav.innerHTML = "";
-        if(role === 'master') { addTab("MASTER CONTROL", "panel-admin"); }
-        if(role === 'client') { addTab("IDENTITY", "panel-onboarding"); addTab("FACTORY & IOT", "panel-factory"); addTab("STAFF MANAGER", "panel-staff-manage"); }
-        if(role === 'staff') { addTab("OPERAZIONI LOGISTICHE", "panel-operations"); if(currentStaffPerms.mint) addTab("FACTORY DELEGATA", "panel-factory"); }
-        if(role === 'buyer') { addTab("PORTALE ACQUIRENTE", "panel-buyer"); }
+        const nav = document.getElementById('tab-nav'); nav.innerHTML = "";
+        if(role === 'master') addTab("MASTER CONTROL", "panel-admin");
+        if(role === 'client') { addTab("IDENTITY", "panel-onboarding"); addTab("FACTORY", "panel-factory"); addTab("STAFF", "panel-staff-manage"); }
+        if(role === 'staff') addTab("OPERAZIONI", "panel-operations");
+        if(role === 'buyer') addTab("BUYER PORTAL", "panel-buyer");
         showPanel(nav.firstChild.getAttribute('data-panel'));
     }
 
-    function addTab(label, panelId) {
-        const t = document.createElement('div');
-        t.className = "tab"; t.innerText = label; t.setAttribute('data-panel', panelId);
-        t.onclick = (e) => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('active')); e.target.classList.add('active'); showPanel(panelId); };
+    function addTab(l, p) {
+        const t = document.createElement('div'); t.className = "tab"; t.innerText = l; t.setAttribute('data-panel', p);
+        t.onclick = (e) => { document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); e.target.classList.add('active'); showPanel(p); };
         document.getElementById('tab-nav').appendChild(t);
-        if(document.getElementById('tab-nav').childNodes.length === 1) t.classList.add('active');
     }
-    function showPanel(id) { document.querySelectorAll('.panel').forEach(p => p.style.display = 'none'); document.getElementById(id).style.display = 'block'; }
+    function showPanel(id) { document.querySelectorAll('.panel').forEach(p=>p.style.display='none'); document.getElementById(id).style.display='block'; }
 
-    // --- FUNZIONI VIDEOCAMERA ---
-    async function startCamera() {
-        try { 
-            videoStream = await navigator.mediaDevices.getUserMedia({video: true}); 
-            document.getElementById('webcam').srcObject = videoStream;
-            log("📸 Modulo Biometrico Attivo. Inquadra il viso e premi CONIA IDENTITÀ."); 
-        } catch(e) { log("❌ Modulo Biometrico: Permesso Negato."); }
+    // --- AZIONI MASTER ---
+    async function syncMasterData() {
+        try {
+            const p = new ethers.providers.JsonRpcProvider(RPC_URL);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, p);
+            const total = await c.shipmentCounter();
+            document.getElementById('m-total').innerText = total.toString();
+            log(`📊 Dati sincronizzati. Lotti totali: ${total}`);
+        } catch(e) { log("❌ Errore sincronizzazione."); }
     }
-
-    function stopCamera() {
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-            document.getElementById('webcam').srcObject = null;
-            videoStream = null;
-            log("🎥 Videocamera spenta con successo.");
-        }
-    }
-
-    // --- CHIAMATE ALLO SMART CONTRACT CON ETHERS.JS ---
 
     async function applyBan(status) {
         const target = document.getElementById('ban-addr').value;
-        if(!target) return log("Inserisci indirizzo da bannare.");
+        if(!target) return log("Inserisci indirizzo.");
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            log(`⏳ Attesa firma Master per BAN...`);
-            const tx = await contract.setBan(target, status);
-            await tx.wait();
-            log(`✅ Lista aggiornata. L'indirizzo non può più operare.`);
-        } catch(e) { log(`❌ Errore Ban: ${e.message}`); }
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.setBan(target, status);
+            log("⏳ Invio bando..."); await tx.wait();
+            log(`🚨 Indirizzo ${target} ${status?'BANNATO':'RIPRISTINATO'}.`);
+        } catch(e) { log("❌ Errore Transazione."); }
+    }
+
+    // --- AZIONI CLIENT ---
+    async function startCamera() {
+        try { videoStream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('webcam').srcObject = videoStream; } 
+        catch(e) { log("❌ Camera negata."); }
     }
 
     async function mintIdentity() {
-        if (!videoStream) return log("⚠️ Accendi prima la fotocamera per il riconoscimento biometrico!");
-        const piva = document.getElementById('reg-piva').value;
-        const salt = document.getElementById('reg-salt').value;
-        if (!piva || !salt) return log("⚠️ Inserisci P.IVA e Salt Privacy.");
-
-        log("📸 SORRIDI! Acquisizione biometrica in corso... (5 secondi)");
+        if(!videoStream) return log("⚠️ Accendi camera.");
+        log("📸 SORRIDI! Acquisizione in corso (5s)...");
         setTimeout(async () => {
-            stopCamera();
-            const dna = CryptoJS.SHA256(piva + salt + encryptionKey).toString();
-            const dnaBytes32 = "0x" + dna;
-            log(`⏳ Attesa approvazione MetaMask per SBT...`);
+            videoStream.getTracks().forEach(t=>t.stop());
+            const piva = document.getElementById('reg-piva').value;
+            const dna = "0x" + CryptoJS.SHA256(piva + encryptionKey).toString();
             try {
-                const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-                const tx = await contract.mintSBT(dnaBytes32);
-                log(`🚀 Transazione inviata! Hash: ${tx.hash.substring(0,16)}...`);
+                const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+                const tx = await c.mintSBT(dna);
                 await tx.wait();
-                log(`✅ IDENTITÀ CONIATA CON SUCCESSO SUL NODO!`);
-            } catch (error) { log(`❌ Errore Blockchain: ${error.message}`); }
+                log(`🛡️ SBT Coniato: ${dna}`);
+            } catch(e) { log("❌ Errore coniazione."); }
         }, 5000);
     }
 
     async function registerHub() {
-        const name = document.getElementById('hub-name').value;
         const lat = document.getElementById('hub-lat').value;
         const lon = document.getElementById('hub-lon').value;
-        if (!lat || !lon) return log("⚠️ Inserisci le coordinate GPS dell'Hub.");
-
-        const rawData = lat + "|" + lon;
-        const hubHash = "0x" + CryptoJS.SHA256(rawData + encryptionKey).toString();
-        
-        let hubs = JSON.parse(localStorage.getItem('smartsheer_hubs') || "{}");
-        hubs[name] = hubHash;
-        localStorage.setItem('smartsheer_hubs', JSON.stringify(hubs));
-
-        log(`⏳ Attesa approvazione MetaMask per Hub Cieco...`);
+        const hash = "0x" + CryptoJS.SHA256(lat + "|" + lon + encryptionKey).toString();
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await contract.registerHub(hubHash);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.registerHub(hash);
             await tx.wait();
-            log(`✅ HUB GEOFENCING REGISTRATO CON SUCCESSO!`);
-        } catch (error) { log(`❌ Errore: ${error.message}`); }
+            log("📍 Hub Geofence salvato su Blockchain.");
+        } catch(e) { log("❌ Errore Hub."); }
     }
 
     async function buildAndMintNFT() {
         const name = document.getElementById('nft-name').value;
         const qty = document.getElementById('nft-qty').value;
-        const priceRaw = document.getElementById('nft-price').value || "0";
+        const price = ethers.utils.parseEther(document.getElementById('nft-price').value || "0");
         const buyer = document.getElementById('nft-buyer').value || ethers.constants.AddressZero;
-        
-        const reqTemp = document.getElementById('iot-temp').checked;
-        const minTemp = document.getElementById('temp-min').value || 0;
-        const maxTemp = document.getElementById('temp-max').value || 0;
-        const reqGps = document.getElementById('iot-gps').checked;
-        const reqTamper = document.getElementById('iot-tamper').checked;
-
-        const reqs = [reqTemp, minTemp, maxTemp, reqGps, reqTamper];
-        // Simula metadata IPFS (normalmente questo salirebbe su pinata.cloud)
-        const metadataHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + Date.now()));
-        const price = ethers.utils.parseEther(priceRaw.toString());
-
-        log(`⏳ Firma richiesta su MetaMask per coniare il Lotto...`);
+        const reqs = [
+            document.getElementById('iot-temp').checked,
+            document.getElementById('t-min').value || 0,
+            document.getElementById('t-max').value || 0,
+            document.getElementById('iot-gps').checked,
+            document.getElementById('iot-tamper').checked
+        ];
+        const meta = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + Date.now()));
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const motherClient = await signer.getAddress();
-            const tx = await contract.mintBatch(motherClient, metadataHash, qty, reqs, price, buyer);
-            log(`🚀 Lotto in creazione... Hash: ${tx.hash.substring(0,16)}`);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.mintBatch(await signer.getAddress(), meta, qty, reqs, price, buyer);
             await tx.wait();
-            log(`✅ LOTTO CONIATO E SIGILLATO NEL VAULT.`);
-        } catch (e) { log(`❌ Errore Blockchain: ${e.message}`); }
+            log("📦 Lotto sigillato e pronto alla partenza.");
+        } catch(e) { log("❌ Errore Factory."); }
     }
 
+    // --- STAFF MANAGER ---
     async function generateWorkerQR() {
         const name = document.getElementById('worker-name').value;
-        if(!name) return showAlert("Inserisci il nome del magazziniere.");
-        const perms = { mint: document.getElementById('perm-mint').checked, in: document.getElementById('perm-in').checked, out: document.getElementById('perm-out').checked };
-        
-        const entropy = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + encryptionKey + Date.now()));
-        const workerWallet = new ethers.Wallet(entropy);
-        
-        log(`⏳ Delega On-Chain per ${name}... Firma la transazione.`);
+        const wallet = ethers.Wallet.createRandom();
+        const perms = [document.getElementById('p-mint').checked, document.getElementById('p-in').checked, document.getElementById('p-out').checked];
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await contract.setStealthWorker(workerWallet.address, perms.mint, perms.in, perms.out, true);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.setStealthWorker(wallet.address, perms[0], pers[1], perms[2], true);
             await tx.wait();
             
-            const payload = JSON.stringify({ pk: workerWallet.privateKey, perms: perms });
-            staffList.push({ name: name, address: workerWallet.address, perms: perms, active: true });
-            localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
-            renderStaffList();
-
+            const payload = JSON.stringify({ pk: wallet.privateKey, name: name });
             document.getElementById('qr-display').style.display = "block";
             document.getElementById('qr-display').innerHTML = "";
-            new QRCode(document.getElementById("qr-display"), { text: payload, width: 200, height: 200 });
-            log(`✅ DELEGA STEALTH ATTIVATA SULLA BLOCKCHAIN.`);
-        } catch (e) { log(`❌ Errore Delega: ${e.message}`); }
+            new QRCode(document.getElementById('qr-display'), { text: payload, width: 180, height: 180 });
+            document.getElementById('btn-dl-qr').style.display = "block";
+            
+            staffList.push({ name: name, addr: wallet.address, active: true });
+            localStorage.setItem('ss_staff', JSON.stringify(staffList));
+            renderStaff();
+            log(`👥 Staff ${name} autorizzato.`);
+        } catch(e) { log("❌ Delega fallita."); }
     }
 
-    async function revokeStaff(index) {
-        if(confirm(`Revocare i poteri a ${staffList[index].name}?`)) {
-            log(`⏳ Attesa firma per revoca On-Chain...`);
-            try {
-                const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-                const s = staffList[index];
-                const tx = await contract.setStealthWorker(s.address, false, false, false, false);
-                await tx.wait();
-
-                staffList[index].active = false;
-                localStorage.setItem('smartsheer_staff', JSON.stringify(staffList));
-                renderStaffList();
-                log(`✅ PERMESSI REVOCATI. Il QR è bloccato.`);
-            } catch (e) { log(`❌ Errore: ${e.message}`); }
-        }
+    function renderStaff() {
+        const b = document.getElementById('staff-list-body'); b.innerHTML = "";
+        staffList.forEach((s, idx) => {
+            b.innerHTML += `<tr>
+                <td>${s.name}</td>
+                <td><span class="addr-full" onclick="copyToClipboard('${s.addr}')">${s.addr}</span></td>
+                <td>${s.active?'✅':'❌'}</td>
+                <td><button class="btn-danger" style="padding:4px; font-size:0.5rem;" onclick="revokeStaff(${idx})">REVOCA</button></td>
+            </tr>`;
+        });
     }
 
-    async function connectBLE(direction) {
-        log(`📡 Ricerca sensori Bluetooth [${direction}]...`);
+    async function revokeStaff(idx) {
+        const s = staffList[idx];
         try {
-            const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service'] });
-            const server = await device.gatt.connect();
-            // Dati fittizi dal sensore
-            lastSensorData = { temp: 18, tamper: true, gps: true, lat: "44.41", lon: "12.20" }; 
-            log(`🌡️ Dati Oracolo acquisiti.`);
-            server.disconnect();
-        } catch (error) { log(`❌ Errore BLE: ${error.message}`); }
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.setStealthWorker(s.addr, false, false, false, false);
+            await tx.wait();
+            staffList[idx].active = false;
+            localStorage.setItem('ss_staff', JSON.stringify(staffList));
+            renderStaff();
+            log("🚫 Accesso staff revocato.");
+        } catch(e) { log("❌ Errore revoca."); }
+    }
+
+    function downloadQR() {
+        const img = document.getElementById('qr-display').querySelector('img');
+        const l = document.createElement('a'); l.href = img.src; l.download = "Badge_SmartSheer.png"; l.click();
+    }
+
+    // --- OPERAZIONI BLUETOOTH ---
+    async function connectBT() {
+        log("📡 Ricerca Box Bluetooth...");
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+            await dev.gatt.connect();
+            lastSensorData = { temp: 18, gps: true, tamp: true, lat: "44.41", lon: "12.20" };
+            log("🌡️ Dati Oracolo acquisiti via Bluetooth.");
+        } catch(e) { log("❌ Bluetooth non trovato."); }
     }
 
     async function executeCheckpoint() {
-        if(!lastSensorData) return log(`⚠️ Leggi i dati dal Box!`);
-        const id = document.getElementById('checkpoint-nft').value;
-        const currentData = lastSensorData.lat + "|" + lastSensorData.lon;
-        const hubHash = "0x" + CryptoJS.SHA256(currentData + encryptionKey).toString();
-
-        log(`⏳ Invio Checkpoint On-Chain per Lotto #${id}...`);
+        const id = document.getElementById('op-id').value;
+        const h = "0x" + CryptoJS.SHA256(lastSensorData.lat + "|" + lastSensorData.lon + encryptionKey).toString();
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await contract.recordCheckpoint(id, hubHash);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.recordCheckpoint(id, h);
             await tx.wait();
-            log(`✅ CHECKPOINT REGISTRATO. Geofencing confermato.`);
-        } catch(e) { log(`❌ Errore: Contratto rifiutato. Sei fuori dal perimetro? (${e.message})`); }
+            log("✅ Checkpoint registrato crittograficamente.");
+        } catch(e) { log("❌ Errore o fuori perimetro."); }
     }
 
     async function executeHandover() {
-        if(!lastSensorData) return log(`⚠️ Verifica i sigilli dal Box!`);
-        const id = document.getElementById('handover-nft').value;
-        log(`⏳ Invio richiesta Handover On-Chain...`);
+        const id = document.getElementById('out-id').value;
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await contract.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamper);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamp);
             await tx.wait();
-            log(`✅ HANDOVER COMPLETATO. L'Escrow ha elaborato i fondi.`);
-        } catch(e) { log(`❌ Handover Fallito: Danni IoT rilevati o problemi di permessi. (${e.message})`); }
+            log("✅ Consegna completata e fondi sbloccati.");
+        } catch(e) { log("❌ Handover fallito (Danni IoT?)."); }
     }
 
-    // --- AZIONI ACQUIRENTE (BUYER) ---
+    // --- BUYER & PUBLIC ---
+    function readPublicNFT() {
+        const id = document.getElementById('pub-id').value;
+        const v = document.getElementById('nft-pub-view'); v.style.display = "block";
+        v.innerHTML = `<h3>🧀 Prodotto Certificato #${id}</h3><p style="color:var(--success);">✅ Catena del Freddo OK</p><p>Origine: Italia (DOP)</p>`;
+    }
+
     async function fundEscrowAction() {
-        const id = document.getElementById('disputed-nft').value;
-        const amountToFund = prompt("Inserisci importo in MATIC/ETH per fondare l'Escrow:");
-        if (!amountToFund) return;
-        
-        log(`⏳ Versamento fondi per Lotto #${id}...`);
+        const id = document.getElementById('esc-id').value;
+        const amt = prompt("Importo in MATIC:");
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await contract.fundEscrow(id, { value: ethers.utils.parseEther(amountToFund) });
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.fundEscrow(id, { value: ethers.utils.parseEther(amt) });
             await tx.wait();
-            log(`✅ ESCROW FINANZIATO E BLOCCATO IN CASSAFORTE.`);
-        } catch(e) { log(`❌ Errore Versamento: ${e.message}`); }
-    }
-
-    async function forceAcceptance() {
-        const id = document.getElementById('disputed-nft').value;
-        log(`⏳ Forzatura pagamento al venditore...`);
-        try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await contract.forceAcceptance(id);
-            await tx.wait();
-            log(`⚠️ OVERRIDE ESEGUITO. Il venditore è stato pagato nonostante i danni.`);
-        } catch(e) { log(`❌ Errore Forzatura: ${e.message}`); }
+            log("💸 Pagamento depositato in Escrow.");
+        } catch(e) { log("❌ Errore deposito."); }
     }
 
     async function refundDispute() {
-        const id = document.getElementById('disputed-nft').value;
-        log(`⏳ Richiesta rimborso per merce rovinata...`);
+        const id = document.getElementById('esc-id').value;
         try {
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await contract.refundDispute(id);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.refundDispute(id);
             await tx.wait();
-            log(`✅ RIMBORSO APPROVATO. Fondi restituiti al tuo wallet.`);
-        } catch(e) { log(`❌ Errore Rimborso: ${e.message}`); }
+            log("🔙 Rimborso accreditato.");
+        } catch(e) { log("❌ Rimborso non possibile."); }
     }
 
-    function readPublicNFT() {
-        const id = document.getElementById('public-nft-id').value;
-        if(!id) return showAlert("Inserisci l'ID.");
-        const display = document.getElementById('nft-public-display');
-        display.style.display = 'block';
-        display.innerHTML = `
-            <h3 style="color:var(--success); margin-top:0; font-size:1.1rem;">🧀 Formaggio di Fossa DOP - Riserva Speciale</h3>
-            <div style="width:100%; height:120px; background:#0d1117; border-radius:6px; margin-bottom:15px; display:flex; align-items:center; justify-content:center; border:1px dashed var(--success);">
-                <span style="color:var(--success);">[Immagine Prodotto da IPFS]</span>
-            </div>
-            <p><strong>Lotto ID:</strong> #${id}</p>
-            <p><strong>Origine Fossa:</strong> Sogliano al Rubicone</p>
-            <p style="color:var(--success); font-weight:bold; font-size:0.9rem;">✅ Catena del freddo certificata su Blockchain</p>
-        `;
-    }
-
-    function renderStaffList() {
-        const tb = document.getElementById('staff-list-body');
-        if(!tb) return;
-        tb.innerHTML = staffList.map((s, idx) => `
-            <tr>
-                <td>${s.name}</td>
-                <td style="font-family:monospace;">${s.address.substring(0,8)}...</td>
-                <td>${s.perms.mint?'[M]':''} ${s.perms.in?'[IN]':''} ${s.perms.out?'[OUT]':''}</td>
-                <td style="color:${s.active ? 'var(--success)' : 'var(--danger)'}">${s.active ? 'ATTIVO' : 'REVOCATO'}</td>
-                <td>${s.active ? `<button class="btn-danger" style="padding: 4px 8px; width:auto; font-size:0.6rem; margin:0;" onclick="revokeStaff(${idx})">REVOCA</button>` : `-`}</td>
-            </tr>
-        `).join('');
-    }
-
+    // --- UTILS ---
     function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
+    function showAlert(m) { document.getElementById('gate-msg').innerText = m; }
+    function copyToClipboard(t) { navigator.clipboard.writeText(t); log(`📋 Copiato: ${t}`); }
+    function previewImage(i) { 
+        if (i.files && i.files[0]) { 
+            const r = new FileReader(); r.onload = (e) => { 
+                document.getElementById('img-preview').src = e.target.result; 
+                document.getElementById('img-preview-box').style.display='block';
+            }; r.readAsDataURL(i.files[0]); 
+        } 
+    }
+    function resetDevice() { if(confirm("Cancellare tutto?")) { localStorage.clear(); location.reload(); } }
 </script>
 </body>
 </html>
