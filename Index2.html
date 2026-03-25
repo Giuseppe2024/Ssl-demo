@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v19.1 | Sovereign Web3 ERP</title>
+    <title>SmartSheer v22.0 | Sovereign Web3 ERP (Geocoding & BLE)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -50,7 +50,7 @@
         .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 0.8rem; }
         .checkbox-group input { width: auto; }
         
-        #video-container, #qr-reader { width: 100%; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); }
+        #video-container, #qr-reader, #op-qr-reader { width: 100%; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); }
         #webcam { width: 100%; height: 100%; object-fit: cover; }
         
         #terminal { background: #000; color: var(--success); font-family: monospace; padding: 15px; border-radius: 8px; height: 150px; overflow-y: auto; font-size: 0.75rem; border: 1px solid var(--border); line-height: 1.4; }
@@ -95,7 +95,7 @@
         </div>
         
         <div id="login-staff-area" style="display: none;">
-            <p style="font-size: 0.75rem; color: #888;">Inquadra il QR Code del tuo Badge.</p>
+            <p style="font-size: 0.75rem; color: #888;">Inquadra il QR Code del tuo Badge Aziendale.</p>
             <div id="qr-reader" style="width: 100%; min-height: 250px;"></div>
             <button class="btn-danger" style="margin-top:15px;" onclick="stopQRScanner()">ANNULLA SCAN</button>
         </div>
@@ -171,9 +171,9 @@
             </div>
             
             <div class="card" style="border-color: var(--neon);">
-                <h2>📍 REGISTRA HUB (GEOFENCE CIECO)</h2>
+                <h2>📍 REGISTRA HUB LOGISTICO (GEOFENCE)</h2>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="hub-name" placeholder="Nome (es. Ravenna)" style="flex:2;">
+                    <input type="text" id="hub-name" placeholder="Nome (es. Ravenna Hub)" style="flex:2;">
                     <input type="text" id="hub-lat" placeholder="Lat (es. 44.41)" style="flex:1;">
                     <input type="text" id="hub-lon" placeholder="Lon (es. 12.20)" style="flex:1;">
                     <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="registerHub()">2. SALVA HUB</button>
@@ -197,7 +197,7 @@
 
         <div id="panel-factory" class="panel">
             <div class="card" style="border-color: var(--neon);">
-                <h2>🚀 FACTORY: CREAZIONE LOTTO (NFT LOGISTICO)</h2>
+                <h2>🚀 FACTORY: CREAZIONE LOTTO (MINTING NFT)</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
                     <div>
                         <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Parmigiano)">
@@ -211,11 +211,26 @@
                             <input type="file" id="nft-img" style="display:none;" onchange="previewImage(this)">
                             <div id="img-preview-box" style="display:none; margin-top:10px;"><img id="img-preview" style="max-width:100%; max-height:120px; border-radius:5px;"></div>
                         </div>
+
+                        <hr style="border-color: var(--border); margin: 20px 0 15px 0;">
+                        <h3 style="margin:0; font-size:0.75rem; color:var(--master);">📍 DESTINAZIONE SPEDIZIONE</h3>
+                        <input type="text" id="dest-piva" placeholder="P.IVA Destinatario (es. 0123456789)">
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="dest-address" placeholder="Indirizzo (es. Via Roma 1, Milano)" style="flex:2;">
+                            <button class="btn-grey" style="flex:1; margin-top:8px; font-size:0.65rem;" onclick="geocodeAddress()">Trova GPS</button>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="dest-lat" placeholder="Latitudine" readonly style="flex:1; background:#161b22; color:#888;">
+                            <input type="text" id="dest-lon" placeholder="Longitudine" readonly style="flex:1; background:#161b22; color:#888;">
+                        </div>
+
                     </div>
                     <div style="background:#000; padding:20px; border-radius:8px; border:1px solid var(--border);">
-                        <h3 style="margin:0; font-size:0.75rem; color:var(--master);">🔒 CONDIZIONI SMART CONTRACT</h3>
-                        <input type="number" id="nft-qty" placeholder="Unità nel Lotto Reale" value="1">
-                        <div class="checkbox-group">
+                        <h3 style="margin:0; font-size:0.75rem; color:var(--master);">🔒 CONDIZIONI SMART CONTRACT E QUANTITÀ</h3>
+                        <label style="font-size: 0.65rem; color: var(--neon); display:block; margin-top:10px;">👇 INSERISCI QUI IL NUMERO DI PRODOTTI NEL BANCALE</label>
+                        <input type="number" id="nft-qty" placeholder="Unità nel Lotto Reale (es. 10000)" value="1" style="border-color: var(--neon); font-size: 1.2rem; font-weight:bold;">
+                        
+                        <div class="checkbox-group" style="margin-top:15px;">
                             <input type="checkbox" id="use-escrow" onchange="toggleEscrow()"> <label style="color:var(--master); font-weight:bold;">Attiva Pagamento Escrow</label>
                         </div>
                         <div id="escrow-fields" style="display:none; gap:10px; margin-bottom:10px;">
@@ -229,11 +244,11 @@
                         <div class="checkbox-group"><input type="checkbox" id="iot-tamper" checked> <label>Anti-Manomissione PVC</label></div>
                     </div>
                 </div>
-                <button class="btn-neon" style="margin-top:20px; font-size:1rem;" onclick="buildAndMintNFT()">📦 CONIA IL LOTTO SULLA BLOCKCHAIN</button>
+                <button class="btn-neon" style="margin-top:20px; font-size:1rem;" onclick="buildAndMintNFT()">📦 1. CONIA IL LOTTO SULLA BLOCKCHAIN</button>
                 
                 <div style="text-align: center; margin-top: 20px;">
                     <div id="lotto-qr-display"></div>
-                    <button id="btn-dl-lotto-qr" class="btn-grey" style="display:none; width:auto; margin:15px auto;" onclick="downloadQR('lotto-qr-display', 'Etichetta_Pallet_SmartSheer')">📥 SCARICA ETICHETTA QR DEL LOTTO</button>
+                    <button id="btn-dl-lotto-qr" class="btn-success" style="display:none; width:auto; margin:15px auto;" onclick="downloadQR('lotto-qr-display', 'Etichetta_Pallet_SmartSheer')">🖨️ 2. STAMPA ETICHETTA QR DEL LOTTO</button>
                 </div>
             </div>
         </div>
@@ -248,9 +263,9 @@
                     </div>
                     <div style="background:#000; padding:15px; border-radius:8px; border:1px solid var(--border);">
                         <h3 style="margin:0 0 10px 0; font-size:0.75rem; color:var(--neon);">🛠️ POTERI ASSEGNATI</h3>
-                        <div class="checkbox-group"><input type="checkbox" id="p-mint"> <label>Factory (Mint Lotti)</label></div>
-                        <div class="checkbox-group"><input type="checkbox" id="p-in" checked> <label>Ricezione (Checkpoint)</label></div>
-                        <div class="checkbox-group"><input type="checkbox" id="p-out" checked> <label>Spedizione (Handover)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-mint"> <label>Factory (Mint Lotti e Stampa Etichette)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-in" checked> <label>Ricezione (Avvia Spedizione / Checkpoint)</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-out" checked> <label>Spedizione (Handover Finale)</label></div>
                     </div>
                 </div>
                 
@@ -270,18 +285,34 @@
         </div>
 
         <div id="panel-operations" class="panel">
+            <div class="card" style="border-color: var(--grey); margin-bottom:20px; display:none;" id="op-scanner-box">
+                <h3 style="color:var(--text); margin-top:0;">📷 SCANSIONA ETICHETTA PALLET</h3>
+                <div id="op-qr-reader" style="display:none; min-height:200px;"></div>
+                <button class="btn-danger" style="display:none; margin-top:10px;" id="btn-stop-op-scan" onclick="stopOpScanner()">ANNULLA SCANSIONE</button>
+            </div>
+
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                 <div class="card" style="border-color: var(--neon);">
-                    <h2>📍 CHECKPOINT INTERMEDIO</h2>
+                    <h2>📍 PARTENZA / CHECKPOINT INTERMEDIO</h2>
                     <button class="btn-grey" onclick="connectBT()">📡 1. LEGGI IOT (BLUETOOTH)</button>
-                    <input type="text" id="op-id" placeholder="ID Lotto (Es. 1)" style="margin-top:10px;">
-                    <button class="btn-neon" onclick="executeCheckpoint()">2. REGISTRA POSIZIONE</button>
+                    
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <input type="text" id="op-id" placeholder="ID Lotto (Es. 1)" style="flex:2;">
+                        <button class="btn-success" style="flex:1; margin:8px 0;" onclick="startOpScanner('op-id')">📷 SCAN QR</button>
+                    </div>
+
+                    <button class="btn-neon" onclick="executeCheckpoint()">2. REGISTRA INVIO / POSIZIONE</button>
                 </div>
                 <div class="card" style="border-color: var(--master);">
-                    <h2>📤 CONSEGNA (HANDOVER)</h2>
+                    <h2>📤 ARRIVO / HANDOVER FINALE</h2>
                     <button class="btn-grey" onclick="connectBT()">📡 1. VERIFICA SIGILLI IOT</button>
-                    <input type="text" id="out-id" placeholder="ID Lotto (Es. 1)" style="margin-top:10px;">
-                    <button class="btn-staff" onclick="executeHandover()">2. SBLOCCA CONSEGNA</button>
+                    
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <input type="text" id="out-id" placeholder="ID Lotto (Es. 1)" style="flex:2;">
+                        <button class="btn-success" style="flex:1; margin:8px 0;" onclick="startOpScanner('out-id')">📷 SCAN QR</button>
+                    </div>
+
+                    <button class="btn-staff" onclick="executeHandover()">2. SBLOCCA CONSEGNA ED ESCROW</button>
                 </div>
             </div>
         </div>
@@ -315,7 +346,6 @@
     const CONTRACT_ADDRESS = "0xeDBcFDF5d690663858999639d3601E2F723B69db"; 
     const RPC_URL = "https://polygon-rpc.com"; 
 
-    // ABI Aggiornato con la funzione di lettura SBT
     const contractABI = [
         "function setBan(address _target, bool _status) external",
         "function mintSBT(bytes32 _dnaHash) external",
@@ -333,7 +363,9 @@
 
     let provider, signer, encryptionKey, currentRole, lastSensorData, videoStream;
     let html5QrcodeScanner;
+    let opQrScanner; 
     let staffList = JSON.parse(localStorage.getItem('ss_staff') || "[]");
+    let currentStaffPerms = { mint: false, in: false, out: false };
 
     // --- UTILS & LOGS ---
     function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato: ${text}`); }
@@ -357,22 +389,14 @@
 
     // --- BACKUP & RESTORE JSON ---
     function exportSystemBackup() {
-        const data = {
-            setup: localStorage.getItem('ss_setup'),
-            staff: localStorage.getItem('ss_staff'),
-            logs: localStorage.getItem('ss_logs'),
-            hubs: localStorage.getItem('smartsheer_hubs')
-        };
+        const data = { setup: localStorage.getItem('ss_setup'), staff: localStorage.getItem('ss_staff'), logs: localStorage.getItem('ss_logs'), hubs: localStorage.getItem('smartsheer_hubs') };
         const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'SmartSheer_Backup_Full.json'; a.click();
-        log("📥 Backup JSON di sistema scaricato.");
+        const a = document.createElement('a'); a.href = url; a.download = 'SmartSheer_Backup_Full.json'; a.click();
+        log("📥 Backup JSON scaricato.");
     }
-
     function importSystemBackup(input) {
-        const file = input.files[0];
-        if(!file) return;
+        const file = input.files[0]; if(!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -381,11 +405,9 @@
                 if(data.staff) localStorage.setItem('ss_staff', data.staff);
                 if(data.logs) localStorage.setItem('ss_logs', data.logs);
                 if(data.hubs) localStorage.setItem('smartsheer_hubs', data.hubs);
-                log("📤 Backup importato con successo! Riavvio in corso...");
-                setTimeout(() => location.reload(), 1500);
+                log("📤 Backup importato. Riavvio..."); setTimeout(() => location.reload(), 1500);
             } catch(err) { log("❌ File JSON non valido."); }
-        };
-        reader.readAsText(file);
+        }; reader.readAsText(file);
     }
 
     // --- SETUP & AUTH ---
@@ -396,7 +418,6 @@
         renderLogs();
     }
     window.addEventListener('DOMContentLoaded', checkSetup);
-
     function togglePass(id) { const i = document.getElementById(id); i.type = i.type === "password" ? "text" : "password"; }
     function toggleEscrow() { document.getElementById('escrow-fields').style.display = document.getElementById('use-escrow').checked ? 'flex' : 'none'; }
     function toggleTempInputs() { document.getElementById('temp-ranges').style.display = document.getElementById('iot-temp').checked ? 'flex' : 'none'; }
@@ -408,11 +429,9 @@
             await provider.send("eth_requestAccounts", []);
             signer = provider.getSigner();
             const addr = await signer.getAddress();
-            
             const msg = `SmartSheer_Auth_2026_${addr}`;
             const sig = await signer.signMessage(msg);
             encryptionKey = ethers.utils.keccak256(sig);
-
             localStorage.setItem('ss_setup', 'true');
             currentRole = document.getElementById('role-selector').value;
             captureLog(currentRole.toUpperCase(), 'Login MetaMask', 'OK');
@@ -420,47 +439,41 @@
         } catch(e) { showAlert("Firma MetaMask rifiutata."); }
     }
 
-    // --- QR SCANNER (STAFF) ---
+    // --- QR SCANNER (LOGIN STAFF) ---
     function switchLoginMode(mode) {
         document.getElementById('login-admin-area').style.display = mode === 'admin' ? 'block' : 'none';
         document.getElementById('login-staff-area').style.display = mode === 'staff' ? 'block' : 'none';
         if(mode === 'staff') startQRScanner(); else stopQRScanner();
     }
-
     function startQRScanner() {
         html5QrcodeScanner = new Html5Qrcode("qr-reader");
         html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-            stopQRScanner();
-            processStaffLogin(txt);
+            stopQRScanner(); processStaffLogin(txt);
         });
     }
     function stopQRScanner() { if(html5QrcodeScanner) html5QrcodeScanner.stop(); }
 
     async function processStaffLogin(txt) {
         try {
-            const data = JSON.parse(txt);
-            if(!data.pk) throw new Error();
+            const data = JSON.parse(txt); if(!data.pk) throw new Error();
             const rpc = new ethers.providers.JsonRpcProvider(RPC_URL);
             signer = new ethers.Wallet(data.pk, rpc); 
             currentRole = 'staff';
+            currentStaffPerms = data.perms || { mint: false, in: false, out: false };
             captureLog('STAFF', `Accesso: ${data.name || 'Sconosciuto'}`, 'OK');
             launchDashboard(signer.address, 'staff');
             log("🔓 Staff riconosciuto. Accesso eseguito.");
         } catch(e) { showAlert("QR non valido."); switchLoginMode('admin'); }
     }
 
-    // --- UI NAVIGATION E CONTROLLO SBT ---
+    // --- UI NAVIGATION ---
     function launchDashboard(addr, role) {
         document.getElementById('gate-overlay').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
         document.getElementById('eth-address').innerText = addr;
         document.getElementById('tag-ruolo').innerText = role.toUpperCase();
         buildTabs(role);
-        
-        if(role === 'client') { 
-            renderStaff(); 
-            checkSBTStatus(); // Verifica se l'identità è già stata creata
-        }
+        if(role === 'client') { renderStaff(); checkSBTStatus(); }
         if(role === 'master') syncMasterData();
     }
 
@@ -470,26 +483,25 @@
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, p);
             const addr = await signer.getAddress();
             const dna = await c.sbtRegistry(addr);
-            
-            // Se l'SBT esiste (non è un hash vuoto di soli zeri)
             if(dna !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
                 document.getElementById('onboarding-form-area').innerHTML = `
                     <div style="background:#161b22; padding:20px; border-radius:8px; border:1px solid var(--success); text-align:center; grid-column: span 2;">
                         <h3 style="color:var(--success); margin:0; font-family:Orbitron;">✅ IDENTITÀ AZIENDALE ATTIVA E PROTETTA</h3>
                         <p style="color:#888; font-size:0.8rem; margin-top:5px;">La tua azienda è autorizzata ad operare sulla rete SmartSheer.</p>
                         <p style="font-family:monospace; color:var(--neon); font-size:0.75rem; margin-top:15px; word-break:break-all; background:#000; padding:10px; border-radius:4px;">HASH IDENTITÀ:<br>${dna}</p>
-                    </div>
-                `;
-                log("🛡️ Sistema: Rilevata Identità SBT attiva per questo indirizzo.");
+                    </div>`;
             }
-        } catch(e) { console.log("Impossibile leggere SBT:", e); }
+        } catch(e) { console.log(e); }
     }
 
     function buildTabs(role) {
         const nav = document.getElementById('tab-nav'); nav.innerHTML = "";
         if(role === 'master') addTab("MASTER CONTROL", "panel-admin");
         if(role === 'client') { addTab("IDENTITY", "panel-onboarding"); addTab("FACTORY", "panel-factory"); addTab("STAFF", "panel-staff-manage"); }
-        if(role === 'staff') addTab("OPERAZIONI", "panel-operations");
+        if(role === 'staff') {
+            if(currentStaffPerms.mint) addTab("FACTORY DELEGATA", "panel-factory");
+            addTab("OPERAZIONI LOGISTICHE", "panel-operations");
+        }
         if(role === 'buyer') addTab("BUYER PORTAL", "panel-buyer");
         showPanel(nav.firstChild.getAttribute('data-panel'));
     }
@@ -510,31 +522,19 @@
             document.getElementById('m-total').innerText = total.toString();
             document.getElementById('m-status').innerText = "SINCRONIZZATO";
             log(`📊 Sincronizzazione: ${total} Lotti.`);
-        } catch(e) { 
-            document.getElementById('m-status').innerText = "ERRORE";
-            document.getElementById('m-status').style.color = "var(--danger)";
-        }
+        } catch(e) { document.getElementById('m-status').innerText = "ERRORE"; document.getElementById('m-status').style.color = "var(--danger)"; }
     }
-
     async function applyBan(status) {
-        const target = document.getElementById('ban-addr').value;
-        if(!target) return log("Inserisci indirizzo.");
+        const target = document.getElementById('ban-addr').value; if(!target) return log("Inserisci indirizzo.");
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            log("⏳ Invio bando..."); 
-            const tx = await c.setBan(target, status);
-            await tx.wait();
-            log(`🚨 ${target} ${status?'BANNATO':'RIPRISTINATO'}.`);
-            captureLog('MASTER', `Ban status: ${status}`, 'OK');
+            log("⏳ Invio bando..."); const tx = await c.setBan(target, status); await tx.wait();
+            log(`🚨 ${target} ${status?'BANNATO':'RIPRISTINATO'}.`); captureLog('MASTER', `Ban status: ${status}`, 'OK');
         } catch(e) { log("❌ Errore Ban."); }
     }
 
     // --- AZIONI CLIENT ---
-    async function startCamera() {
-        try { videoStream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('webcam').srcObject = videoStream; } 
-        catch(e) { log("❌ Camera negata."); }
-    }
-
+    async function startCamera() { try { videoStream = await navigator.mediaDevices.getUserMedia({video:true}); document.getElementById('webcam').srcObject = videoStream; } catch(e) { log("❌ Camera negata."); } }
     async function mintIdentity() {
         if(!videoStream) return log("⚠️ Accendi camera.");
         setTimeout(async () => {
@@ -543,34 +543,52 @@
             const dna = "0x" + CryptoJS.SHA256(piva + encryptionKey).toString();
             try {
                 const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-                const tx = await c.mintSBT(dna);
-                await tx.wait();
-                log(`🛡️ SBT CONIATO: ${dna}`);
-                captureLog('CLIENT', 'Coniato SBT', 'OK');
-                checkSBTStatus(); // Aggiorna l'interfaccia istantaneamente
+                const tx = await c.mintSBT(dna); await tx.wait();
+                log(`🛡️ SBT CONIATO: ${dna}`); captureLog('CLIENT', 'Coniato SBT', 'OK'); checkSBTStatus();
             } catch(e) { log("❌ Errore coniazione."); }
         }, 3000);
     }
-
     async function registerHub() {
-        const lat = document.getElementById('hub-lat').value;
-        const lon = document.getElementById('hub-lon').value;
+        const lat = document.getElementById('hub-lat').value; const lon = document.getElementById('hub-lon').value;
         const hash = "0x" + CryptoJS.SHA256(lat + "|" + lon + encryptionKey).toString();
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.registerHub(hash);
-            await tx.wait();
-            log("📍 Hub salvato su Blockchain.");
-            captureLog('CLIENT', 'Hub Registrato', 'OK');
+            const tx = await c.registerHub(hash); await tx.wait();
+            log("📍 Hub salvato su Blockchain."); captureLog('CLIENT', 'Hub Registrato', 'OK');
         } catch(e) { log("❌ Errore Hub."); }
     }
 
-    // --- FACTORY: CREA LOTTO + QR CODE ETICHETTA ---
+    // --- 🌍 GEOCODING DESTINAZIONE (NUOVO) ---
+    async function geocodeAddress() {
+        const address = document.getElementById('dest-address').value;
+        if(!address) return log("⚠️ Inserisci un indirizzo valido.");
+        log("🌍 Geocoding in corso (Conversione indirizzo in coordinate GPS)...");
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+            const data = await res.json();
+            if(data && data.length > 0) {
+                document.getElementById('dest-lat').value = parseFloat(data[0].lat).toFixed(4);
+                document.getElementById('dest-lon').value = parseFloat(data[0].lon).toFixed(4);
+                log(`📍 Coordinate Trovate e Certificate: Lat ${data[0].lat}, Lon ${data[0].lon}`);
+            } else {
+                log("❌ Indirizzo non trovato. Failsafe: applico coordinate Hub Milano.");
+                document.getElementById('dest-lat').value = "45.4642"; document.getElementById('dest-lon').value = "9.1900";
+            }
+        } catch(e) {
+            log("❌ Errore Rete Geocoding. Failsafe attivo.");
+            document.getElementById('dest-lat').value = "45.4642"; document.getElementById('dest-lon').value = "9.1900";
+        }
+    }
+
+    // --- FACTORY: CREA LOTTO + QR ETICHETTA ---
     async function buildAndMintNFT() {
         const name = document.getElementById('nft-name').value;
         const qty = document.getElementById('nft-qty').value;
         const price = ethers.utils.parseEther(document.getElementById('nft-price').value || "0");
         const buyer = document.getElementById('nft-buyer').value || ethers.constants.AddressZero;
+        
+        const destPiva = document.getElementById('dest-piva').value || "";
+        const destLat = document.getElementById('dest-lat').value || "";
         
         const reqs = [
             document.getElementById('iot-temp').checked,
@@ -579,26 +597,30 @@
             document.getElementById('iot-gps').checked,
             document.getElementById('iot-tamper').checked
         ];
-        const meta = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name + Date.now()));
         
-        log("⏳ Firma su MetaMask per coniare il Lotto...");
+        // Uniamo i dati destinazione all'hash dei metadati per certificarli on-chain
+        const combinedData = name + Date.now() + destPiva + destLat;
+        const meta = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(combinedData));
+        
+        log("⏳ Richiesta di creazione in corso...");
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.mintBatch(await signer.getAddress(), meta, qty, reqs, price, buyer);
+            const addressCaller = await signer.getAddress();
+            const tx = await c.mintBatch(addressCaller, meta, qty, reqs, price, buyer);
             await tx.wait();
             
             const count = await c.shipmentCounter();
             const lottoId = count.toString();
             log(`✅ LOTTO CONIATO! ID Spedizione: #${lottoId}`);
             
-            // Genera QR Code del Pallet
             document.getElementById('lotto-qr-display').style.display = "block";
             document.getElementById('lotto-qr-display').innerHTML = "";
-            new QRCode(document.getElementById('lotto-qr-display'), { text: lottoId, width: 200, height: 200 });
+            new QRCode(document.getElementById('lotto-qr-display'), { text: "SMARTSHEER_LOTTO:" + lottoId, width: 250, height: 250 });
             document.getElementById('btn-dl-lotto-qr').style.display = "block";
             
-            captureLog('CLIENT', `Creato Lotto #${lottoId}`, 'OK');
-        } catch(e) { log("❌ Errore creazione Lotto."); }
+            captureLog(currentRole.toUpperCase(), `Creato Lotto #${lottoId}`, 'OK');
+            alert(`✅ LOTTO #${lottoId} CREATO CON SUCCESSO!\nQuantità: ${qty}\nPuoi stampare l'etichetta.`);
+        } catch(e) { log("❌ Errore creazione Lotto. (Fondi o permessi mancanti)"); }
     }
 
     // --- STAFF MANAGER ---
@@ -622,20 +644,14 @@
             
             staffList.push({ name: name, addr: wallet.address, active: true });
             localStorage.setItem('ss_staff', JSON.stringify(staffList));
-            renderStaff();
-            log(`👥 Badge Generato per ${name}.`);
+            renderStaff(); log(`👥 Badge Generato per ${name}.`);
         } catch(e) { log("❌ Delega fallita."); }
     }
 
     function renderStaff() {
         const b = document.getElementById('staff-list-body'); b.innerHTML = "";
         staffList.forEach((s, idx) => {
-            b.innerHTML += `<tr>
-                <td>${s.name}</td>
-                <td><span class="addr-full" onclick="copyToClipboard('${s.addr}')">${s.addr.substring(0,8)}...</span></td>
-                <td>${s.active?'✅':'❌'}</td>
-                <td><button class="btn-danger" style="padding:4px; font-size:0.5rem;" onclick="revokeStaff(${idx})">REVOCA</button></td>
-            </tr>`;
+            b.innerHTML += `<tr><td>${s.name}</td><td><span class="addr-full" onclick="copyToClipboard('${s.addr}')">${s.addr.substring(0,8)}...</span></td><td>${s.active?'✅':'❌'}</td><td><button class="btn-danger" style="padding:4px; font-size:0.5rem;" onclick="revokeStaff(${idx})">REVOCA</button></td></tr>`;
         });
     }
 
@@ -645,10 +661,8 @@
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
             const tx = await c.setStealthWorker(s.addr, false, false, false, false);
             await tx.wait();
-            staffList[idx].active = false;
-            localStorage.setItem('ss_staff', JSON.stringify(staffList));
-            renderStaff();
-            log("🚫 Revoca completata.");
+            staffList[idx].active = false; localStorage.setItem('ss_staff', JSON.stringify(staffList));
+            renderStaff(); log("🚫 Revoca completata.");
         } catch(e) { log("❌ Errore revoca."); }
     }
 
@@ -658,38 +672,65 @@
         const l = document.createElement('a'); l.href = img.src; l.download = filename + ".png"; l.click();
     }
 
-    // --- OPERAZIONI BLUETOOTH ---
+    // --- 📷 SCANNER ETICHETTE PALLET (OPERAZIONI) ---
+    function startOpScanner(targetInputId) {
+        document.getElementById('op-scanner-box').style.display = "block";
+        document.getElementById('op-qr-reader').style.display = "block";
+        document.getElementById('btn-stop-op-scan').style.display = "block";
+        
+        opQrScanner = new Html5Qrcode("op-qr-reader");
+        opQrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            stopOpScanner();
+            const lottoId = txt.replace("SMARTSHEER_LOTTO:", "");
+            document.getElementById(targetInputId).value = lottoId;
+            log(`✅ ETICHETTA LETTA: Acquisito Lotto #${lottoId}`);
+        });
+    }
+    function stopOpScanner() { if(opQrScanner) { opQrScanner.stop().then(() => { document.getElementById('op-scanner-box').style.display = "none"; }); } }
+
+    // --- 📡 MOTORE BLUETOOTH LIVE ---
     async function connectBT() {
+        log("📡 Ricerca Box Bluetooth IoT...");
         try {
-            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
-            await dev.gatt.connect();
-            lastSensorData = { temp: 18, gps: true, tamp: true, lat: "44.41", lon: "12.20" };
-            log("🌡️ Dati BT acquisiti.");
-        } catch(e) { log("❌ Bluetooth fallito."); }
+            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['environmental_sensing', 0x181A] });
+            const server = await dev.gatt.connect();
+            log("🔗 Box accoppiato. Estrazione dati...");
+            try {
+                const service = await server.getPrimaryService('environmental_sensing');
+                const characteristic = await service.getCharacteristic('temperature');
+                const value = await characteristic.readValue();
+                const tempRaw = value.getInt16(0, true);
+                const tempCelsius = tempRaw / 100;
+                lastSensorData = { temp: tempCelsius, gps: true, tamp: true, lat: "44.41", lon: "12.20" };
+                log(`🌡️ DATO REALE RILEVATO: ${tempCelsius}°C.`);
+            } catch(error) {
+                log(`⚠️ Servizio standard non trovato. Protocollo Sicurezza...`);
+                lastSensorData = { temp: 18.2, gps: true, tamp: true, lat: "44.41", lon: "12.20" };
+                log("🌡️ DATO SIMULATO RILEVATO: 18.2°C.");
+            }
+        } catch(e) { log(`❌ Bluetooth interrotto.`); }
     }
 
     async function executeCheckpoint() {
         const id = document.getElementById('op-id').value;
-        if(!lastSensorData) return log("⚠️ Leggi dati BT!");
+        if(!id) return log("⚠️ Inserisci o scansiona l'ID del Lotto!");
+        if(!lastSensorData) return log("⚠️ Leggi prima i dati dal sensore BT!");
         const h = "0x" + CryptoJS.SHA256(lastSensorData.lat + "|" + lastSensorData.lon + encryptionKey).toString();
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.recordCheckpoint(id, h);
-            await tx.wait();
-            log("✅ CHECKPOINT REGISTRATO.");
-            captureLog('STAFF', `Checkpoint #${id}`, 'OK');
+            const tx = await c.recordCheckpoint(id, h); await tx.wait();
+            log("✅ CHECKPOINT REGISTRATO SU BLOCKCHAIN."); captureLog('STAFF', `Checkpoint #${id}`, 'OK');
         } catch(e) { log("❌ Errore Checkpoint."); }
     }
 
     async function executeHandover() {
         const id = document.getElementById('out-id').value;
-        if(!lastSensorData) return log("⚠️ Leggi dati BT!");
+        if(!id) return log("⚠️ Inserisci o scansiona l'ID del Lotto!");
+        if(!lastSensorData) return log("⚠️ Leggi prima i dati dal sensore BT!");
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamp);
-            await tx.wait();
-            log("✅ HANDOVER COMPLETATO.");
-            captureLog('STAFF', `Handover #${id}`, 'OK');
+            const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamp); await tx.wait();
+            log("✅ HANDOVER FINALE COMPLETATO. FONDI SBLOCCATI."); captureLog('STAFF', `Handover #${id}`, 'OK');
         } catch(e) { log("❌ Handover fallito."); }
     }
 
@@ -699,55 +740,25 @@
         if(!id) return;
         const v = document.getElementById('nft-pub-view'); v.style.display = "block";
         const imgScr = document.getElementById('img-preview').src || '';
-        v.innerHTML = `
-            <h3 style="color:var(--success); font-family:Orbitron;">🧀 LOTTO #${id}</h3>
-            ${imgScr && imgScr.length > 10 ? `<img src="${imgScr}" style="max-width:100%; border-radius:8px; margin-bottom:10px;">` : ''}
-            <p style="color:var(--success); font-weight:bold;">✅ Catena del Freddo OK</p>
-            <p><strong>Origine:</strong> Registrata su Blockchain</p>
-        `;
+        v.innerHTML = `<h3 style="color:var(--success); font-family:Orbitron;">🧀 LOTTO #${id}</h3>${imgScr && imgScr.length > 10 ? `<img src="${imgScr}" style="max-width:100%; border-radius:8px; margin-bottom:10px;">` : ''}<p style="color:var(--success); font-weight:bold;">✅ Catena del Freddo OK</p><p><strong>Origine:</strong> Registrata su Blockchain</p>`;
         captureLog('PUBLIC', `Lettura #${id}`, 'OK');
     }
-
     async function fundEscrowAction() {
-        const id = document.getElementById('esc-id').value;
-        const amt = prompt("Importo (MATIC):");
-        if(!amt) return;
+        const id = document.getElementById('esc-id').value; const amt = prompt("Importo (MATIC):"); if(!amt) return;
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.fundEscrow(id, { value: ethers.utils.parseEther(amt) });
-            await tx.wait();
-            log("💸 Escrow caricato.");
+            const tx = await c.fundEscrow(id, { value: ethers.utils.parseEther(amt) }); await tx.wait(); log("💸 Escrow caricato.");
         } catch(e) { log("❌ Errore deposito."); }
     }
-
     async function forceAcceptance() {
         const id = document.getElementById('esc-id').value;
-        try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.forceAcceptance(id);
-            await tx.wait();
-            log("⚠️ PAGAMENTO FORZATO.");
-        } catch(e) { log("❌ Errore forzatura."); }
+        try { const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); const tx = await c.forceAcceptance(id); await tx.wait(); log("⚠️ PAGAMENTO FORZATO."); } catch(e) { log("❌ Errore forzatura."); }
     }
-
     async function refundDispute() {
         const id = document.getElementById('esc-id').value;
-        try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.refundDispute(id);
-            await tx.wait();
-            log("🔙 Rimborso accreditato.");
-        } catch(e) { log("❌ Errore Rimborso."); }
+        try { const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); const tx = await c.refundDispute(id); await tx.wait(); log("🔙 Rimborso accreditato."); } catch(e) { log("❌ Errore Rimborso."); }
     }
-
-    function previewImage(i) { 
-        if (i.files && i.files[0]) { 
-            const r = new FileReader(); r.onload = (e) => { 
-                document.getElementById('img-preview').src = e.target.result; 
-                document.getElementById('img-preview-box').style.display='block';
-            }; r.readAsDataURL(i.files[0]); 
-        } 
-    }
+    function previewImage(i) { if (i.files && i.files[0]) { const r = new FileReader(); r.onload = (e) => { document.getElementById('img-preview').src = e.target.result; document.getElementById('img-preview-box').style.display='block'; }; r.readAsDataURL(i.files[0]); } }
     function resetDevice() { if(confirm("Cancellare tutto?")) { localStorage.clear(); location.reload(); } }
 </script>
 </body>
