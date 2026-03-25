@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSheer v19.0 | Sovereign Web3 ERP</title>
+    <title>SmartSheer v19.1 | Sovereign Web3 ERP</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -156,7 +156,7 @@
         <div id="panel-onboarding" class="panel">
             <div class="card">
                 <h2>🛡️ ONBOARDING SBT E GEOFENCING</h2>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                <div id="onboarding-form-area" style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
                     <div>
                         <label style="font-size:0.6rem; color:var(--neon);">DNA AZIENDALE (P.IVA)</label>
                         <input type="text" id="reg-piva" placeholder="Inserisci P.IVA">
@@ -182,7 +182,7 @@
 
             <div class="card" style="border-color: var(--master);">
                 <h2 style="color: var(--master);">💾 SYSTEM BACKUP & RIPRISTINO</h2>
-                <p style="font-size:0.75rem; color:#888;">Esporta l'intero database locale (Staff, Hub, Log, Password di Setup) per backup o importalo su un nuovo dispositivo.</p>
+                <p style="font-size:0.75rem; color:#888;">Esporta l'intero database locale per backup o importalo su un nuovo dispositivo.</p>
                 <div style="display:flex; gap:15px; align-items:center;">
                     <button class="btn-staff" style="width:auto; padding:10px 30px;" onclick="exportSystemBackup()">📥 SCARICA BACKUP JSON</button>
                     <div style="flex:1; border:1px dashed var(--border); padding:10px; border-radius:6px; text-align:center;">
@@ -315,9 +315,11 @@
     const CONTRACT_ADDRESS = "0xeDBcFDF5d690663858999639d3601E2F723B69db"; 
     const RPC_URL = "https://polygon-rpc.com"; 
 
+    // ABI Aggiornato con la funzione di lettura SBT
     const contractABI = [
         "function setBan(address _target, bool _status) external",
         "function mintSBT(bytes32 _dnaHash) external",
+        "function sbtRegistry(address) view returns (bytes32)", 
         "function registerHub(bytes32 _hubHash) external",
         "function setStealthWorker(address _ephemeralStaff, bool _mint, bool _in, bool _out, bool _active) external",
         "function shipmentCounter() public view returns (uint256)",
@@ -379,7 +381,7 @@
                 if(data.staff) localStorage.setItem('ss_staff', data.staff);
                 if(data.logs) localStorage.setItem('ss_logs', data.logs);
                 if(data.hubs) localStorage.setItem('smartsheer_hubs', data.hubs);
-                log("📤 Backup importato con successo! Riavvio...");
+                log("📤 Backup importato con successo! Riavvio in corso...");
                 setTimeout(() => location.reload(), 1500);
             } catch(err) { log("❌ File JSON non valido."); }
         };
@@ -447,15 +449,40 @@
         } catch(e) { showAlert("QR non valido."); switchLoginMode('admin'); }
     }
 
-    // --- UI NAVIGATION ---
+    // --- UI NAVIGATION E CONTROLLO SBT ---
     function launchDashboard(addr, role) {
         document.getElementById('gate-overlay').style.display = 'none';
         document.getElementById('main-app').style.display = 'flex';
         document.getElementById('eth-address').innerText = addr;
         document.getElementById('tag-ruolo').innerText = role.toUpperCase();
         buildTabs(role);
-        if(role === 'client') renderStaff();
+        
+        if(role === 'client') { 
+            renderStaff(); 
+            checkSBTStatus(); // Verifica se l'identità è già stata creata
+        }
         if(role === 'master') syncMasterData();
+    }
+
+    async function checkSBTStatus() {
+        try {
+            const p = new ethers.providers.JsonRpcProvider(RPC_URL);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, p);
+            const addr = await signer.getAddress();
+            const dna = await c.sbtRegistry(addr);
+            
+            // Se l'SBT esiste (non è un hash vuoto di soli zeri)
+            if(dna !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+                document.getElementById('onboarding-form-area').innerHTML = `
+                    <div style="background:#161b22; padding:20px; border-radius:8px; border:1px solid var(--success); text-align:center; grid-column: span 2;">
+                        <h3 style="color:var(--success); margin:0; font-family:Orbitron;">✅ IDENTITÀ AZIENDALE ATTIVA E PROTETTA</h3>
+                        <p style="color:#888; font-size:0.8rem; margin-top:5px;">La tua azienda è autorizzata ad operare sulla rete SmartSheer.</p>
+                        <p style="font-family:monospace; color:var(--neon); font-size:0.75rem; margin-top:15px; word-break:break-all; background:#000; padding:10px; border-radius:4px;">HASH IDENTITÀ:<br>${dna}</p>
+                    </div>
+                `;
+                log("🛡️ Sistema: Rilevata Identità SBT attiva per questo indirizzo.");
+            }
+        } catch(e) { console.log("Impossibile leggere SBT:", e); }
     }
 
     function buildTabs(role) {
@@ -520,6 +547,7 @@
                 await tx.wait();
                 log(`🛡️ SBT CONIATO: ${dna}`);
                 captureLog('CLIENT', 'Coniato SBT', 'OK');
+                checkSBTStatus(); // Aggiorna l'interfaccia istantaneamente
             } catch(e) { log("❌ Errore coniazione."); }
         }, 3000);
     }
@@ -566,7 +594,7 @@
             // Genera QR Code del Pallet
             document.getElementById('lotto-qr-display').style.display = "block";
             document.getElementById('lotto-qr-display').innerHTML = "";
-            new QRCode(document.getElementById('lotto-qr-display'), { text: "SMARTSHEER_LOTTO:" + lottoId, width: 200, height: 200 });
+            new QRCode(document.getElementById('lotto-qr-display'), { text: lottoId, width: 200, height: 200 });
             document.getElementById('btn-dl-lotto-qr').style.display = "block";
             
             captureLog('CLIENT', `Creato Lotto #${lottoId}`, 'OK');
