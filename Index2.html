@@ -158,11 +158,21 @@
             
             <div class="card" id="hub-registration-section" style="display:none; border-color: var(--neon);">
                 <h2>📍 REGISTRA HUB LOGISTICO (CRITTOGRAFATO)</h2>
-                <p style="font-size:0.75rem; color:#888;">Aggiungi i tuoi magazzini. Le coordinate verranno salvate nel tuo Vault segreto e inviate sulla Blockchain solo come Hash incomprensibile per la privacy.</p>
+                <p style="font-size:0.75rem; color:#888;">Inserisci l'indirizzo. Verrà convertito in GPS e crittografato. Il raggio di tolleranza permette la lettura in tutto il piazzale.</p>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="hub-name" placeholder="Nome (es. Ravenna Hub)" style="flex:2;">
-                    <input type="text" id="hub-lat" placeholder="Latitudine" style="flex:1;">
-                    <input type="text" id="hub-lon" placeholder="Longitudine" style="flex:1;">
+                    <input type="text" id="hub-name" placeholder="Nome (es. Hub Ravenna)" style="flex:1;">
+                    <input type="text" id="hub-address" placeholder="Indirizzo (es. Via Roma 1, Milano)" style="flex:2;">
+                    <button class="btn-grey" style="width:auto; padding:0 15px;" onclick="geocodeHub()">Trova GPS</button>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="text" id="hub-lat" placeholder="Latitudine" readonly style="flex:1; background:#161b22; color:#888;">
+                    <input type="text" id="hub-lon" placeholder="Longitudine" readonly style="flex:1; background:#161b22; color:#888;">
+                    <select id="hub-tolerance" style="flex:1.5;">
+                        <option value="3">Raggio ~100 Metri (Consigliato)</option>
+                        <option value="2">Raggio ~1 Chilometro (Largo)</option>
+                        <option value="4">Raggio ~10 Metri (Rischioso)</option>
+                    </select>
                     <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="registerHubBlind()">➕ AGGIUNGI HUB</button>
                 </div>
                 
@@ -319,7 +329,7 @@
     const CONTRACT_ADDRESS = "0xeDBcFDF5d690663858999639d3601E2F723B69db"; 
     const RPC_URL = "https://polygon-rpc.com"; 
 
-    // ABI essenziale
+    // ABI essenziale VECCHIO CONTRATTO
     const contractABI = [
         "function mintSBT(bytes32 _dnaHash) external",
         "function sbtRegistry(address) view returns (bytes32)", 
@@ -376,14 +386,22 @@
         if (!window.ethereum) return alert("MetaMask non trovato.");
         try {
             provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
+            await provider.send("eth_requestAccounts", []); // Controlla la connessione
             signer = provider.getSigner();
             const addr = await signer.getAddress();
+            
+            // Forziamo la firma crittografica per dimostrare l'identità
+            const msg = `SmartSheer_Accesso_Sicuro_${addr}`;
+            await signer.signMessage(msg); 
+
             currentRole = document.getElementById('role-selector').value;
             
             loadVault(addr);
             launchDashboard(addr, currentRole);
-        } catch(e) { alert("Firma MetaMask rifiutata."); }
+            log("✅ Login confermato tramite firma MetaMask.");
+        } catch(e) { 
+            alert("ACCESSO NEGATO: Firma MetaMask rifiutata."); 
+        }
     }
 
     function switchLoginMode(mode) {
@@ -499,25 +517,50 @@
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
             const tx = await c.mintSBT(dna); await tx.wait();
             log(`🛡️ SBT CONIATO: ${dna}`);
-            checkSBTStatus(); // Refresh UI
+            checkSBTStatus(); 
         } catch(e) { log("❌ Errore SBT."); }
+    }
+
+    // --- GESTIONE INDIRIZZI HUB (GEOFENCING CON TOLLERANZA) ---
+    async function geocodeHub() {
+        const address = document.getElementById('hub-address').value;
+        if(!address) return alert("Inserisci un indirizzo.");
+        log("🌍 Ricerca coordinate Hub in corso...");
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+            const data = await res.json();
+            if(data && data.length > 0) {
+                document.getElementById('hub-lat').value = parseFloat(data[0].lat).toFixed(5);
+                document.getElementById('hub-lon').value = parseFloat(data[0].lon).toFixed(5);
+                log(`📍 Coordinate Hub Trovate: ${data[0].lat}, ${data[0].lon}`);
+            } else { alert("Indirizzo non trovato."); }
+        } catch(e) { log("❌ Errore Rete Geocoding."); }
     }
 
     async function registerHubBlind() {
         const name = document.getElementById('hub-name').value;
-        const lat = document.getElementById('hub-lat').value; 
-        const lon = document.getElementById('hub-lon').value;
-        const blindString = lat + "|" + lon + "|" + vaultPass;
+        let lat = document.getElementById('hub-lat').value; 
+        let lon = document.getElementById('hub-lon').value;
+        const decimals = parseInt(document.getElementById('hub-tolerance').value);
+        
+        if(!lat || !lon) return alert("Devi prima premere 'Trova GPS'!");
+
+        // Taglio matematico dei decimali per creare la "Griglia di Tolleranza"
+        const latTruncated = parseFloat(lat).toFixed(decimals);
+        const lonTruncated = parseFloat(lon).toFixed(decimals);
+
+        const blindString = latTruncated + "|" + lonTruncated + "|" + vaultPass;
         const hash = "0x" + CryptoJS.SHA256(blindString).toString();
+        
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
             const tx = await c.registerHub(hash); await tx.wait();
             
-            myVaultData.hubs.push({ name: name, hash: hash, lat: lat, lon: lon });
+            myVaultData.hubs.push({ name: name, hash: hash, lat: lat, lon: lon, decimals: decimals });
             saveVault(await signer.getAddress());
-            log(`📍 Hub Cieco salvato: Hash ${hash}`);
+            log(`📍 Hub '${name}' salvato con raggio di tolleranza.`);
             renderHubs();
-        } catch(e) { log("❌ Errore Hub."); }
+        } catch(e) { log("❌ Errore salvataggio Hub."); }
     }
 
     async function geocodeAddress() {
@@ -557,6 +600,7 @@
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
             const addressCaller = await signer.getAddress();
+            // VECCHIO CONTRATTO: Richiede address _m come primo parametro
             const tx = await c.mintBatch(addressCaller, meta, qty, reqs, price, buyer);
             await tx.wait();
             
@@ -564,6 +608,7 @@
             const lottoId = count.toString();
             
             // Salva in chiaro solo nella cassaforte segreta
+            if (!myVaultData.shipments) myVaultData.shipments = [];
             myVaultData.shipments.push({ id: lottoId, name: name, dest: destAddress });
             saveVault(addressCaller);
 
@@ -601,9 +646,14 @@
         const b = document.getElementById('staff-list-body'); b.innerHTML = "";
         staffList.forEach((s, idx) => {
             let permsHtml = '';
-            if(s.perms.mint) permsHtml += '<span class="perm-badge" style="background:var(--neon);">FACTORY</span>';
-            if(s.perms.in) permsHtml += '<span class="perm-badge" style="background:var(--master);">IN</span>';
-            if(s.perms.out) permsHtml += '<span class="perm-badge" style="background:var(--success);">OUT</span>';
+            // Salvavita nel caso i vecchi salvataggi non abbiano s.perms
+            if(s.perms) {
+                if(s.perms.mint) permsHtml += '<span class="perm-badge" style="background:var(--neon);">FACTORY</span>';
+                if(s.perms.in) permsHtml += '<span class="perm-badge" style="background:var(--master);">IN</span>';
+                if(s.perms.out) permsHtml += '<span class="perm-badge" style="background:var(--success);">OUT</span>';
+            } else {
+                permsHtml = '<span class="perm-badge" style="background:grey;">VECCHIO ACCOUNT</span>';
+            }
 
             b.innerHTML += `<tr>
                 <td>${s.name}</td>
@@ -640,9 +690,10 @@
                 const s = await c.shipments(i);
                 if(s[1] === myAddr) { // Nel vecchio contratto il creator è all'indice 1
                     let prodName = "Sconosciuto"; let prodDest = "Sconosciuta";
-                    const found = myVaultData.shipments.find(x => x.id == i);
-                    if(found) { prodName = found.name; prodDest = found.dest; }
-                    
+                    if(myVaultData.shipments) {
+                        const found = myVaultData.shipments.find(x => x.id == i);
+                        if(found) { prodName = found.name; prodDest = found.dest; }
+                    }
                     b.innerHTML += `<tr><td>#${i}</td><td>${prodName}</td><td>${prodDest}</td><td style="color:var(--neon);">${statusMap[s[7]]}</td></tr>`;
                 }
             } catch(e){}
@@ -674,8 +725,10 @@
                 const s = await c.shipments(i);
                 if(s[1] === myAddr) {
                     let prodName = "Sconosciuto"; let prodDest = "Sconosciuta";
-                    const found = myVaultData.shipments.find(x => x.id == i);
-                    if(found) { prodName = found.name; prodDest = found.dest; }
+                    if(myVaultData.shipments) {
+                        const found = myVaultData.shipments.find(x => x.id == i);
+                        if(found) { prodName = found.name; prodDest = found.dest; }
+                    }
                     csvContent += `${i},"${prodName}","${prodDest}",${statusMap[s[7]]}\n`;
                 }
             } catch(e){}
@@ -729,12 +782,35 @@
         const id = document.getElementById('op-id').value;
         if(!id || !lastSensorData) return log("⚠️ Manca ID o Dati IoT!");
         
-        const blindString = lastSensorData.lat + "|" + lastSensorData.lon + "|" + vaultPass;
-        const currentHubHash = "0x" + CryptoJS.SHA256(blindString).toString();
+        let foundHubHash = null;
+        
+        if(!myVaultData.hubs || myVaultData.hubs.length === 0) {
+            return log("❌ GEOFENCE FALLITO: Nessun Hub registrato in questo Vault.");
+        }
+
+        // Il tablet controlla tutti i magazzini applicando la tolleranza
+        for (let hub of myVaultData.hubs) {
+            const currentLatRounded = parseFloat(lastSensorData.lat).toFixed(hub.decimals);
+            const currentLonRounded = parseFloat(lastSensorData.lon).toFixed(hub.decimals);
+            
+            const blindString = currentLatRounded + "|" + currentLonRounded + "|" + vaultPass;
+            const testHash = "0x" + CryptoJS.SHA256(blindString).toString();
+            
+            if (testHash === hub.hash) {
+                foundHubHash = hub.hash;
+                log(`📍 Geofence Match: Sei nel magazzino '${hub.name}'`);
+                break;
+            }
+        }
+        
+        if (!foundHubHash) {
+            return log("❌ GEOFENCE FALLITO: Fuori dal raggio di tolleranza di tutti gli Hub noti.");
+        }
         
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.recordCheckpoint(id, currentHubHash);
+            // VECCHIO CONTRATTO a 2 Argomenti
+            const tx = await c.recordCheckpoint(id, foundHubHash);
             await tx.wait();
             log("✅ CHECKPOINT ANONIMO REGISTRATO.");
         } catch(e) { log("❌ Errore Checkpoint."); }
@@ -745,6 +821,7 @@
         if(!id || !lastSensorData) return log("⚠️ Manca ID o Dati IoT!");
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            // VECCHIO CONTRATTO a 4 Argomenti
             const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamp);
             await tx.wait();
             log("✅ HANDOVER COMPLETATO.");
