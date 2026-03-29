@@ -50,6 +50,7 @@
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .stat-card { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
         .stat-val { font-size: 1.4rem; color: var(--neon); font-weight: bold; font-family: 'Orbitron'; }
+        .perm-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; margin-right: 4px; color: #000; }
     </style>
 </head>
 <body>
@@ -140,27 +141,40 @@
         </div>
 
         <div id="panel-onboarding" class="panel">
-            <div class="card">
-                <h2>🛡️ ONBOARDING SBT E GEOFENCING CIECO</h2>
-                <div id="onboarding-form-area" style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
-                    <div>
-                        <label style="font-size:0.6rem; color:var(--neon);">DNA AZIENDALE (P.IVA)</label>
-                        <input type="text" id="reg-piva" placeholder="Inserisci P.IVA">
-                        <button class="btn-neon" onclick="mintIdentity()">1. CONIA IDENTITÀ SBT</button>
-                    </div>
+            
+            <div class="card" id="sbt-mint-section">
+                <h2>🛡️ ONBOARDING SBT (CREA IDENTITÀ)</h2>
+                <p style="font-size:0.75rem; color:#888;">Non hai ancora un'identità. Inserisci la tua P.IVA per registrarla in modo permanente sulla Blockchain.</p>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="reg-piva" placeholder="Inserisci P.IVA" style="flex:2;">
+                    <button class="btn-neon" style="width:auto; padding:0 30px;" onclick="mintIdentity()">1. CONIA IDENTITÀ SBT</button>
+                </div>
+            </div>
+
+            <div class="card" id="sbt-verified-section" style="display:none; border-color: var(--success); background: #0a150f;">
+                <h2 style="color: var(--success); border-bottom: none; margin-bottom: 0;">✅ IDENTITÀ AZIENDALE VERIFICATA</h2>
+                <p style="font-size:0.75rem; color:#888; margin-top:5px;">Il tuo SBT è attivo. Sei autorizzato ad operare sulla rete SmartSheer.</p>
+            </div>
+            
+            <div class="card" id="hub-registration-section" style="display:none; border-color: var(--neon);">
+                <h2>📍 REGISTRA HUB LOGISTICO (CRITTOGRAFATO)</h2>
+                <p style="font-size:0.75rem; color:#888;">Aggiungi i tuoi magazzini. Le coordinate verranno salvate nel tuo Vault segreto e inviate sulla Blockchain solo come Hash incomprensibile per la privacy.</p>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="hub-name" placeholder="Nome (es. Ravenna Hub)" style="flex:2;">
+                    <input type="text" id="hub-lat" placeholder="Latitudine" style="flex:1;">
+                    <input type="text" id="hub-lon" placeholder="Longitudine" style="flex:1;">
+                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="registerHubBlind()">➕ AGGIUNGI HUB</button>
+                </div>
+                
+                <h3 style="margin-top:30px; font-size:0.75rem; color:var(--master);">🏢 I TUOI HUB REGISTRATI (LETTI DAL VAULT)</h3>
+                <div style="overflow-x:auto;">
+                    <table id="hubs-table">
+                        <thead><tr><th>Nome Hub</th><th>Coordinate in chiaro</th><th>Hash (Pubblico su Blockchain)</th></tr></thead>
+                        <tbody id="hubs-list-body"></tbody>
+                    </table>
                 </div>
             </div>
             
-            <div class="card" style="border-color: var(--neon);">
-                <h2>📍 REGISTRA HUB LOGISTICO (CRITTOGRAFATO)</h2>
-                <p style="font-size:0.75rem; color:#888;">Le coordinate verranno salvate nel Vault e inviate sulla Blockchain solo come Hash incomprensibile.</p>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="hub-name" placeholder="Nome Hub" style="flex:2;">
-                    <input type="text" id="hub-lat" placeholder="Latitudine" style="flex:1;">
-                    <input type="text" id="hub-lon" placeholder="Longitudine" style="flex:1;">
-                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="registerHubBlind()">2. SALVA HUB SECRETO</button>
-                </div>
-            </div>
         </div>
 
         <div id="panel-factory" class="panel">
@@ -238,12 +252,13 @@
                 
                 <div style="text-align: center;">
                     <div id="qr-display"></div>
+                    <button id="btn-dl-qr" class="btn-grey" style="display:none; width:auto; margin:15px auto;">📥 SCARICA BADGE .PNG</button>
                 </div>
 
                 <h3 style="margin-top:30px; font-size:0.7rem; color:var(--master);">📋 LISTA PERSONALE ATTIVO</h3>
                 <div style="overflow-x:auto;">
                     <table id="staff-table">
-                        <thead><tr><th>Nome</th><th>Wallet Assegnato</th><th>Azione</th></tr></thead>
+                        <thead><tr><th>Nome</th><th>Wallet Assegnato</th><th>Permessi</th><th>Azione</th></tr></thead>
                         <tbody id="staff-list-body"></tbody>
                     </table>
                 </div>
@@ -300,36 +315,32 @@
 </div>
 
 <script>
-    // 🚨 IL TUO INDIRIZZO DEL CONTRATTO "SheerEngine" QUI 🚨
+    // 🚨 IL TUO INDIRIZZO DEL CONTRATTO VECCHIO (Mantieni questo per testare ora) 🚨
     const CONTRACT_ADDRESS = "0xeDBcFDF5d690663858999639d3601E2F723B69db"; 
     const RPC_URL = "https://polygon-rpc.com"; 
 
-    // ABI essenziale per comunicare con SheerEngine
+    // ABI essenziale
     const contractABI = [
         "function mintSBT(bytes32 _dnaHash) external",
+        "function sbtRegistry(address) view returns (bytes32)", 
         "function registerHub(bytes32 _hubHash) external",
         "function setStealthWorker(address _worker, bool _mint, bool _in, bool _out, bool _active) external",
-        "function mintBatch(bytes32 _meta, uint256 _qty, tuple(bool, int256, int256, bool, bool) _rules, uint256 _price, address _buyer) external",
-        "function recordCheckpoint(uint256 _id, bytes32 _hubHash, address _hwSigner) external",
-        "function executeHandover(uint256 _id, int256 _temp, bool _tamp, address _hwSigner) external",
+        "function mintBatch(address _m, bytes32 _meta, uint256 _qty, tuple(bool, int256, int256, bool, bool) _rules, uint256 _price, address _buyer) external",
+        "function recordCheckpoint(uint256 _id, bytes32 _hubHash) external",
+        "function executeHandover(uint256 _id, int256 _temp, bool _gps, bool _tamp) external",
         "function fundEscrow(uint256 _id) external payable",
         "function forceAcceptance(uint256 _id) external",
         "function refundDispute(uint256 _id) external",
         "function shipmentCounter() view returns(uint256)",
-        "function shipments(uint256) view returns(address, bytes32, uint256, tuple(bool, int256, int256, bool, bool), uint256, address, uint8, bytes32)"
+        "function shipments(uint256) view returns(uint256, address, bytes32, uint256, tuple(bool, int256, int256, bool, bool), uint256, address, uint8, bool)"
     ];
-
-    // ABI per l'Identity (chiamata dal Master per l'Hardware)
-    const identityABI = ["function setHardware(address _hwAddress, bool _status) external"];
-    // ABI per l'Identity, dobbiamo leggerne l'indirizzo dall'Engine
-    const engineGetIdentityABI = ["function identity() view returns(address)"];
 
     let provider, signer, vaultPass, currentRole, lastSensorData;
     let opQrScanner; 
     let staffList = [];
-    let myVaultData = { shipments: [], hubs: [] }; // Dati crittografati locali
+    let myVaultData = { shipments: [], hubs: [] }; 
 
-    const statusMap = ["In Magazzino", "In Viaggio", "Consegnato", "In Disputa", "Rimborsato"];
+    const statusMap = ["In Magazzino", "In Viaggio", "In Disputa", "Consegnato", "Rimborsato"];
 
     // --- UTILS & LOGS ---
     function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato: ${text}`); }
@@ -393,7 +404,7 @@
             const rpc = new ethers.providers.JsonRpcProvider(RPC_URL);
             signer = new ethers.Wallet(data.pk, rpc); 
             currentRole = 'staff';
-            loadVault(signer.address); // Staff might not have vault, but we initialize
+            loadVault(signer.address); 
             launchDashboard(signer.address, 'staff');
             log(`🔓 Accesso Staff: ${data.name}`);
         } catch(e) { alert("QR non valido."); switchLoginMode('admin'); }
@@ -417,6 +428,7 @@
             addTab("STAFF", "panel-staff-manage");
             renderStaff();
             syncMyShipments();
+            checkSBTStatus(); 
         }
         if(role === 'staff') { addTab("OPERAZIONI LOGISTICHE", "panel-operations"); }
         if(role === 'buyer') { addTab("BUYER PORTAL", "panel-buyer"); }
@@ -431,32 +443,52 @@
     }
     function showPanel(id) { document.querySelectorAll('.panel').forEach(p=>p.style.display='none'); document.getElementById(id).style.display='block'; }
 
+    // --- VERIFICA AUTOMATICA IDENTITA E HUB (SBT) ---
+    async function checkSBTStatus() {
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
+            const myAddr = await signer.getAddress();
+            const dna = await c.sbtRegistry(myAddr);
+            
+            if(dna !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+                document.getElementById('sbt-mint-section').style.display = 'none';
+                document.getElementById('sbt-verified-section').style.display = 'block';
+                document.getElementById('hub-registration-section').style.display = 'block';
+                renderHubs();
+            } else {
+                document.getElementById('sbt-mint-section').style.display = 'block';
+                document.getElementById('sbt-verified-section').style.display = 'none';
+                document.getElementById('hub-registration-section').style.display = 'none';
+            }
+        } catch(e) { log("⚠️ Errore controllo SBT. Riprova."); }
+    }
+
+    function renderHubs() {
+        const b = document.getElementById('hubs-list-body'); b.innerHTML = "";
+        if(myVaultData.hubs && myVaultData.hubs.length > 0) {
+            myVaultData.hubs.forEach((h) => {
+                b.innerHTML += `<tr><td><strong>${h.name}</strong></td><td>${h.lat}, ${h.lon}</td><td class="addr-full">${h.hash.substring(0,12)}...</td></tr>`;
+            });
+        } else {
+            b.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#888;'>Nessun Hub registrato nel Vault.</td></tr>";
+        }
+    }
+
     // --- 📡 AZIONI MASTER: REGISTRO HARDWARE ---
     async function registerIoTBox() {
         log("📡 Ricerca ESP32 per Registrazione Master...");
         const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
         try {
             const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SheerBox_' }], optionalServices: [SERVICE_UUID] });
-            // Poichè l'ESP32 ha una chiave privata fissa nota per il prototipo (0x1122...), 
-            // il Master deriva e registra quell'indirizzo univoco matematico.
             const knownHardwareWallet = new ethers.Wallet("0x112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00");
             document.getElementById('iot-addr-manual').value = knownHardwareWallet.address;
-            log(`🔗 ESP32 Rilevato! Indirizzo Pubblico Hardware: ${knownHardwareWallet.address}`);
-            alert("Hardware Rilevato! Ora clicca su SALVA per autorizzarlo nella Blockchain.");
+            log(`🔗 ESP32 Rilevato! Indirizzo Pubblico: ${knownHardwareWallet.address}`);
+            alert("Hardware Rilevato! Al momento usa il vecchio contratto, la registrazione master sarà attiva col nuovo deploy.");
         } catch(e) { log("❌ Errore Bluetooth."); }
     }
 
     async function addHardwareManual() {
-        const addr = document.getElementById('iot-addr-manual').value;
-        if(!addr) return;
-        try {
-            const engineC = new ethers.Contract(CONTRACT_ADDRESS, engineGetIdentityABI, signer);
-            const identityAddr = await engineC.identity();
-            const idenC = new ethers.Contract(identityAddr, identityABI, signer);
-            const tx = await idenC.setHardware(addr, true);
-            await tx.wait();
-            log(`✅ Hardware IoT ${addr} Autorizzato con successo!`);
-        } catch(e) { log("❌ Errore Registrazione Hardware."); }
+        log("⚠️ Attenzione: Funzionalità pronta per il NUOVO contratto a 3 pilastri. Riprova dopo il deploy su Remix.");
     }
 
     // --- AZIONI CLIENT: HUB CIECO E ONBOARDING ---
@@ -467,6 +499,7 @@
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
             const tx = await c.mintSBT(dna); await tx.wait();
             log(`🛡️ SBT CONIATO: ${dna}`);
+            checkSBTStatus(); // Refresh UI
         } catch(e) { log("❌ Errore SBT."); }
     }
 
@@ -483,6 +516,7 @@
             myVaultData.hubs.push({ name: name, hash: hash, lat: lat, lon: lon });
             saveVault(await signer.getAddress());
             log(`📍 Hub Cieco salvato: Hash ${hash}`);
+            renderHubs();
         } catch(e) { log("❌ Errore Hub."); }
     }
 
@@ -522,15 +556,16 @@
         log("⏳ Creazione Lotto su Blockchain in corso...");
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.mintBatch(meta, qty, reqs, price, buyer);
+            const addressCaller = await signer.getAddress();
+            const tx = await c.mintBatch(addressCaller, meta, qty, reqs, price, buyer);
             await tx.wait();
             
             const count = await c.shipmentCounter();
             const lottoId = count.toString();
             
-            // Salva in chiaro solo nella cassaforte segreta del cliente
+            // Salva in chiaro solo nella cassaforte segreta
             myVaultData.shipments.push({ id: lottoId, name: name, dest: destAddress });
-            saveVault(await signer.getAddress());
+            saveVault(addressCaller);
 
             log(`✅ LOTTO #${lottoId} CONIATO E SALVATO NEL VAULT.`);
             document.getElementById('lotto-qr-display').style.display = "block";
@@ -565,8 +600,17 @@
     function renderStaff() {
         const b = document.getElementById('staff-list-body'); b.innerHTML = "";
         staffList.forEach((s, idx) => {
-            b.innerHTML += `<tr><td>${s.name}</td><td><span class="addr-full">${s.addr.substring(0,8)}...</span></td>
-            <td><button class="btn-success" style="padding:4px 10px; width:auto;" onclick="showStaffQR(${idx})">🖨️ STAMPA QR</button></td></tr>`;
+            let permsHtml = '';
+            if(s.perms.mint) permsHtml += '<span class="perm-badge" style="background:var(--neon);">FACTORY</span>';
+            if(s.perms.in) permsHtml += '<span class="perm-badge" style="background:var(--master);">IN</span>';
+            if(s.perms.out) permsHtml += '<span class="perm-badge" style="background:var(--success);">OUT</span>';
+
+            b.innerHTML += `<tr>
+                <td>${s.name}</td>
+                <td><span class="addr-full">${s.addr.substring(0,8)}...</span></td>
+                <td>${permsHtml}</td>
+                <td><button class="btn-success" style="padding:4px 10px; width:auto;" onclick="showStaffQR(${idx})">🖨️ STAMPA QR</button></td>
+            </tr>`;
         });
     }
 
@@ -576,6 +620,11 @@
         document.getElementById('qr-display').style.display = "block";
         document.getElementById('qr-display').innerHTML = "";
         new QRCode(document.getElementById('qr-display'), { text: payloadStr, width: 200, height: 200 });
+        
+        const btnDl = document.getElementById('btn-dl-qr');
+        btnDl.style.display = "block";
+        btnDl.onclick = () => downloadQR('qr-display', `Badge_SmartSheer_${s.name.replace(/\s+/g, '_')}`);
+        
         window.scrollTo(0, document.body.scrollHeight);
     }
 
@@ -589,13 +638,12 @@
         for(let i = 1; i <= count; i++) {
             try {
                 const s = await c.shipments(i);
-                if(s[0] === myAddr) {
-                    // Cerca il nome nel Vault
+                if(s[1] === myAddr) { // Nel vecchio contratto il creator è all'indice 1
                     let prodName = "Sconosciuto"; let prodDest = "Sconosciuta";
                     const found = myVaultData.shipments.find(x => x.id == i);
                     if(found) { prodName = found.name; prodDest = found.dest; }
                     
-                    b.innerHTML += `<tr><td>#${i}</td><td>${prodName}</td><td>${prodDest}</td><td style="color:var(--neon);">${statusMap[s[6]]}</td></tr>`;
+                    b.innerHTML += `<tr><td>#${i}</td><td>${prodName}</td><td>${prodDest}</td><td style="color:var(--neon);">${statusMap[s[7]]}</td></tr>`;
                 }
             } catch(e){}
         }
@@ -609,7 +657,7 @@
         for(let i = 1; i <= count; i++) {
             try {
                 const s = await c.shipments(i);
-                b.innerHTML += `<tr><td>#${i}</td><td class="addr-full">${s[0].substring(0,10)}...</td><td style="color:var(--master);">${statusMap[s[6]]}</td></tr>`;
+                b.innerHTML += `<tr><td>#${i}</td><td class="addr-full">${s[1].substring(0,10)}...</td><td style="color:var(--master);">${statusMap[s[7]]}</td></tr>`;
             } catch(e){}
         }
     }
@@ -624,11 +672,11 @@
         for(let i = 1; i <= count; i++) {
             try {
                 const s = await c.shipments(i);
-                if(s[0] === myAddr) {
+                if(s[1] === myAddr) {
                     let prodName = "Sconosciuto"; let prodDest = "Sconosciuta";
                     const found = myVaultData.shipments.find(x => x.id == i);
                     if(found) { prodName = found.name; prodDest = found.dest; }
-                    csvContent += `${i},"${prodName}","${prodDest}",${statusMap[s[6]]}\n`;
+                    csvContent += `${i},"${prodName}","${prodDest}",${statusMap[s[7]]}\n`;
                 }
             } catch(e){}
         }
@@ -662,12 +710,9 @@
             const value = await dataChar.readValue();
             const data = JSON.parse(new TextDecoder().decode(value));
 
-            // Deriviamo l'indirizzo Hardware
-            const hwWallet = new ethers.Wallet("0x112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00");
-            
             lastSensorData = {
                 temp: Math.round(data.payload.tAvg), lat: data.payload.lat.toString(), lon: data.payload.lon.toString(),
-                tamp: data.payload.tamper, gps: (data.payload.lat !== 0), hwSigner: hwWallet.address
+                tamp: data.payload.tamper, gps: (data.payload.lat !== 0)
             };
             log(`🌡️ Dati: ${data.payload.tAvg}°C | GPS Acquisito`);
             if(data.payload.tamper) log(`⚠️ URTO RILEVATO! (Magnitudo: ${data.payload.shock})`);
@@ -684,16 +729,15 @@
         const id = document.getElementById('op-id').value;
         if(!id || !lastSensorData) return log("⚠️ Manca ID o Dati IoT!");
         
-        // Calcola l'Hash Cieco usando il GPS del sensore e la password Vault
         const blindString = lastSensorData.lat + "|" + lastSensorData.lon + "|" + vaultPass;
         const currentHubHash = "0x" + CryptoJS.SHA256(blindString).toString();
         
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.recordCheckpoint(id, currentHubHash, lastSensorData.hwSigner);
+            const tx = await c.recordCheckpoint(id, currentHubHash);
             await tx.wait();
             log("✅ CHECKPOINT ANONIMO REGISTRATO.");
-        } catch(e) { log("❌ Errore Checkpoint (Geofence fallito o Hardware non autorizzato)."); }
+        } catch(e) { log("❌ Errore Checkpoint."); }
     }
 
     async function executeHandoverBlind() {
@@ -701,13 +745,13 @@
         if(!id || !lastSensorData) return log("⚠️ Manca ID o Dati IoT!");
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.tamp, lastSensorData.hwSigner);
+            const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamp);
             await tx.wait();
             log("✅ HANDOVER COMPLETATO.");
         } catch(e) { log("❌ Errore Handover."); }
     }
 
-    // --- MANUTENZIONE ESP32 E BUYER PORTAL (Lasciati Intatti) ---
+    // --- MANUTENZIONE ESP32 E BUYER PORTAL ---
     async function resetBoxWithSuperAlert() {
         if(prompt("⚠️ DIGITA: CONFERMO") !== "CONFERMO") return;
         const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SheerBox_' }], optionalServices: ["4fafc201-1fb5-459e-8fcc-c5c9c331914b"] });
