@@ -151,6 +151,15 @@
                     </table>
                 </div>
             </div>
+
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">⚠️ ZONA ROSSA: MANUTENZIONE HARDWARE BOX</h2>
+                <p style="font-size:0.75rem; color:#888;">Questi comandi comunicano via Bluetooth e agiscono direttamente sulla memoria fisica dell'ESP32. Usa con estrema cautela.</p>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-danger" style="flex:1; border: 2px solid #fff;" onclick="resetBoxWithSuperAlert()">💥 FORMATTA SCATOLA NERA</button>
+                    <button class="btn-grey" style="flex:1;" onclick="printLogToSerial()">📥 STAMPA LOG SU SERIALE</button>
+                </div>
+            </div>
         </div>
 
         <div id="panel-onboarding" class="panel">
@@ -688,7 +697,7 @@
     }
     function stopOpScanner() { if(opQrScanner) { opQrScanner.stop().then(() => { document.getElementById('op-scanner-box').style.display = "none"; }); } }
 
-    // --- 📡 MOTORE BLUETOOTH LIVE (Aggiornato per interagire con l'ESP32 e lo Smart Contract) ---
+   // --- 📡 MOTORE BLUETOOTH LIVE (Sincronizzato con Arduino v2026) ---
     async function connectBT() {
         log("📡 Ricerca Box SmartSheer IoT...");
         const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
@@ -771,6 +780,52 @@
             const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamp); await tx.wait();
             log("✅ HANDOVER FINALE COMPLETATO. FONDI SBLOCCATI."); captureLog('STAFF', `Handover #${id}`, 'OK');
         } catch(e) { log("❌ Handover fallito."); }
+    }
+
+    // --- GESTIONE MANUTENZIONE BOX IOT (ZONA ROSSA) ---
+    async function resetBoxWithSuperAlert() {
+        // SUPER ALERT 1
+        const warn1 = confirm("🛑 ATTENZIONE CRITICA 🛑\n\nStai per FORMATTARE la memoria fisica del Box IoT.\nTutti i dati di temperatura, urti e coordinate GPS salvati verranno distrutti irreversibilmente.\n\nSei ASSOLUTAMENTE sicuro di voler procedere?");
+        if(!warn1) return;
+        
+        // SUPER ALERT 2 (Doppia conferma digitata)
+        const warn2 = prompt("⚠️ PERICOLO PERDITA DATI ⚠️\n\nPer confermare la formattazione, digita la parola in maiuscolo: CONFERMO");
+        if(warn2 !== "CONFERMO") {
+            alert("Operazione annullata. La memoria del Box è salva.");
+            return;
+        }
+
+        log("📡 Connessione al Box per FORMATTAZIONE in corso...");
+        const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+        const CONFIG_CHAR_UUID = "c8659211-140f-4f24-9b16-419b7d5a00a1";
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SheerBox_' }], optionalServices: [SERVICE_UUID] });
+            const server = await dev.gatt.connect();
+            const service = await server.getPrimaryService(SERVICE_UUID);
+            const configChar = await service.getCharacteristic(CONFIG_CHAR_UUID);
+            await configChar.writeValue(new TextEncoder().encode("RESET_ALL"));
+            log("✅ Comando DITTATORIALE inviato! Il Box si sta azzerando e riavviando.");
+            alert("🔥 Memoria del Box azzerata con successo! Addio ai vecchi dati sballati. Al prossimo avvio partirà da zero.");
+        } catch(e) { 
+            log("❌ Errore di connessione o operazione annullata: " + e.message); 
+        }
+    }
+
+    async function printLogToSerial() {
+        log("📡 Connessione al Box per estrazione Log Forense...");
+        const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+        const CONFIG_CHAR_UUID = "c8659211-140f-4f24-9b16-419b7d5a00a1";
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SheerBox_' }], optionalServices: [SERVICE_UUID] });
+            const server = await dev.gatt.connect();
+            const service = await server.getPrimaryService(SERVICE_UUID);
+            const configChar = await service.getCharacteristic(CONFIG_CHAR_UUID);
+            await configChar.writeValue(new TextEncoder().encode("GET_CSV"));
+            log("📂 Richiesta estrazione inviata al Box.");
+            alert("📥 Controlla il Monitor Seriale di Arduino sul Mac! Il Box sta stampando tutto il file CSV riga per riga.");
+        } catch(e) { 
+            log("❌ Errore richiesta log: " + e.message); 
+        }
     }
 
     // --- BUYER ---
