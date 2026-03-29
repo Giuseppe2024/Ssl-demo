@@ -688,50 +688,61 @@
     }
     function stopOpScanner() { if(opQrScanner) { opQrScanner.stop().then(() => { document.getElementById('op-scanner-box').style.display = "none"; }); } }
 
-    // --- 📡 MOTORE BLUETOOTH LIVE ---
+   // --- 📡 MOTORE BLUETOOTH LIVE (Sincronizzato con Arduino v2026) ---
     async function connectBT() {
-        log("📡 Ricerca Box Bluetooth IoT...");
+        log("📡 Ricerca Box SmartSheer IoT...");
+        const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+        const DATA_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+        const CONFIG_CHAR_UUID = "c8659211-140f-4f24-9b16-419b7d5a00a1";
+
         try {
-            const dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['environmental_sensing', 0x181A] });
+            const dev = await navigator.bluetooth.requestDevice({
+                filters: [{ namePrefix: 'SheerBox_' }],
+                optionalServices: [SERVICE_UUID]
+            });
+
             const server = await dev.gatt.connect();
-            log("🔗 Box accoppiato. Estrazione dati...");
+            log("🔗 Box accoppiato. Acquisizione pacchetto certificato...");
+            
+            const service = await server.getPrimaryService(SERVICE_UUID);
+            
+            // 1. LEGGI I DATI DAL BOX
+            const dataChar = await service.getCharacteristic(DATA_CHAR_UUID);
+            const value = await dataChar.readValue();
+            const jsonStr = new TextDecoder().decode(value);
+            const data = JSON.parse(jsonStr);
+
+            // 2. MAPPA I DATI PER LO SMART CONTRACT
+            // Salviamo i dati per le funzioni executeCheckpoint e executeHandover
+            lastSensorData = {
+                temp: data.payload.tAvg,
+                lat: data.payload.lat.toString(),
+                lon: data.payload.lon.toString(),
+                tamp: data.payload.tamper,
+                gps: true, // Se abbiamo le coordinate, il GPS è valido
+                signature: data.signature,
+                hash: data.hash
+            };
+
+            log(`🌡️ Dati Ricevuti: ${data.payload.tAvg}°C | Posizione: ${data.payload.lat}, ${data.payload.lon}`);
+            if(data.payload.tamper) log("⚠️ ATTENZIONE: Rilevato allarme urto/manomissione nel pacchetto!");
+
+            // 3. COMANDO DI CHIUSURA (Manda a nanna il box per risparmiare batteria)
             try {
-                const service = await server.getPrimaryService('environmental_sensing');
-                const characteristic = await service.getCharacteristic('temperature');
-                const value = await characteristic.readValue();
-                const tempRaw = value.getInt16(0, true);
-                const tempCelsius = tempRaw / 100;
-                lastSensorData = { temp: tempCelsius, gps: true, tamp: true, lat: "44.41", lon: "12.20" };
-                log(`🌡️ DATO REALE RILEVATO: ${tempCelsius}°C.`);
-            } catch(error) {
-                log(`⚠️ Servizio standard non trovato. Protocollo Sicurezza...`);
-                lastSensorData = { temp: 18.2, gps: true, tamp: true, lat: "44.41", lon: "12.20" };
-                log("🌡️ DATO SIMULATO RILEVATO: 18.2°C.");
+                const configChar = await service.getCharacteristic(CONFIG_CHAR_UUID);
+                const encoder = new TextEncoder();
+                await configChar.writeValue(encoder.encode("SLEEP"));
+                log("💤 Comando SLEEP inviato. Il box tornerà in letargo.");
+            } catch(e) { 
+                log("⚠️ Impossibile inviare SLEEP, il box resterà sveglio fino al timeout."); 
             }
-        } catch(e) { log(`❌ Bluetooth interrotto.`); }
-    }
 
-    async function executeCheckpoint() {
-        const id = document.getElementById('op-id').value;
-        if(!id) return log("⚠️ Inserisci o scansiona l'ID del Lotto!");
-        if(!lastSensorData) return log("⚠️ Leggi prima i dati dal sensore BT!");
-        const h = "0x" + CryptoJS.SHA256(lastSensorData.lat + "|" + lastSensorData.lon + encryptionKey).toString();
-        try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.recordCheckpoint(id, h); await tx.wait();
-            log("✅ CHECKPOINT REGISTRATO SU BLOCKCHAIN."); captureLog('STAFF', `Checkpoint #${id}`, 'OK');
-        } catch(e) { log("❌ Errore Checkpoint."); }
-    }
+            alert("✅ DATI RICEVUTI E FIRMATI!\nOra puoi registrare l'operazione sulla Blockchain.");
 
-    async function executeHandover() {
-        const id = document.getElementById('out-id').value;
-        if(!id) return log("⚠️ Inserisci o scansiona l'ID del Lotto!");
-        if(!lastSensorData) return log("⚠️ Leggi prima i dati dal sensore BT!");
-        try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.executeHandover(id, lastSensorData.temp, lastSensorData.gps, lastSensorData.tamp); await tx.wait();
-            log("✅ HANDOVER FINALE COMPLETATO. FONDI SBLOCCATI."); captureLog('STAFF', `Handover #${id}`, 'OK');
-        } catch(e) { log("❌ Handover fallito."); }
+        } catch(e) { 
+            log(`❌ Errore Bluetooth: ${e.message}`); 
+            alert("Connessione fallita. Assicurati che il Bluetooth sia attivo e il Box sia sveglio.");
+        }
     }
 
     // --- BUYER ---
