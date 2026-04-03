@@ -704,11 +704,32 @@
         } catch(e) { log("❌ Delega fallita: " + (e.reason || e.message)); }
     }
 
-    function renderStaff() {
+   function renderStaff() {
         const b = document.getElementById('staff-list-body'); b.innerHTML = "";
-        staffList.forEach(s => {
-            b.innerHTML += `<tr><td>${s.name}</td><td>${s.addr.substring(0,10)}...</td><td><button class="btn-grey" onclick="log('Badge ok')">🖨️</button></td></tr>`;
+        // Aggiungo 'index' per sapere quale magazziniere stiamo cliccando
+        staffList.forEach((s, index) => {
+            b.innerHTML += `<tr>
+                <td>${s.name}</td>
+                <td>${s.addr.substring(0,10)}...</td>
+                <td><button class="btn-grey" onclick="reprintBadge(${index})">🖨️</button></td>
+            </tr>`;
         });
+    }
+
+    // NUOVA FUNZIONE: Pesca i dati e rigenera il QR visibile!
+    function reprintBadge(index) {
+        const s = staffList[index]; // Prende i dati del magazziniere cliccato
+        document.getElementById('qr-display').innerHTML = ""; // Pulisce il div
+        document.getElementById('qr-display').style.display = "block"; // Lo rende visibile
+        
+        // Genera il nuovo QR code con i dati veri
+        new QRCode(document.getElementById('qr-display'), { 
+            text: JSON.stringify({pk: s.pk, name: s.name}), 
+            width: 150, 
+            height: 150 
+        });
+        
+        log(`🖨️ Ristampato badge a video per: ${s.name}`);
     }
 
     // --- GEOFENCE COMPLETO (COMPARA BOX CON VAULT) ---
