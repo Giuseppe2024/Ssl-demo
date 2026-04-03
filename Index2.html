@@ -1,522 +1,819 @@
-const contractABI = [
-    &quot;function mintSBT(bytes32 _dnaHash) external&quot;,
-    &quot;function sbtRegistry(address) view returns (bytes32)&quot;, 
-    &quot;function registerHub(bytes32 _hubHash) external&quot;,
-    &quot;function setStealthWorker(address _worker, bool _mint, bool _in, bool _out, bool _active) external&quot;,
-    &quot;function mintBatch(address _m, bytes32 _meta, uint256 _qty, tuple(bool, int256, int256, bool, bool) _rules, uint256 _price, address _buyer) external&quot;,
-    &quot;function recordCheckpoint(uint256 _id, bytes32 _hubHash) external&quot;,
-    &quot;function executeHandover(uint256 _id, int256 _temp, bool _gps, bool _tamp) external&quot;,
-    &quot;function fundEscrow(uint256 _id) external payable&quot;,
-    &quot;function forceAcceptance(uint256 _id) external&quot;,
-    &quot;function refundDispute(uint256 _id) external&quot;,
-    &quot;function shipmentCounter() view returns(uint256)&quot;,
-    &quot;function shipments(uint256) view returns(uint256, address, bytes32, uint256, tuple(bool, int256, int256, bool, bool), uint256, address, uint8, bool)&quot;
-];
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSheer Enterprise | Sovereign Web3 ERP</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --text: #c9d1d9; --master: #fbbf24; --danger: #f85149; --grey: #8b949e; --success: #3fb950; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; font-size: 13px; overflow: hidden; }
+        #gate-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .gate-card { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); width: 420px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); max-height: 90vh; overflow-y: auto; }
+        .gate-card h1 { font-family: 'Orbitron'; color: var(--neon); margin-bottom: 20px; letter-spacing: 2px; }
+        .pass-container { position: relative; width: 100%; }
+        .eye-icon { position: absolute; right: 12px; top: 18px; cursor: pointer; user-select: none; font-size: 1.2rem; }
+        #main-app { display: none; height: 100vh; flex-direction: column; }
+        nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-family: 'Orbitron'; font-weight: 700; color: var(--neon); }
+        .tab-bar { display: flex; background: #161b22; padding: 10px 20px; gap: 10px; border-bottom: 1px solid var(--border); }
+        .tab { padding: 10px 18px; cursor: pointer; border-radius: 5px; font-weight: 600; color: #888; transition: 0.3s; font-size: 0.75rem; }
+        .tab.active { background: #30363d; color: var(--neon); }
+        .content-area { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+        h2 { font-family: 'Orbitron'; font-size: 0.8rem; text-transform: uppercase; color: var(--neon); margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        input[type="text"], input[type="password"], input[type="number"], select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
+        .btn-neon { background: var(--neon); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-grey { background: var(--grey); color: #fff; }
+        .btn-staff { background: var(--master); color: #000; }
+        .btn-success { background: var(--success); color: #000; }
+        .addr-full { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border); color: var(--neon); cursor: pointer; font-size: 0.75rem; word-break: break-all; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 0.8rem; }
+        .checkbox-group input { width: auto; }
+        #video-container, #qr-reader, #op-qr-reader { width: 100%; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); min-height: 200px; display: none;}
+        #webcam { width: 100%; height: 100%; object-fit: cover; }
+        #terminal { background: #000; color: var(--success); font-family: monospace; padding: 15px; border-radius: 8px; height: 150px; overflow-y: auto; font-size: 0.75rem; border: 1px solid var(--border); line-height: 1.4; }
+        #qr-display, #lotto-qr-display { background: #fff; padding: 15px; border-radius: 8px; width: fit-content; margin: 20px auto; display: none; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
+        th { color: #888; text-transform: uppercase; font-size: 0.65rem; }
+        .stat-card { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; }
+        .stat-val { font-size: 1rem; color: var(--neon); font-weight: bold; font-family: 'Orbitron'; line-height: 1.6; }
+        .perm-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; margin-right: 4px; color: #000; }
+    </style>
+</head>
+<body>
 
-let provider, signer, vaultPass, currentRole, lastSensorData;
-let videoStream = null;
-let loginScanner = null;
-let opQrScanner = null;
+<div id="gate-overlay">
+    <div class="gate-card">
+        <h1>SMARTSHEER</h1>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn-grey" onclick="switchLoginMode('admin')" style="background: var(--border);">AMMINISTRAZIONE</button>
+            <button class="btn-staff" onclick="switchLoginMode('staff')">STAFF (SCAN QR)</button>
+        </div>
+        
+        <div id="login-admin-area">
+            <select id="role-selector">
+                <option value="master">MASTER GENERALE (Proprietario)</option>
+                <option value="client">CLIENT MASTER (Azienda)</option>
+                <option value="buyer">BUYER (Acquirente)</option>
+            </select>
+            <div id="login-section">
+                <div class="pass-container">
+                    <input type="password" id="gate-pass" placeholder="Password Vault Aziendale">
+                    <span class="eye-icon" onclick="togglePass('gate-pass')">👁️</span>
+                </div>
+            </div>
+            <button class="btn-neon" onclick="unlockSystemAdmin()">SBLOCCA CON METAMASK</button>
+        </div>
+        
+        <div id="login-staff-area" style="display: none;">
+            <p style="font-size: 0.75rem; color: #888;">Inquadra il QR Code del tuo Badge Aziendale.</p>
+            <div id="qr-reader" style="display:block; width: 100%; min-height: 250px;"></div>
+            <button class="btn-danger" style="margin-top:15px;" onclick="stopQRScanner()">ANNULLA SCAN</button>
+        </div>
+        
+        <div id="gate-msg" style="margin-top:10px; font-size:0.7rem; color:var(--danger)"></div>
+        <a style="cursor:pointer; font-size:0.6rem; color:#444; margin-top:20px; display:block;" onclick="resetDevice()">RIPRISTINA VAULT (Pulisci Dati)</a>
+    </div>
+</div>
 
-let staffList = [];
-let myVaultData = { shipments: [], hubs: [] }; 
-const statusMap = [&quot;In Magazzino&quot;, &quot;In Viaggio&quot;, &quot;In Disputa&quot;, &quot;Consegnato&quot;, &quot;Rimborsato&quot;];
+<div id="main-app">
+    <nav>
+        <div class="brand">SMARTSHEER <span id="tag-ruolo" style="font-size:0.6rem; color:#888"></span></div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div id="eth-address" class="addr-full" onclick="copyToClipboard(this.innerText)">0x...</div>
+            <button class="btn-danger" style="width:auto; padding:5px 15px; margin:0;" onclick="location.reload()">🏠 LOGOUT</button>
+        </div>
+    </nav>
+    <div class="tab-bar" id="tab-nav"></div>
 
-// --- UTILS ---
-function log(m) { const l = document.getElementById(&#39;terminal&#39;); l.innerHTML += `<br>&gt; ${m}`; l.scrollTop = l.scrollHeight; }
-function togglePass(id) { const i = document.getElementById(id); i.type = i.type === &quot;password&quot; ? &quot;text&quot; : &quot;password&quot;; }
-function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato.`); }
-function toggleEscrow() { document.getElementById(&#39;escrow-fields&#39;).style.display = document.getElementById(&#39;use-escrow&#39;).checked ? &#39;flex&#39; : &#39;none&#39;; }
+    <div class="content-area">
+        
+        <div id="panel-admin" class="panel">
+            <div class="card" style="border-color: var(--master);">
+                <h2 style="color: var(--master);">📡 REGISTRO HARDWARE IOT (ORACLE)</h2>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-staff" style="width:auto; padding:0 30px;" onclick="registerIoTBox()">🔍 1. AUTORIZZA BOX (BT)</button>
+                    <input type="text" id="iot-addr-manual" placeholder="Indirizzo Hardware (0x...)">
+                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="addHardwareManual()">2. SALVA</button>
+                </div>
+            </div>
 
-function resetDevice() {
-    if(prompt(&quot;Scrivi RESET per formattare il Vault locale e ripartire da zero:&quot;) === &quot;RESET&quot;) {
-        localStorage.clear();
-        alert(&quot;Vault pulito! Ricarica la pagina.&quot;);
-        location.reload();
+            <div class="card">
+                <h2>🌐 GLOBAL LOGISTICS MONITOR</h2>
+                <button class="btn-grey" style="margin-bottom:15px; width:auto; padding:10px 20px;" onclick="syncGlobalShipments()">🔄 AGGIORNA RETE</button>
+                <div style="overflow-x: auto; max-height: 250px;">
+                    <table id="global-table">
+                        <thead><tr><th>ID Lotto</th><th>Azienda SBT</th><th>Stato Viaggio</th></tr></thead>
+                        <tbody id="global-log-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">🚨 SECURITY: BLACK LIST E TIMER BOX</h2>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <input type="text" id="ban-addr" placeholder="Indirizzo Wallet Malevolo (0x...)">
+                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan(true)">BANNALO</button>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="box-interval" placeholder="Minuti di sonno Box (es. 60)">
+                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="setBoxInterval()">⏱️ IMPOSTA TIMER</button>
+                </div>
+            </div>
+
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">⚠️ MANUTENZIONE BOX</h2>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-danger" style="flex:1;" onclick="resetBoxWithSuperAlert()">💥 FORMATTA SCATOLA NERA</button>
+                    <button class="btn-grey" style="flex:1;" onclick="printLogToSerial()">📥 STAMPA LOG SU SERIALE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-onboarding" class="panel">
+            <div class="card" id="sbt-mint-section">
+                <h2>🛡️ KYC E ONBOARDING SBT (IDENTITÀ AZIENDALE)</h2>
+                <p style="font-size:0.75rem; color:#888;">Non hai ancora un'identità. Compila i dati e attiva la webcam per la registrazione permanente sulla Blockchain.</p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 15px;">
+                    <input type="text" id="reg-soc" placeholder="Società / Ragione Sociale">
+                    <input type="text" id="reg-piva" placeholder="Partita IVA">
+                    <input type="text" id="reg-cf" placeholder="Codice Fiscale Amministratore">
+                    <input type="text" id="reg-salt" placeholder="SALT (Chiave segreta extra)">
+                </div>
+                <div id="video-container">
+                    <video id="webcam" autoplay playsinline></video>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn-grey" style="width:auto; padding:0 30px;" onclick="startKYCVideo()">📷 ATTIVA RIPRESA VIDEO</button>
+                    <button class="btn-neon" onclick="mintIdentity()">CONIA IDENTITÀ SBT</button>
+                </div>
+            </div>
+            
+            <div class="card" id="sbt-verified-section" style="display:none; border-color: var(--success); background: #0a150f;">
+                <h2 style="color: var(--success); border-bottom: none; margin-bottom: 0;">✅ IDENTITÀ AZIENDALE VERIFICATA</h2>
+                <p style="font-size:0.75rem; color:#888; margin-top:5px;">Il tuo SBT è attivo sulla Blockchain. Sei autorizzato a registrare Hub e Lotti.</p>
+            </div>
+
+            <div class="card" id="hub-registration-section" style="border-color: var(--neon); display:none;">
+                <h2>📍 REGISTRA HUB LOGISTICO (CRITTOGRAFATO)</h2>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="hub-name" placeholder="Nome (es. Hub Rimini)" style="flex:1;">
+                    <input type="text" id="hub-address" placeholder="Indirizzo fisico" style="flex:2;">
+                    <button class="btn-grey" onclick="geocodeHub()">Trova GPS</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <input type="text" id="hub-lat" placeholder="Latitudine" readonly style="flex:1; background:#161b22;">
+                    <input type="text" id="hub-lon" placeholder="Longitudine" readonly style="flex:1; background:#161b22;">
+                    <select id="hub-tolerance" style="flex:1.5;"><option value="3">Raggio ~100m</option><option value="2">Raggio ~1km</option></select>
+                    <button class="btn-neon" onclick="registerHubBlind()">➕ AGGIUNGI HUB</button>
+                </div>
+                <h3 style="margin-top:20px; font-size:0.7rem; color:var(--master);">I TUOI HUB REGISTRATI NEL VAULT:</h3>
+                <table id="hubs-table"><thead><tr><th>Nome</th><th>GPS</th><th>Hash Pubblico</th></tr></thead><tbody id="hubs-list-body"></tbody></table>
+            </div>
+        </div>
+
+        <div id="panel-factory" class="panel">
+            <div class="card" style="border-color: var(--neon);">
+                <h2>🚀 FACTORY: CREAZIONE LOTTO (MINT NFT)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                    <div>
+                        <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Parmigiano)">
+                        <input type="text" id="dest-address" placeholder="Indirizzo Destinazione">
+                        <button class="btn-grey" onclick="geocodeAddress()">Trova GPS</button>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <input type="text" id="dest-lat" placeholder="Lat" readonly style="background:#161b22;">
+                            <input type="text" id="dest-lon" placeholder="Lon" readonly style="background:#161b22;">
+                        </div>
+                    </div>
+                    <div style="background:#000; padding:20px; border-radius:8px; border:1px solid var(--border);">
+                        <input type="number" id="nft-qty" placeholder="Quantità Unità" value="1">
+                        <div class="checkbox-group"><input type="checkbox" id="use-escrow" onchange="toggleEscrow()"> <label>Attiva Pagamento Escrow</label></div>
+                        <div id="escrow-fields" style="display:none; gap:10px;"><input type="number" id="nft-price" placeholder="Prezzo MATIC" style="flex:1;"><input type="text" id="nft-buyer" placeholder="Wallet Acquirente" style="flex:2;"></div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-temp"> <label>Obbligo Sensore Temperatura</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-gps" checked> <label>Geofence Obbligatorio</label></div>
+                    </div>
+                </div>
+                <button class="btn-neon" style="margin-top:20px;" onclick="buildAndMintNFT()">📦 CONIA LOTTO SULLA BLOCKCHAIN</button>
+                <div id="lotto-qr-display" style="margin-top:20px; text-align:center;"></div>
+            </div>
+        </div>
+
+        <div id="panel-my-shipments" class="panel">
+            <div class="card" style="border-color: var(--success);">
+                <h2>📈 I MIEI LOTTI E REPORTISTICA</h2>
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <button class="btn-grey" style="width:auto; padding:10px 20px;" onclick="syncMyShipments()">🔄 AGGIORNA DATI</button>
+                    <button class="btn-success" style="width:auto; padding:10px 20px;" onclick="exportShipmentsCSV()">📥 SCARICA EXCEL (.CSV)</button>
+                </div>
+                <table id="my-shipments-table"><thead><tr><th>ID</th><th>Prodotto</th><th>Destinazione</th><th>Stato</th></tr></thead><tbody id="my-shipments-body"></tbody></table>
+            </div>
+        </div>
+
+        <div id="panel-staff-manage" class="panel">
+            <div class="card">
+                <h2>👥 GESTIONE BADGE & DELEGHE OPERATIVE</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div>
+                        <input type="text" id="worker-name" placeholder="Nome Magazziniere">
+                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE E DELEGA</button>
+                    </div>
+                    <div style="background:#000; padding:15px; border-radius:8px;">
+                        <div class="checkbox-group"><input type="checkbox" id="p-mint"> <label>Permesso Factory</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-in" checked> <label>Permesso Checkpoint</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-out" checked> <label>Permesso Handover</label></div>
+                    </div>
+                </div>
+                <div id="qr-display" style="margin-top:20px;"></div>
+                <table id="staff-table"><thead><tr><th>Nome</th><th>Wallet Assegnato</th><th>Azione</th></tr></thead><tbody id="staff-list-body"></tbody></table>
+            </div>
+        </div>
+
+        <div id="panel-operations" class="panel">
+            <div class="card" style="border-color: var(--neon);">
+                <h2>📍 OPERAZIONI LOGISTICHE (BADGE STAFF)</h2>
+                
+                <div class="stat-card">
+                    <p style="margin:0; font-size:0.6rem; color:#888;">DATI BOX ATTUALI:</p>
+                    <div id="live-box-data" class="stat-val">Nessun Box Sincronizzato</div>
+                </div>
+                <button class="btn-grey" onclick="connectBT()">📡 1. LEGGI IOT E SINCRONIZZA BOX</button>
+                
+                <div id="op-scanner-box" style="display:none; margin-top:20px;">
+                    <div id="op-qr-reader" style="display:block; min-height: 200px;"></div>
+                    <button class="btn-danger" onclick="stopOpScanner()">ANNULLA SCANSIONE</button>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px;">
+                    <div class="card">
+                        <h3>CHECKPOINT / POSIZIONE</h3>
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <input type="text" id="op-id" placeholder="ID Lotto" style="flex:2;">
+                            <button class="btn-success" style="flex:1; padding:0;" onclick="startOpScanner('op-id')">📷 SCAN QR</button>
+                        </div>
+                        <button class="btn-neon" onclick="executeCheckpointBlind()">2. REGISTRA POSIZIONE</button>
+                    </div>
+                    <div class="card">
+                        <h3>HANDOVER / CONSEGNA</h3>
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <input type="text" id="out-id" placeholder="ID Lotto" style="flex:2;">
+                            <button class="btn-success" style="flex:1; padding:0;" onclick="startOpScanner('out-id')">📷 SCAN QR</button>
+                        </div>
+                        <button class="btn-staff" onclick="executeHandoverBlind()">2. SBLOCCA CONSEGNA</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-buyer" class="panel">
+            <div class="card" style="border-color: var(--danger);">
+                <h2>🛒 BUYER PORTAL: ESCROW & DISPUTE</h2>
+                <input type="text" id="esc-id" placeholder="ID Lotto da pagare">
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn-success" onclick="fundEscrowAction()">💸 PAGA/CARICA ESCROW</button>
+                    <button class="btn-danger" style="background:transparent; border:1px solid var(--danger);" onclick="refundDispute()">❌ RICHIEDI RIMBORSO</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="terminal">> Sistema SmartSheer Pronto. In attesa di login...</div>
+    </div>
+</div>
+
+<script>
+    // 🚨 CONFIGURAZIONE CORE E BLOCKCHAIN 🚨
+    const CONTRACT_ADDRESS = "0xce91B1Ce710b6b63Ce1605aa8eE01b16C6364683"; 
+    const RPC_URL = "https://polygon-rpc.com"; 
+    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+    const contractABI = [
+        "function mintSBT(bytes32 _dnaHash) external",
+        "function sbtRegistry(address) view returns (bytes32)", 
+        "function registerHub(bytes32 _hubHash) external",
+        "function setStealthWorker(address _worker, bool _mint, bool _in, bool _out, bool _active) external",
+        "function mintBatch(address _m, bytes32 _meta, uint256 _qty, tuple(bool, int256, int256, bool, bool) _rules, uint256 _price, address _buyer) external",
+        "function recordCheckpoint(uint256 _id, bytes32 _hubHash) external",
+        "function executeHandover(uint256 _id, int256 _temp, bool _gps, bool _tamp) external",
+        "function fundEscrow(uint256 _id) external payable",
+        "function forceAcceptance(uint256 _id) external",
+        "function refundDispute(uint256 _id) external",
+        "function shipmentCounter() view returns(uint256)",
+        "function shipments(uint256) view returns(uint256, address, bytes32, uint256, tuple(bool, int256, int256, bool, bool), uint256, address, uint8, bool)"
+    ];
+
+    let provider, signer, vaultPass, currentRole, lastSensorData;
+    let videoStream = null;
+    let loginScanner = null;
+    let opQrScanner = null;
+    
+    let staffList = [];
+    let myVaultData = { shipments: [], hubs: [] }; 
+    const statusMap = ["In Magazzino", "In Viaggio", "In Disputa", "Consegnato", "Rimborsato"];
+
+    // --- UTILS ---
+    function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
+    function togglePass(id) { const i = document.getElementById(id); i.type = i.type === "password" ? "text" : "password"; }
+    function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato.`); }
+    function toggleEscrow() { document.getElementById('escrow-fields').style.display = document.getElementById('use-escrow').checked ? 'flex' : 'none'; }
+    
+    function resetDevice() {
+        if(prompt("Scrivi RESET per formattare il Vault locale e ripartire da zero:") === "RESET") {
+            localStorage.clear();
+            alert("Vault pulito! Ricarica la pagina.");
+            location.reload();
+        }
     }
-}
 
-// --- QR E VIDEO KYC ---
-async function startKYCVideo() {
-    try {
-        document.getElementById(&#39;video-container&#39;).style.display = &#39;block&#39;;
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        document.getElementById(&#39;webcam&#39;).srcObject = videoStream;
-        log(&quot;📷 Ripresa Video attivata.&quot;);
-    } catch(e) { log(&quot;❌ Errore Webcam: &quot; + e.message); }
-}
-function stopKYCVideo() {
-    if(videoStream) { videoStream.getTracks().forEach(t =&gt; t.stop()); document.getElementById(&#39;webcam&#39;).srcObject = null; }
-    document.getElementById(&#39;video-container&#39;).style.display = &#39;none&#39;;
-}
+    // --- QR E VIDEO KYC ---
+    async function startKYCVideo() {
+        try {
+            document.getElementById('video-container').style.display = 'block';
+            videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('webcam').srcObject = videoStream;
+            log("📷 Ripresa Video attivata.");
+        } catch(e) { log("❌ Errore Webcam: " + e.message); }
+    }
+    function stopKYCVideo() {
+        if(videoStream) { videoStream.getTracks().forEach(t => t.stop()); document.getElementById('webcam').srcObject = null; }
+        document.getElementById('video-container').style.display = 'none';
+    }
 
-// SCANNER DI LOGIN (IL TUO MOTORE ORIGINALE FUNZIONANTE)
-function switchLoginMode(mode) {
-    document.getElementById(&#39;login-admin-area&#39;).style.display = mode === &#39;admin&#39; ? &#39;block&#39; : &#39;none&#39;;
-    document.getElementById(&#39;login-staff-area&#39;).style.display = mode === &#39;staff&#39; ? &#39;block&#39; : &#39;none&#39;;
-    if(mode === &#39;staff&#39;) {
-        loginScanner = new Html5Qrcode(&quot;qr-reader&quot;);
-        loginScanner.start({ facingMode: &quot;environment&quot; }, { fps: 10, qrbox: 250 }, (txt) =&gt; {
-            loginScanner.stop(); 
-            processStaffLogin(txt);
+    // SCANNER DI LOGIN
+    function switchLoginMode(mode) {
+        document.getElementById('login-admin-area').style.display = mode === 'admin' ? 'block' : 'none';
+        document.getElementById('login-staff-area').style.display = mode === 'staff' ? 'block' : 'none';
+        if(mode === 'staff') {
+            loginScanner = new Html5Qrcode("qr-reader");
+            loginScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+                loginScanner.stop(); 
+                processStaffLogin(txt);
+            });
+        }
+    }
+
+    function stopQRScanner() { 
+        if(loginScanner) { loginScanner.stop(); }
+        log("Scanner Login interrotto."); 
+    }
+
+    // SCANNER DELLE OPERAZIONI
+    function startOpScanner(targetInputId) {
+        document.getElementById('op-scanner-box').style.display = "block";
+        opQrScanner = new Html5Qrcode("op-qr-reader");
+        opQrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            stopOpScanner();
+            document.getElementById(targetInputId).value = txt.replace("SMARTSHEER_LOTTO:", "");
         });
     }
-}
-
-function stopQRScanner() { 
-    if(loginScanner) { loginScanner.stop(); }
-    log(&quot;Scanner Login interrotto.&quot;); 
-}
-
-// SCANNER DELLE OPERAZIONI
-function startOpScanner(targetInputId) {
-    document.getElementById(&#39;op-scanner-box&#39;).style.display = &quot;block&quot;;
-    opQrScanner = new Html5Qrcode(&quot;op-qr-reader&quot;);
-    opQrScanner.start({ facingMode: &quot;environment&quot; }, { fps: 10, qrbox: 250 }, (txt) =&gt; {
-        stopOpScanner();
-        document.getElementById(targetInputId).value = txt.replace(&quot;SMARTSHEER_LOTTO:&quot;, &quot;&quot;);
-    });
-}
-function stopOpScanner() {
-    if(opQrScanner) { opQrScanner.stop(); }
-    document.getElementById(&#39;op-scanner-box&#39;).style.display = &#39;none&#39;;
-}
-
-async function exportShipmentsCSV() { alert(&quot;Generazione report in corso...&quot;); }
-
-// --- BLUETOOTH E SCAMBIO DATI CON LA BOX ---
-async function registerIoTBox() {
-    log(&quot;📡 Autorizzazione Box in corso...&quot;);
-    try {
-        const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: &#39;SmartSheer_&#39; }], optionalServices: [SERVICE_UUID] });
-        const server = await dev.gatt.connect();
-        log(`✅ Box Rilevato e Autorizzato: ${dev.name}`);
-        document.getElementById(&#39;iot-addr-manual&#39;).value = &quot;Hardware Connesso&quot;;
-    } catch(e) { log(&quot;❌ Errore BT: Dispositivo non trovato.&quot;); }
-}
-
-async function connectBT() {
-    log(&quot;📡 Connessione al Box in corso...&quot;);
-    try {
-        const dev = await navigator.bluetooth.requestDevice({ 
-            filters: [{ namePrefix: &#39;SmartSheer_&#39; }], 
-            optionalServices: [SERVICE_UUID] 
-        });
-        const server = await dev.gatt.connect();
-        const service = await server.getPrimaryService(SERVICE_UUID);
-        const characteristic = await service.getCharacteristic(CHAR_UUID);
-        
-        log(&quot;📥 Acquisizione dati...&quot;);
-        const value = await characteristic.readValue();
-        const decoded = new TextDecoder().decode(value);
-        const data = JSON.parse(decoded);
-
-        lastSensorData = {
-            temp: data.payload.tAvg,
-            lat: data.payload.lat,
-            lon: data.payload.lon,
-            shock: data.payload.shock,
-            hash: data.payload.lastHash
-        };
-
-        const gmapsLink = `https://www.google.com/maps?q=${data.payload.lat},${data.payload.lon}`;
-        document.getElementById(&#39;live-box-data&#39;).innerHTML = `
-            &lt;a href=&quot;${gmapsLink}&quot; target=&quot;_blank&quot; style=&quot;color:var(--neon); text-decoration:underline;&quot;&gt;📍 APRI MAPPA (${data.payload.lat}, ${data.payload.lon})&lt;/a&gt;<br>
-            🌡️ Temp Media: ${data.payload.tAvg}°C | ⚠️ Urti: ${data.payload.shock}
-        `;
-        
-        log(`✅ SINCRONIZZATO | Hash: ${data.payload.lastHash.substring(0,12)}...`);
-        alert(&quot;Box Sincronizzato! Controlla i dati nel pannello.&quot;);
-    } catch(e) { log(&quot;❌ Errore Bluetooth: &quot; + e.message); }
-}
-
-async function resetBoxWithSuperAlert() {
-    if(prompt(&quot;⚠️ DIGITA: CONFERMO&quot;) !== &quot;CONFERMO&quot;) return;
-    try {
-        const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: &#39;SmartSheer_&#39; }], optionalServices: [SERVICE_UUID] });
-        const server = await dev.gatt.connect();
-        const characteristic = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID);
-        await characteristic.writeValue(new TextEncoder().encode(&quot;RESET_ALL&quot;));
-        log(&quot;🔥 COMANDO RESET INVIATO ALLA BOX.&quot;);
-    } catch(e) { log(&quot;❌ Errore Reset: &quot; + e.message); }
-}
-
-async function printLogToSerial() {
-    try {
-        const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: &#39;SmartSheer_&#39; }], optionalServices: [SERVICE_UUID] });
-        const server = await dev.gatt.connect();
-        const characteristic = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID);
-        await characteristic.writeValue(new TextEncoder().encode(&quot;GET_CSV&quot;));
-        log(&quot;📥 Dump Log inviato alla porta seriale dell&#39;ESP32.&quot;);
-    } catch(e) { log(&quot;❌ Errore Seriale: &quot; + e.message); }
-}
-
-async function setBoxInterval() {
-    const minuti = document.getElementById(&#39;box-interval&#39;).value;
-    if(!minuti) return alert(&quot;Inserisci i minuti!&quot;);
-    try {
-        const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: &#39;SmartSheer_&#39; }], optionalServices: [SERVICE_UUID] });
-        const server = await dev.gatt.connect();
-        const char = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID);
-        await char.writeValue(new TextEncoder().encode(&quot;SLEEP:&quot; + minuti));
-        log(`⏱️ Intervallo sonno Box impostato a ${minuti} minuti.`);
-    } catch(e) { log(&quot;❌ Errore Timer BT: &quot; + e.message); }
-}
-
-// --- VAULT CRITTOGRAFATO (RESILIENTE) ---
-function loadVault(address) {
-    try {
-        myVaultData = { shipments: [], hubs: [] };
-        staffList = [];
-        
-        const enc = localStorage.getItem(&#39;ss_vault_&#39; + address);
-        if(enc) {
-            const bytes = CryptoJS.AES.decrypt(enc, vaultPass);
-            myVaultData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-            if(!myVaultData.hubs) myVaultData.hubs = [];
-            if(!myVaultData.shipments) myVaultData.shipments = [];
-        }
-        const encStaff = localStorage.getItem(&#39;ss_staff_&#39; + address);
-        if(encStaff) {
-            const bytes2 = CryptoJS.AES.decrypt(encStaff, vaultPass);
-            staffList = JSON.parse(bytes2.toString(CryptoJS.enc.Utf8));
-        }
-    } catch(e) { log(&quot;⚠️ Errore decrittazione Vault. Se hai cambiato password, esegui il RIPRISTINO.&quot;); }
-}
-
-function saveVault(address) {
-    localStorage.setItem(&#39;ss_vault_&#39; + address, CryptoJS.AES.encrypt(JSON.stringify(myVaultData), vaultPass).toString());
-    localStorage.setItem(&#39;ss_staff_&#39; + address, CryptoJS.AES.encrypt(JSON.stringify(staffList), vaultPass).toString());
-}
-
-// --- AUTH &amp; LOGIN ---
-async function unlockSystemAdmin() {
-    vaultPass = document.getElementById(&#39;gate-pass&#39;).value;
-    if(!vaultPass || vaultPass.length &lt; 4) return alert(&quot;Password troppo corta!&quot;);
-    if(!window.ethereum) return alert(&quot;MetaMask non trovato.&quot;);
-    try {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send(&quot;eth_requestAccounts&quot;, []);
-        signer = provider.getSigner();
-        const addr = await signer.getAddress();
-        await signer.signMessage(`SmartSheer_Accesso_Sicuro_${addr}`);
-        currentRole = document.getElementById(&#39;role-selector&#39;).value;
-        loadVault(addr);
-        launchDashboard(addr, currentRole);
-        log(&quot;✅ Login effettuato.&quot;);
-    } catch(e) { alert(&quot;Firma rifiutata.&quot;); }
-}
-
-// IL TUO LOGIN JSON ORIGINALE FUNZIONANTE
-async function processStaffLogin(txt) {
-    try {
-        const data = JSON.parse(txt);
-        const rpc = new ethers.providers.JsonRpcProvider(RPC_URL);
-        signer = new ethers.Wallet(data.pk, rpc);
-        currentRole = &#39;staff&#39;;
-        launchDashboard(signer.address, &#39;staff&#39;);
-        log(`🔓 Accesso Staff confermato: ${data.name}`);
-    } catch(e) { alert(&quot;QR Badge non valido.&quot;); }
-}
-
-// --- DASHBOARD ROUTING ---
-function launchDashboard(addr, role) {
-    document.getElementById(&#39;gate-overlay&#39;).style.display = &#39;none&#39;;
-    document.getElementById(&#39;main-app&#39;).style.display = &#39;flex&#39;;
-    document.getElementById(&#39;eth-address&#39;).innerText = addr;
-    document.getElementById(&#39;tag-ruolo&#39;).innerText = role.toUpperCase();
-    const nav = document.getElementById(&#39;tab-nav&#39;); nav.innerHTML = &quot;&quot;;
-    
-    if(role === &#39;master&#39;) { 
-        addTab(&quot;MASTER CONTROL&quot;, &quot;panel-admin&quot;); 
-        syncGlobalShipments(); 
+    function stopOpScanner() {
+        if(opQrScanner) { opQrScanner.stop(); }
+        document.getElementById('op-scanner-box').style.display = 'none';
     }
-    if(role === &#39;client&#39;) {
-        addTab(&quot;IDENTITY &amp; HUB&quot;, &quot;panel-onboarding&quot;);
-        addTab(&quot;FACTORY&quot;, &quot;panel-factory&quot;);
-        addTab(&quot;I MIEI LOTTI&quot;, &quot;panel-my-shipments&quot;);
-        addTab(&quot;STAFF&quot;, &quot;panel-staff-manage&quot;);
-        renderStaff(); 
-        syncMyShipments(); 
-        renderHubs();
-        checkSBTStatus();
-    }
-    if(role === &#39;staff&#39;) { addTab(&quot;OPERATIONS&quot;, &quot;panel-operations&quot;); }
-    if(role === &#39;buyer&#39;) { addTab(&quot;BUYER PORTAL&quot;, &quot;panel-buyer&quot;); }
-    
-    showPanel(nav.firstChild.getAttribute(&#39;data-panel&#39;));
-}
 
-function addTab(l, p) {
-    const t = document.createElement(&#39;div&#39;); t.className = &quot;tab&quot;; t.innerText = l; t.setAttribute(&#39;data-panel&#39;, p);
-    t.onclick = (e) =&gt; { document.querySelectorAll(&#39;.tab&#39;).forEach(x=&gt;x.classList.remove(&#39;active&#39;)); e.target.classList.add(&#39;active&#39;); showPanel(p); };
-    document.getElementById(&#39;tab-nav&#39;).appendChild(t);
-}
-function showPanel(id) { document.querySelectorAll(&#39;.panel&#39;).forEach(p=&gt;p.style.display=&#39;none&#39;); document.getElementById(id).style.display=&#39;block&#39;; }
+    async function exportShipmentsCSV() { alert("Generazione report in corso..."); }
 
-// --- LOGICA BLOCKCHAIN &amp; ERP ---
-async function applyBan(isBanned) {
-    const addr = document.getElementById(&#39;ban-addr&#39;).value;
-    if(!addr) return alert(&quot;Inserisci l&#39;indirizzo da bannare.&quot;);
-    try {
-        log(`⏳ Inserimento ${addr} in Black List...`);
-        log(`🚫 Indirizzo ${addr} inserito in Black List dal Master.`);
-        alert(`L&#39;indirizzo ${addr} non potrà più firmare o coniare.`);
-    } catch(e) { log(&quot;❌ Errore Black List.&quot;); }
-}
-
-async function checkSBTStatus() {
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); 
-        const myAddr = await signer.getAddress();
-        const dna = await c.sbtRegistry(myAddr);
-        
-        if(dna !== &quot;0x0000000000000000000000000000000000000000000000000000000000000000&quot;) {
-            document.getElementById(&#39;sbt-mint-section&#39;).style.display = &#39;none&#39;;
-            document.getElementById(&#39;sbt-verified-section&#39;).style.display = &#39;block&#39;;
-            document.getElementById(&#39;hub-registration-section&#39;).style.display = &#39;block&#39;;
-            log(&quot;✅ SBT Trovato. Abilitato alle operazioni.&quot;);
-        } else {
-            document.getElementById(&#39;sbt-mint-section&#39;).style.display = &#39;block&#39;;
-            document.getElementById(&#39;sbt-verified-section&#39;).style.display = &#39;none&#39;;
-            document.getElementById(&#39;hub-registration-section&#39;).style.display = &#39;none&#39;;
-        }
-    } catch(e) { 
-        log(&quot;⚠️ Errore SBT (Dettaglio): &quot; + (e.reason || e.message)); 
-    }
-}
-
-async function mintIdentity() {
-    const soc = document.getElementById(&#39;reg-soc&#39;).value;
-    const piva = document.getElementById(&#39;reg-piva&#39;).value;
-    const cf = document.getElementById(&#39;reg-cf&#39;).value;
-    const salt = document.getElementById(&#39;reg-salt&#39;).value;
-    
-    if(!soc || !piva || !cf || !salt) return alert(&quot;Compila tutti i campi aziendali prima di coniare!&quot;);
-
-    const rawData = soc + piva + cf + salt + vaultPass;
-    const dna = &quot;0x&quot; + CryptoJS.SHA256(rawData).toString();
-    
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        log(&quot;⏳ Conio SBT in corso...&quot;);
-        const tx = await c.mintSBT(dna); await tx.wait();
-        log(`🛡️ SBT Coniato: ${dna}`);
-        stopKYCVideo(); 
-        checkSBTStatus();
-    } catch(e) { log(&quot;❌ Errore SBT.&quot;); }
-}
-
-async function registerHubBlind() {
-    const name = document.getElementById(&#39;hub-name&#39;).value;
-    const lat = document.getElementById(&#39;hub-lat&#39;).value;
-    const lon = document.getElementById(&#39;hub-lon&#39;).value;
-    const dec = document.getElementById(&#39;hub-tolerance&#39;).value;
-    
-    if(!lat || !lon) return alert(&quot;Devi prima trovare il GPS!&quot;);
-    
-    const latRound = parseFloat(lat).toFixed(dec);
-    const lonRound = parseFloat(lon).toFixed(dec);
-    const blindStr = latRound + &quot;|&quot; + lonRound + &quot;|&quot; + vaultPass;
-    const hash = &quot;0x&quot; + CryptoJS.SHA256(blindStr).toString();
-    
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        const tx = await c.registerHub(hash); await tx.wait();
-        myVaultData.hubs.push({ name: name, hash: hash, lat: latRound, lon: lonRound, dec: dec });
-        saveVault(await signer.getAddress()); renderHubs();
-        log(`📍 Hub registrato con hash: ${hash}`);
-    } catch(e) { log(&quot;❌ Errore Hub: &quot; + e.message); }
-}
-
-function renderHubs() {
-    const b = document.getElementById(&#39;hubs-list-body&#39;); b.innerHTML = &quot;&quot;;
-    myVaultData.hubs.forEach(h =&gt; {
-        b.innerHTML += `&lt;tr&gt;&lt;td&gt;${h.name}&lt;/td&gt;&lt;td&gt;${h.lat}, ${h.lon}&lt;/td&gt;&lt;td&gt;${h.hash.substring(0,10)}...&lt;/td&gt;&lt;/tr&gt;`;
-    });
-}
-
-async function buildAndMintNFT() {
-    const name = document.getElementById(&#39;nft-name&#39;).value;
-    const qty = document.getElementById(&#39;nft-qty&#39;).value;
-    const price = ethers.utils.parseEther(document.getElementById(&#39;nft-price&#39;).value || &quot;0&quot;);
-    const buyer = document.getElementById(&#39;nft-buyer&#39;).value || ethers.constants.AddressZero;
-    const meta = &quot;0x&quot; + CryptoJS.SHA256(name + Date.now()).toString();
-    const rules = [document.getElementById(&#39;iot-temp&#39;).checked, 0, 0, document.getElementById(&#39;iot-gps&#39;).checked, true];
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        const tx = await c.mintBatch(await signer.getAddress(), meta, qty, rules, price, buyer);
-        await tx.wait();
-        const id = (await c.shipmentCounter()).toString();
-        myVaultData.shipments.push({ id: id, name: name, dest: document.getElementById(&#39;dest-address&#39;).value });
-        saveVault(await signer.getAddress());
-        log(`✅ Lotto #${id} creato.`);
-        document.getElementById(&#39;lotto-qr-display&#39;).innerHTML = &quot;&quot;;
-        document.getElementById(&#39;lotto-qr-display&#39;).style.display = &quot;block&quot;;
-        new QRCode(document.getElementById(&#39;lotto-qr-display&#39;), { text: &quot;SMARTSHEER_LOTTO:&quot; + id, width: 200, height: 200 });
-    } catch(e) { log(&quot;❌ Errore Mint.&quot;); }
-}
-
-async function syncGlobalShipments() {
-    const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
-    const count = await c.shipmentCounter();
-    const b = document.getElementById(&#39;global-log-body&#39;); b.innerHTML = &quot;&quot;;
-    for(let i=1; i&lt;=count; i++) {
+    // --- BLUETOOTH E SCAMBIO DATI CON LA BOX ---
+    async function registerIoTBox() {
+        log("📡 Autorizzazione Box in corso...");
         try {
-            const s = await c.shipments(i);
-            b.innerHTML += `&lt;tr&gt;&lt;td&gt;#${i}&lt;/td&gt;&lt;td class=&quot;addr-full&quot;&gt;${s[1].substring(0,10)}...&lt;/td&gt;&lt;td style=&quot;color:var(--master);&quot;&gt;${statusMap[s[8]]}&lt;/td&gt;&lt;/tr&gt;`;
-        } catch(e) {}
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] });
+            const server = await dev.gatt.connect();
+            log(`✅ Box Rilevato e Autorizzato: ${dev.name}`);
+            document.getElementById('iot-addr-manual').value = "Hardware Connesso";
+        } catch(e) { log("❌ Errore BT: Dispositivo non trovato."); }
     }
-}
 
-async function syncMyShipments() {
-    const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
-    const count = await c.shipmentCounter();
-    const myAddr = await signer.getAddress();
-    const b = document.getElementById(&#39;my-shipments-body&#39;); b.innerHTML = &quot;&quot;;
-    for(let i=1; i&lt;=count; i++) {
+    async function connectBT() {
+        log("📡 Connessione al Box in corso...");
         try {
-            const s = await c.shipments(i);
-            if(s[1] === myAddr) {
-                const info = myVaultData.shipments.find(x =&gt; x.id == i) || {name:&quot;?&quot;, dest:&quot;?&quot;};
-                b.innerHTML += `&lt;tr&gt;&lt;td&gt;#${i}&lt;/td&gt;&lt;td&gt;${info.name}&lt;/td&gt;&lt;td&gt;${info.dest}&lt;/td&gt;&lt;td&gt;${statusMap[s[8]]}&lt;/td&gt;&lt;/tr&gt;`;
+            const dev = await navigator.bluetooth.requestDevice({ 
+                filters: [{ namePrefix: 'SmartSheer_' }], 
+                optionalServices: [SERVICE_UUID] 
+            });
+            const server = await dev.gatt.connect();
+            const service = await server.getPrimaryService(SERVICE_UUID);
+            const characteristic = await service.getCharacteristic(CHAR_UUID);
+            
+            log("📥 Acquisizione dati...");
+            const value = await characteristic.readValue();
+            const decoded = new TextDecoder().decode(value);
+            const data = JSON.parse(decoded);
+
+            lastSensorData = {
+                temp: data.payload.tAvg,
+                lat: data.payload.lat,
+                lon: data.payload.lon,
+                shock: data.payload.shock,
+                hash: data.payload.lastHash
+            };
+
+            const gmapsLink = `http://googleusercontent.com/maps.google.com/?q=${data.payload.lat},${data.payload.lon}`;
+            document.getElementById('live-box-data').innerHTML = `
+                <a href="${gmapsLink}" target="_blank" style="color:var(--neon); text-decoration:underline;">📍 APRI MAPPA (${data.payload.lat}, ${data.payload.lon})</a><br>
+                🌡️ Temp Media: ${data.payload.tAvg}°C | ⚠️ Urti: ${data.payload.shock}
+            `;
+            
+            log(`✅ SINCRONIZZATO | Hash: ${data.payload.lastHash.substring(0,12)}...`);
+            alert("Box Sincronizzato! Controlla i dati nel pannello.");
+        } catch(e) { log("❌ Errore Bluetooth: " + e.message); }
+    }
+
+    async function resetBoxWithSuperAlert() {
+        if(prompt("⚠️ DIGITA: CONFERMO") !== "CONFERMO") return;
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] });
+            const server = await dev.gatt.connect();
+            const characteristic = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID);
+            await characteristic.writeValue(new TextEncoder().encode("RESET_ALL"));
+            log("🔥 COMANDO RESET INVIATO ALLA BOX.");
+        } catch(e) { log("❌ Errore Reset: " + e.message); }
+    }
+
+    async function printLogToSerial() {
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] });
+            const server = await dev.gatt.connect();
+            const characteristic = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID);
+            await characteristic.writeValue(new TextEncoder().encode("GET_CSV"));
+            log("📥 Dump Log inviato alla porta seriale dell'ESP32.");
+        } catch(e) { log("❌ Errore Seriale: " + e.message); }
+    }
+
+    async function setBoxInterval() {
+        const minuti = document.getElementById('box-interval').value;
+        if(!minuti) return alert("Inserisci i minuti!");
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] });
+            const server = await dev.gatt.connect();
+            const char = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID);
+            await char.writeValue(new TextEncoder().encode("SLEEP:" + minuti));
+            log(`⏱️ Intervallo sonno Box impostato a ${minuti} minuti.`);
+        } catch(e) { log("❌ Errore Timer BT: " + e.message); }
+    }
+
+    // --- VAULT CRITTOGRAFATO (RESILIENTE) ---
+    function loadVault(address) {
+        try {
+            myVaultData = { shipments: [], hubs: [] };
+            staffList = [];
+            
+            const enc = localStorage.getItem('ss_vault_' + address);
+            if(enc) {
+                const bytes = CryptoJS.AES.decrypt(enc, vaultPass);
+                myVaultData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+                if(!myVaultData.hubs) myVaultData.hubs = [];
+                if(!myVaultData.shipments) myVaultData.shipments = [];
             }
-        } catch(e) {}
+            const encStaff = localStorage.getItem('ss_staff_' + address);
+            if(encStaff) {
+                const bytes2 = CryptoJS.AES.decrypt(encStaff, vaultPass);
+                staffList = JSON.parse(bytes2.toString(CryptoJS.enc.Utf8));
+            }
+        } catch(e) { log("⚠️ Errore decrittazione Vault. Se hai cambiato password, esegui il RIPRISTINO."); }
     }
-}
-
-// IL TUO SISTEMA DI CREAZIONE QR ORIGINALE FUNZIONANTE E INGRANDITO
-async function generateWorkerQR() {
-    const name = document.getElementById(&#39;worker-name&#39;).value;
-    if(!name) return alert(&quot;Inserisci il nome del magazziniere.&quot;);
-    const wallet = ethers.Wallet.createRandom();
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        const tx = await c.setStealthWorker(wallet.address, document.getElementById(&#39;p-mint&#39;).checked, document.getElementById(&#39;p-in&#39;).checked, document.getElementById(&#39;p-out&#39;).checked, true);
-        await tx.wait();
-        staffList.push({ name: name, addr: wallet.address, pk: wallet.privateKey });
-        saveVault(await signer.getAddress());
-        
-        document.getElementById(&#39;qr-display&#39;).innerHTML = &quot;&quot;;
-        document.getElementById(&#39;qr-display&#39;).style.display = &quot;block&quot;;
-        
-        new QRCode(document.getElementById(&#39;qr-display&#39;), { 
-            text: JSON.stringify({pk: wallet.privateKey, name: name}), 
-            width: 256, 
-            height: 256 
-        });
-        
-        renderStaff();
-        document.getElementById(&#39;qr-display&#39;).scrollIntoView({ behavior: &#39;smooth&#39; });
-    } catch(e) { log(&quot;❌ Delega fallita.&quot;); }
-}
-
-function renderStaff() {
-    const b = document.getElementById(&#39;staff-list-body&#39;); b.innerHTML = &quot;&quot;;
-    staffList.forEach((s, index) =&gt; {
-        b.innerHTML += `&lt;tr&gt;
-            &lt;td&gt;${s.name}&lt;/td&gt;
-            &lt;td&gt;${s.addr.substring(0,10)}...&lt;/td&gt;
-            &lt;td&gt;&lt;button class=&quot;btn-grey&quot; onclick=&quot;reprintBadge(${index})&quot;&gt;🖨️&lt;/button&gt;&lt;/td&gt;
-        &lt;/tr&gt;`;
-    });
-}
-
-function reprintBadge(index) {
-    const s = staffList[index];
-    document.getElementById(&#39;qr-display&#39;).innerHTML = &quot;&quot;;
-    document.getElementById(&#39;qr-display&#39;).style.display = &quot;block&quot;;
     
-    new QRCode(document.getElementById(&#39;qr-display&#39;), { 
-        text: JSON.stringify({pk: s.pk, name: s.name}), 
-        width: 256, 
-        height: 256
-    });
-    
-    log(`🖨️ Ristampato badge a video per: ${s.name}`);
-    document.getElementById(&#39;qr-display&#39;).scrollIntoView({ behavior: &#39;smooth&#39; });
-}
+    function saveVault(address) {
+        localStorage.setItem('ss_vault_' + address, CryptoJS.AES.encrypt(JSON.stringify(myVaultData), vaultPass).toString());
+        localStorage.setItem('ss_staff_' + address, CryptoJS.AES.encrypt(JSON.stringify(staffList), vaultPass).toString());
+    }
 
-// --- GEOFENCE COMPLETO (COMPARA BOX CON VAULT) ---
-async function executeCheckpointBlind() {
-    const id = document.getElementById(&#39;op-id&#39;).value;
-    if(!id || !lastSensorData) return alert(&quot;Sincronizza il Box prima di inviare dati!&quot;);
-    
-    let foundHubHash = null;
-    
-    for (let hub of myVaultData.hubs) {
-        const latRound = parseFloat(lastSensorData.lat).toFixed(hub.dec);
-        const lonRound = parseFloat(lastSensorData.lon).toFixed(hub.dec);
-        const blindStr = latRound + &quot;|&quot; + lonRound + &quot;|&quot; + vaultPass;
-        const testHash = &quot;0x&quot; + CryptoJS.SHA256(blindStr).toString();
+    // --- AUTH & LOGIN ---
+    async function unlockSystemAdmin() {
+        vaultPass = document.getElementById('gate-pass').value;
+        if(!vaultPass || vaultPass.length < 4) return alert("Password troppo corta!");
+        if(!window.ethereum) return alert("MetaMask non trovato.");
+        try {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            const addr = await signer.getAddress();
+            await signer.signMessage(`SmartSheer_Accesso_Sicuro_${addr}`);
+            currentRole = document.getElementById('role-selector').value;
+            loadVault(addr);
+            launchDashboard(addr, currentRole);
+            log("✅ Login effettuato.");
+        } catch(e) { alert("Firma rifiutata."); }
+    }
+
+    async function processStaffLogin(txt) {
+        try {
+            const data = JSON.parse(txt);
+            const rpc = new ethers.providers.JsonRpcProvider(RPC_URL);
+            signer = new ethers.Wallet(data.pk, rpc);
+            currentRole = 'staff';
+            launchDashboard(signer.address, 'staff');
+            log(`🔓 Accesso Staff confermato: ${data.name}`);
+        } catch(e) { alert("QR Badge non valido."); }
+    }
+
+    // --- DASHBOARD ROUTING ---
+    function launchDashboard(addr, role) {
+        document.getElementById('gate-overlay').style.display = 'none';
+        document.getElementById('main-app').style.display = 'flex';
+        document.getElementById('eth-address').innerText = addr;
+        document.getElementById('tag-ruolo').innerText = role.toUpperCase();
+        const nav = document.getElementById('tab-nav'); nav.innerHTML = "";
         
-        if (testHash === hub.hash) {
-            foundHubHash = hub.hash;
-            log(`📍 Sei nel magazzino: ${hub.name}`);
-            break;
+        if(role === 'master') { 
+            addTab("MASTER CONTROL", "panel-admin"); 
+            syncGlobalShipments(); 
+        }
+        if(role === 'client') {
+            addTab("IDENTITY & HUB", "panel-onboarding");
+            addTab("FACTORY", "panel-factory");
+            addTab("I MIEI LOTTI", "panel-my-shipments");
+            addTab("STAFF", "panel-staff-manage");
+            renderStaff(); 
+            syncMyShipments(); 
+            renderHubs();
+            checkSBTStatus();
+        }
+        if(role === 'staff') { addTab("OPERATIONS", "panel-operations"); }
+        if(role === 'buyer') { addTab("BUYER PORTAL", "panel-buyer"); }
+        
+        showPanel(nav.firstChild.getAttribute('data-panel'));
+    }
+
+    function addTab(l, p) {
+        const t = document.createElement('div'); t.className = "tab"; t.innerText = l; t.setAttribute('data-panel', p);
+        t.onclick = (e) => { document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); e.target.classList.add('active'); showPanel(p); };
+        document.getElementById('tab-nav').appendChild(t);
+    }
+    function showPanel(id) { document.querySelectorAll('.panel').forEach(p=>p.style.display='none'); document.getElementById(id).style.display='block'; }
+
+    // --- LOGICA BLOCKCHAIN & ERP ---
+    async function applyBan(isBanned) {
+        const addr = document.getElementById('ban-addr').value;
+        if(!addr) return alert("Inserisci l'indirizzo da bannare.");
+        try {
+            log(`⏳ Inserimento ${addr} in Black List...`);
+            log(`🚫 Indirizzo ${addr} inserito in Black List dal Master.`);
+            alert(`L'indirizzo ${addr} non potrà più firmare o coniare.`);
+        } catch(e) { log("❌ Errore Black List."); }
+    }
+
+    async function checkSBTStatus() {
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); 
+            const myAddr = await signer.getAddress();
+            const dna = await c.sbtRegistry(myAddr);
+            
+            if(dna !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+                document.getElementById('sbt-mint-section').style.display = 'none';
+                document.getElementById('sbt-verified-section').style.display = 'block';
+                document.getElementById('hub-registration-section').style.display = 'block';
+                log("✅ SBT Trovato. Abilitato alle operazioni.");
+            } else {
+                document.getElementById('sbt-mint-section').style.display = 'block';
+                document.getElementById('sbt-verified-section').style.display = 'none';
+                document.getElementById('hub-registration-section').style.display = 'none';
+            }
+        } catch(e) { 
+            log("⚠️ Errore SBT (Dettaglio): " + (e.reason || e.message)); 
         }
     }
-    
-    if (!foundHubHash) return alert(&quot;❌ GEOFENCE FALLITO: Il GPS del Box non corrisponde a nessun Hub autorizzato.&quot;);
 
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        log(&quot;⏳ Registrazione Checkpoint su Chain...&quot;);
-        const tx = await c.recordCheckpoint(id, foundHubHash);
-        await tx.wait();
-        log(&quot;✅ CHECKPOINT REGISTRATO SULLA BLOCKCHAIN.&quot;);
-    } catch(e) { log(&quot;❌ Errore Checkpoint.&quot;); }
-}
+    async function mintIdentity() {
+        const soc = document.getElementById('reg-soc').value;
+        const piva = document.getElementById('reg-piva').value;
+        const cf = document.getElementById('reg-cf').value;
+        const salt = document.getElementById('reg-salt').value;
+        
+        if(!soc || !piva || !cf || !salt) return alert("Compila tutti i campi aziendali prima di coniare!");
 
-async function executeHandoverBlind() {
-    const id = document.getElementById(&#39;out-id&#39;).value;
-    if(!id || !lastSensorData) return alert(&quot;Sincronizza il Box prima!&quot;);
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        log(&quot;⏳ Sblocco Consegna in corso...&quot;);
-        const isGpsValid = (lastSensorData.lat !== 0 &amp;&amp; lastSensorData.lat !== &quot;0.000000&quot;);
-        const tx = await c.executeHandover(id, Math.round(lastSensorData.temp), isGpsValid, (lastSensorData.shock &gt; 0));
-        await tx.wait();
-        log(&quot;✅ CONSEGNA ESEGUITA CON SUCCESSO.&quot;);
-    } catch(e) { log(&quot;❌ Errore Consegna.&quot;); }
-}
+        const rawData = soc + piva + cf + salt + vaultPass;
+        const dna = "0x" + CryptoJS.SHA256(rawData).toString();
+        
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            log("⏳ Conio SBT in corso...");
+            const tx = await c.mintSBT(dna); await tx.wait();
+            log(`🛡️ SBT Coniato: ${dna}`);
+            stopKYCVideo(); 
+            checkSBTStatus();
+        } catch(e) { log("❌ Errore SBT."); }
+    }
 
-async function fundEscrowAction() {
-    const id = document.getElementById(&#39;esc-id&#39;).value;
-    const amt = prompt(&quot;Importo MATIC da bloccare:&quot;);
-    if(!amt) return;
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        const tx = await c.fundEscrow(id, { value: ethers.utils.parseEther(amt) });
-        await tx.wait();
-        log(&quot;💸 Escrow pagato.&quot;);
-    } catch(e) { log(&quot;❌ Errore Pagamento.&quot;); }
-}
+    async function registerHubBlind() {
+        const name = document.getElementById('hub-name').value;
+        const lat = document.getElementById('hub-lat').value;
+        const lon = document.getElementById('hub-lon').value;
+        const dec = document.getElementById('hub-tolerance').value;
+        
+        if(!lat || !lon) return alert("Devi prima trovare il GPS!");
+        
+        const latRound = parseFloat(lat).toFixed(dec);
+        const lonRound = parseFloat(lon).toFixed(dec);
+        const blindStr = latRound + "|" + lonRound + "|" + vaultPass;
+        const hash = "0x" + CryptoJS.SHA256(blindStr).toString();
+        
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.registerHub(hash); await tx.wait();
+            myVaultData.hubs.push({ name: name, hash: hash, lat: latRound, lon: lonRound, dec: dec });
+            saveVault(await signer.getAddress()); renderHubs();
+            log(`📍 Hub registrato con hash: ${hash}`);
+        } catch(e) { log("❌ Errore Hub: " + e.message); }
+    }
 
-async function refundDispute() {
-    const id = document.getElementById(&#39;esc-id&#39;).value;
-    try {
-        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-        const tx = await c.refundDispute(id);
-        await tx.wait();
-        log(&quot;🔙 Rimborso in lavorazione.&quot;);
-    } catch(e) { log(&quot;❌ Errore Disputa.&quot;); }
-}
+    function renderHubs() {
+        const b = document.getElementById('hubs-list-body'); b.innerHTML = "";
+        myVaultData.hubs.forEach(h => {
+            b.innerHTML += `<tr><td>${h.name}</td><td>${h.lat}, ${h.lon}</td><td>${h.hash.substring(0,10)}...</td></tr>`;
+        });
+    }
 
-// Geocoding
-async function geocodeHub() { 
-    const addr = document.getElementById(&#39;hub-address&#39;).value;
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&amp;q=${addr}`);
-    const d = await res.json();
-    if(d[0]) { document.getElementById(&#39;hub-lat&#39;).value = d[0].lat; document.getElementById(&#39;hub-lon&#39;).value = d[0].lon; }
-}
-async function geocodeAddress() { 
-    const addr = document.getElementById(&#39;dest-address&#39;).value;
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&amp;q=${addr}`);
-    const d = await res.json();
-    if(d[0]) { document.getElementById(&#39;dest-lat&#39;).value = d[0].lat; document.getElementById(&#39;dest-lon&#39;).value = d[0].lon; }
-}
+    async function buildAndMintNFT() {
+        const name = document.getElementById('nft-name').value;
+        const qty = document.getElementById('nft-qty').value;
+        const price = ethers.utils.parseEther(document.getElementById('nft-price').value || "0");
+        const buyer = document.getElementById('nft-buyer').value || ethers.constants.AddressZero;
+        const meta = "0x" + CryptoJS.SHA256(name + Date.now()).toString();
+        const rules = [document.getElementById('iot-temp').checked, 0, 0, document.getElementById('iot-gps').checked, true];
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.mintBatch(await signer.getAddress(), meta, qty, rules, price, buyer);
+            await tx.wait();
+            const id = (await c.shipmentCounter()).toString();
+            myVaultData.shipments.push({ id: id, name: name, dest: document.getElementById('dest-address').value });
+            saveVault(await signer.getAddress());
+            log(`✅ Lotto #${id} creato.`);
+            document.getElementById('lotto-qr-display').innerHTML = "";
+            document.getElementById('lotto-qr-display').style.display = "block";
+            new QRCode(document.getElementById('lotto-qr-display'), { text: "SMARTSHEER_LOTTO:" + id, width: 200, height: 200 });
+        } catch(e) { log("❌ Errore Mint."); }
+    }
+
+    async function syncGlobalShipments() {
+        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
+        const count = await c.shipmentCounter();
+        const b = document.getElementById('global-log-body'); b.innerHTML = "";
+        for(let i=1; i<=count; i++) {
+            try {
+                const s = await c.shipments(i);
+                b.innerHTML += `<tr><td>#${i}</td><td class="addr-full">${s[1].substring(0,10)}...</td><td style="color:var(--master);">${statusMap[s[8]]}</td></tr>`;
+            } catch(e) {}
+        }
+    }
+
+    async function syncMyShipments() {
+        const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
+        const count = await c.shipmentCounter();
+        const myAddr = await signer.getAddress();
+        const b = document.getElementById('my-shipments-body'); b.innerHTML = "";
+        for(let i=1; i<=count; i++) {
+            try {
+                const s = await c.shipments(i);
+                if(s[1] === myAddr) {
+                    const info = myVaultData.shipments.find(x => x.id == i) || {name:"?", dest:"?"};
+                    b.innerHTML += `<tr><td>#${i}</td><td>${info.name}</td><td>${info.dest}</td><td>${statusMap[s[8]]}</td></tr>`;
+                }
+            } catch(e) {}
+        }
+    }
+
+    async function generateWorkerQR() {
+        const name = document.getElementById('worker-name').value;
+        if(!name) return alert("Inserisci il nome del magazziniere.");
+        const wallet = ethers.Wallet.createRandom();
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.setStealthWorker(wallet.address, document.getElementById('p-mint').checked, document.getElementById('p-in').checked, document.getElementById('p-out').checked, true);
+            await tx.wait();
+            staffList.push({ name: name, addr: wallet.address, pk: wallet.privateKey });
+            saveVault(await signer.getAddress());
+            
+            document.getElementById('qr-display').innerHTML = "";
+            document.getElementById('qr-display').style.display = "block";
+            
+            new QRCode(document.getElementById('qr-display'), { 
+                text: JSON.stringify({pk: wallet.privateKey, name: name}), 
+                width: 256, 
+                height: 256 
+            });
+            
+            renderStaff();
+            document.getElementById('qr-display').scrollIntoView({ behavior: 'smooth' });
+        } catch(e) { log("❌ Delega fallita."); }
+    }
+
+    function renderStaff() {
+        const b = document.getElementById('staff-list-body'); b.innerHTML = "";
+        staffList.forEach((s, index) => {
+            b.innerHTML += `<tr>
+                <td>${s.name}</td>
+                <td>${s.addr.substring(0,10)}...</td>
+                <td><button class="btn-grey" onclick="reprintBadge(${index})">🖨️</button></td>
+            </tr>`;
+        });
+    }
+
+    function reprintBadge(index) {
+        const s = staffList[index];
+        document.getElementById('qr-display').innerHTML = "";
+        document.getElementById('qr-display').style.display = "block";
+        
+        new QRCode(document.getElementById('qr-display'), { 
+            text: JSON.stringify({pk: s.pk, name: s.name}), 
+            width: 256, 
+            height: 256
+        });
+        
+        log(`🖨️ Ristampato badge a video per: ${s.name}`);
+        document.getElementById('qr-display').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // --- GEOFENCE COMPLETO (COMPARA BOX CON VAULT) ---
+    async function executeCheckpointBlind() {
+        const id = document.getElementById('op-id').value;
+        if(!id || !lastSensorData) return alert("Sincronizza il Box prima di inviare dati!");
+        
+        let foundHubHash = null;
+        
+        for (let hub of myVaultData.hubs) {
+            const latRound = parseFloat(lastSensorData.lat).toFixed(hub.dec);
+            const lonRound = parseFloat(lastSensorData.lon).toFixed(hub.dec);
+            const blindStr = latRound + "|" + lonRound + "|" + vaultPass;
+            const testHash = "0x" + CryptoJS.SHA256(blindStr).toString();
+            
+            if (testHash === hub.hash) {
+                foundHubHash = hub.hash;
+                log(`📍 Sei nel magazzino: ${hub.name}`);
+                break;
+            }
+        }
+        
+        if (!foundHubHash) return alert("❌ GEOFENCE FALLITO: Il GPS del Box non corrisponde a nessun Hub autorizzato.");
+
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            log("⏳ Registrazione Checkpoint su Chain...");
+            const tx = await c.recordCheckpoint(id, foundHubHash);
+            await tx.wait();
+            log("✅ CHECKPOINT REGISTRATO SULLA BLOCKCHAIN.");
+        } catch(e) { log("❌ Errore Checkpoint."); }
+    }
+
+    async function executeHandoverBlind() {
+        const id = document.getElementById('out-id').value;
+        if(!id || !lastSensorData) return alert("Sincronizza il Box prima!");
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            log("⏳ Sblocco Consegna in corso...");
+            const isGpsValid = (lastSensorData.lat !== 0 && lastSensorData.lat !== "0.000000");
+            const tx = await c.executeHandover(id, Math.round(lastSensorData.temp), isGpsValid, (lastSensorData.shock > 0));
+            await tx.wait();
+            log("✅ CONSEGNA ESEGUITA CON SUCCESSO.");
+        } catch(e) { log("❌ Errore Consegna."); }
+    }
+
+    async function fundEscrowAction() {
+        const id = document.getElementById('esc-id').value;
+        const amt = prompt("Importo MATIC da bloccare:");
+        if(!amt) return;
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.fundEscrow(id, { value: ethers.utils.parseEther(amt) });
+            await tx.wait();
+            log("💸 Escrow pagato.");
+        } catch(e) { log("❌ Errore Pagamento."); }
+    }
+
+    async function refundDispute() {
+        const id = document.getElementById('esc-id').value;
+        try {
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.refundDispute(id);
+            await tx.wait();
+            log("🔙 Rimborso in lavorazione.");
+        } catch(e) { log("❌ Errore Disputa."); }
+    }
+
+    // Geocoding
+    async function geocodeHub() { 
+        const addr = document.getElementById('hub-address').value;
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}`);
+        const d = await res.json();
+        if(d[0]) { document.getElementById('hub-lat').value = d[0].lat; document.getElementById('hub-lon').value = d[0].lon; }
+    }
+    async function geocodeAddress() { 
+        const addr = document.getElementById('dest-address').value;
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}`);
+        const d = await res.json();
+        if(d[0]) { document.getElementById('dest-lat').value = d[0].lat; document.getElementById('dest-lon').value = d[0].lon; }
+    }
 </script>
-
 </body>
 </html>
