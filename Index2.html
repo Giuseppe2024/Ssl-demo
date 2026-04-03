@@ -318,7 +318,7 @@
     let html5QrcodeScanner = null;
     let opQrScanner = null;
     
-    // Inizializzazione corretta degli array per evitare null reference
+    // Inizializzazione array di default per prevenire errori
     let staffList = [];
     let myVaultData = { shipments: [], hubs: [] }; 
     const statusMap = ["In Magazzino", "In Viaggio", "In Disputa", "Consegnato", "Rimborsato"];
@@ -329,6 +329,15 @@
     function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato.`); }
     function toggleEscrow() { document.getElementById('escrow-fields').style.display = document.getElementById('use-escrow').checked ? 'flex' : 'none'; }
     
+    // Funzione fondamentale per svuotare il Vault e rimediare a errori di decrittazione
+    function resetDevice() {
+        if(prompt("Scrivi RESET per formattare il Vault locale e ripartire da zero:") === "RESET") {
+            localStorage.clear();
+            alert("Vault pulito! Ricarica la pagina.");
+            location.reload();
+        }
+    }
+
     // --- QR E VIDEO KYC ---
     async function startKYCVideo() {
         try {
@@ -444,7 +453,6 @@
     // --- VAULT CRITTOGRAFATO (RESILIENTE) ---
     function loadVault(address) {
         try {
-            // Inizializza array puliti di default
             myVaultData = { shipments: [], hubs: [] };
             staffList = [];
             
@@ -460,7 +468,7 @@
                 const bytes2 = CryptoJS.AES.decrypt(encStaff, vaultPass);
                 staffList = JSON.parse(bytes2.toString(CryptoJS.enc.Utf8));
             }
-        } catch(e) { log("⚠️ Errore decrittazione Vault. Password errata?"); }
+        } catch(e) { log("⚠️ Errore decrittazione Vault. Se hai cambiato password, esegui il RIPRISTINO."); }
     }
     
     function saveVault(address) {
@@ -556,7 +564,7 @@
 
     async function checkSBTStatus() {
         try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); // Usa signer per maggior stabilità con Metamask
             const myAddr = await signer.getAddress();
             const dna = await c.sbtRegistry(myAddr);
             
@@ -570,7 +578,9 @@
                 document.getElementById('sbt-verified-section').style.display = 'none';
                 document.getElementById('hub-registration-section').style.display = 'none';
             }
-        } catch(e) { log("⚠️ Errore controllo SBT su Blockchain."); }
+        } catch(e) { 
+            log("⚠️ Errore SBT (Dettaglio): " + (e.reason || e.message)); 
+        }
     }
 
     async function mintIdentity() {
