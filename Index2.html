@@ -497,7 +497,7 @@
         log("📡 Ricerca ESP32 per Registrazione Master...");
         const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
         try {
-            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SheerBox_' }], optionalServices: [SERVICE_UUID] });
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer__' }], optionalServices: [SERVICE_UUID] });
             const knownHardwareWallet = new ethers.Wallet("0x112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00");
             document.getElementById('iot-addr-manual').value = knownHardwareWallet.address;
             log(`🔗 ESP32 Rilevato! Indirizzo Pubblico: ${knownHardwareWallet.address}`);
