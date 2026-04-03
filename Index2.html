@@ -682,20 +682,26 @@
         }
     }
 
-    async function generateWorkerQR() {
+   async function generateWorkerQR() {
         const name = document.getElementById('worker-name').value;
         if(!name) return alert("Inserisci il nome del magazziniere.");
         const wallet = ethers.Wallet.createRandom();
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            log("⏳ Generazione delega su Blockchain in corso...");
             const tx = await c.setStealthWorker(wallet.address, document.getElementById('p-mint').checked, document.getElementById('p-in').checked, document.getElementById('p-out').checked, true);
             await tx.wait();
             staffList.push({ name: name, addr: wallet.address, pk: wallet.privateKey });
             saveVault(await signer.getAddress());
+            
+            // ECCO IL FIX: Svuota, ACCENDE IL DIV e stampa il QR
             document.getElementById('qr-display').innerHTML = "";
+            document.getElementById('qr-display').style.display = "block"; 
             new QRCode(document.getElementById('qr-display'), { text: JSON.stringify({pk: wallet.privateKey, name: name}), width: 150, height: 150 });
+            
             renderStaff();
-        } catch(e) { log("❌ Delega fallita."); }
+            log("✅ Badge Staff generato con successo!");
+        } catch(e) { log("❌ Delega fallita: " + (e.reason || e.message)); }
     }
 
     function renderStaff() {
