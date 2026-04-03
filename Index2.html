@@ -227,7 +227,7 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                     <div>
                         <input type="text" id="worker-name" placeholder="Nome Magazziniere">
-                        <button class="btn-staff" onclick="QR()">GENERA BADGE E DELEGA</button>
+                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE E DELEGA</button>
                     </div>
                     <div style="background:#000; padding:15px; border-radius:8px;">
                         <div class="checkbox-group"><input type="checkbox" id="p-mint"> <label>Permesso Factory</label></div>
@@ -318,7 +318,6 @@
     let html5QrcodeScanner = null;
     let opQrScanner = null;
     
-    // Inizializzazione array di default per prevenire errori
     let staffList = [];
     let myVaultData = { shipments: [], hubs: [] }; 
     const statusMap = ["In Magazzino", "In Viaggio", "In Disputa", "Consegnato", "Rimborsato"];
@@ -329,7 +328,6 @@
     function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato.`); }
     function toggleEscrow() { document.getElementById('escrow-fields').style.display = document.getElementById('use-escrow').checked ? 'flex' : 'none'; }
     
-    // Funzione fondamentale per svuotare il Vault e rimediare a errori di decrittazione
     function resetDevice() {
         if(prompt("Scrivi RESET per formattare il Vault locale e ripartire da zero:") === "RESET") {
             localStorage.clear();
@@ -682,7 +680,7 @@
         }
     }
 
-  async function generateWorkerQR() {
+    async function generateWorkerQR() {
         const name = document.getElementById('worker-name').value;
         if(!name) return alert("Inserisci il nome del magazziniere.");
         const wallet = ethers.Wallet.createRandom();
@@ -693,7 +691,6 @@
             staffList.push({ name: name, addr: wallet.address, pk: wallet.privateKey });
             saveVault(await signer.getAddress());
             
-            // FIX: QR CODE PIÙ GRANDE E CON CORREZIONE ERRORI ALTA
             document.getElementById('qr-display').innerHTML = "";
             document.getElementById('qr-display').style.display = "block";
             
@@ -701,19 +698,19 @@
             
             new QRCode(document.getElementById('qr-display'), { 
                 text: qrData, 
-                width: 256, // INGRANDITO da 150 a 256
-                height: 256, // INGRANDITO
+                width: 256, 
+                height: 256, 
                 colorDark : "#000000",
                 colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M // CORREZIONE ERRORI MEDIA (Migliora la lettura da schermo)
+                correctLevel : QRCode.CorrectLevel.M 
             });
             
             renderStaff();
         } catch(e) { log("❌ Delega fallita."); }
     }
-   function renderStaff() {
+
+    function renderStaff() {
         const b = document.getElementById('staff-list-body'); b.innerHTML = "";
-        // Aggiungo 'index' per sapere quale magazziniere stiamo cliccando
         staffList.forEach((s, index) => {
             b.innerHTML += `<tr>
                 <td>${s.name}</td>
@@ -723,15 +720,13 @@
         });
     }
 
-    // NUOVA FUNZIONE: Pesca i dati e rigenera il QR visibile!
-   function reprintBadge(index) {
+    function reprintBadge(index) {
         const s = staffList[index];
         document.getElementById('qr-display').innerHTML = "";
         document.getElementById('qr-display').style.display = "block";
         
         const qrData = JSON.stringify({pk: s.pk, name: s.name});
         
-        // FIX: QR CODE PIÙ GRANDE ANCHE NELLA RISTAMPA
         new QRCode(document.getElementById('qr-display'), { 
             text: qrData, 
             width: 256, 
@@ -740,6 +735,10 @@
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.M
         });
+        
+        log(`🖨️ Ristampato badge a video per: ${s.name}`);
+        document.getElementById('qr-display').scrollIntoView({ behavior: 'smooth' });
+    }
 
     // --- GEOFENCE COMPLETO (COMPARA BOX CON VAULT) ---
     async function executeCheckpointBlind() {
