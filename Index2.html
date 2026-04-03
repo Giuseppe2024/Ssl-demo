@@ -227,7 +227,7 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                     <div>
                         <input type="text" id="worker-name" placeholder="Nome Magazziniere">
-                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE E DELEGA</button>
+                        <button class="btn-staff" onclick="QR()">GENERA BADGE E DELEGA</button>
                     </div>
                     <div style="background:#000; padding:15px; border-radius:8px;">
                         <div class="checkbox-group"><input type="checkbox" id="p-mint"> <label>Permesso Factory</label></div>
@@ -682,28 +682,35 @@
         }
     }
 
-   async function generateWorkerQR() {
+  async function generateWorkerQR() {
         const name = document.getElementById('worker-name').value;
         if(!name) return alert("Inserisci il nome del magazziniere.");
         const wallet = ethers.Wallet.createRandom();
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-            log("⏳ Generazione delega su Blockchain in corso...");
             const tx = await c.setStealthWorker(wallet.address, document.getElementById('p-mint').checked, document.getElementById('p-in').checked, document.getElementById('p-out').checked, true);
             await tx.wait();
             staffList.push({ name: name, addr: wallet.address, pk: wallet.privateKey });
             saveVault(await signer.getAddress());
             
-            // ECCO IL FIX: Svuota, ACCENDE IL DIV e stampa il QR
+            // FIX: QR CODE PIÙ GRANDE E CON CORREZIONE ERRORI ALTA
             document.getElementById('qr-display').innerHTML = "";
-            document.getElementById('qr-display').style.display = "block"; 
-            new QRCode(document.getElementById('qr-display'), { text: JSON.stringify({pk: wallet.privateKey, name: name}), width: 150, height: 150 });
+            document.getElementById('qr-display').style.display = "block";
+            
+            const qrData = JSON.stringify({pk: wallet.privateKey, name: name});
+            
+            new QRCode(document.getElementById('qr-display'), { 
+                text: qrData, 
+                width: 256, // INGRANDITO da 150 a 256
+                height: 256, // INGRANDITO
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M // CORREZIONE ERRORI MEDIA (Migliora la lettura da schermo)
+            });
             
             renderStaff();
-            log("✅ Badge Staff generato con successo!");
-        } catch(e) { log("❌ Delega fallita: " + (e.reason || e.message)); }
+        } catch(e) { log("❌ Delega fallita."); }
     }
-
    function renderStaff() {
         const b = document.getElementById('staff-list-body'); b.innerHTML = "";
         // Aggiungo 'index' per sapere quale magazziniere stiamo cliccando
@@ -717,20 +724,22 @@
     }
 
     // NUOVA FUNZIONE: Pesca i dati e rigenera il QR visibile!
-    function reprintBadge(index) {
-        const s = staffList[index]; // Prende i dati del magazziniere cliccato
-        document.getElementById('qr-display').innerHTML = ""; // Pulisce il div
-        document.getElementById('qr-display').style.display = "block"; // Lo rende visibile
+   function reprintBadge(index) {
+        const s = staffList[index];
+        document.getElementById('qr-display').innerHTML = "";
+        document.getElementById('qr-display').style.display = "block";
         
-        // Genera il nuovo QR code con i dati veri
+        const qrData = JSON.stringify({pk: s.pk, name: s.name});
+        
+        // FIX: QR CODE PIÙ GRANDE ANCHE NELLA RISTAMPA
         new QRCode(document.getElementById('qr-display'), { 
-            text: JSON.stringify({pk: s.pk, name: s.name}), 
-            width: 150, 
-            height: 150 
+            text: qrData, 
+            width: 256, 
+            height: 256,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.M
         });
-        
-        log(`🖨️ Ristampato badge a video per: ${s.name}`);
-    }
 
     // --- GEOFENCE COMPLETO (COMPARA BOX CON VAULT) ---
     async function executeCheckpointBlind() {
