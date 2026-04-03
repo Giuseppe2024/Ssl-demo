@@ -293,7 +293,7 @@
 
 <script>
     // 🚨 CONFIGURAZIONE CORE E BLOCKCHAIN 🚨
-    const CONTRACT_ADDRESS = "0xCaCaDcd2F779FC42bFBe84Afa043a7d3714C4D2c"; 
+    const CONTRACT_ADDRESS = "0xce91B1Ce710b6b63Ce1605aa8eE01b16C6364683"; 
     const RPC_URL = "https://polygon-rpc.com"; 
     const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
     const CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -564,7 +564,7 @@
 
     async function checkSBTStatus() {
         try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); // Usa signer per maggior stabilità con Metamask
+            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); 
             const myAddr = await signer.getAddress();
             const dna = await c.sbtRegistry(myAddr);
             
