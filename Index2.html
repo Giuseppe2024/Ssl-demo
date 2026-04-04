@@ -168,19 +168,22 @@
 
             <div class="card" id="hub-registration-section" style="border-color: var(--neon); display:none;">
                 <h2>📍 REGISTRA HUB LOGISTICO (CRITTOGRAFATO)</h2>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="hub-name" placeholder="Nome (es. Hub Rimini)" style="flex:1;">
-                    <input type="text" id="hub-address" placeholder="Indirizzo fisico" style="flex:2;">
-                    <button class="btn-grey" onclick="geocodeHub()">Trova GPS</button>
+                <div style="display:grid; grid-template-columns: 1fr 2fr auto; gap:15px; margin-bottom: 15px;">
+                    <input type="text" id="hub-name" placeholder="Nome Magazzino (es. Hub Roma)" style="padding: 15px;">
+                    <input type="text" id="hub-address" placeholder="Indirizzo (Via, Città, CAP)" style="padding: 15px;">
+                    <button class="btn-grey" style="margin: 0; height: 100%;" onclick="geocodeHub()">📍 TROVA GPS</button>
                 </div>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <input type="text" id="hub-lat" placeholder="Latitudine" readonly style="flex:1; background:#161b22;">
-                    <input type="text" id="hub-lon" placeholder="Longitudine" readonly style="flex:1; background:#161b22;">
-                    <select id="hub-tolerance" style="flex:1.5;"><option value="3">Raggio ~100m</option><option value="2">Raggio ~1km</option></select>
-                    <button class="btn-neon" onclick="registerHubBlind()">➕ AGGIUNGI HUB</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:15px;">
+                    <input type="text" id="hub-lat" placeholder="Latitudine" readonly style="padding: 15px; background:#161b22;">
+                    <input type="text" id="hub-lon" placeholder="Longitudine" readonly style="padding: 15px; background:#161b22;">
+                    <select id="hub-tolerance" style="padding: 15px;">
+                        <option value="3">Raggio Sicurezza ~100m</option>
+                        <option value="2">Raggio Sicurezza ~1km</option>
+                    </select>
+                    <button class="btn-neon" style="margin: 0; height: 100%; padding: 0 30px;" onclick="registerHubBlind()">➕ AGGIUNGI HUB</button>
                 </div>
                 <h3 style="margin-top:20px; font-size:0.7rem; color:var(--master);">I TUOI HUB REGISTRATI NEL VAULT:</h3>
-                <table id="hubs-table"><thead><tr><th>Nome</th><th>GPS</th><th>Hash Pubblico</th></tr></thead><tbody id="hubs-list-body"></tbody></table>
+                <table id="hubs-table"><thead><tr><th>Nome</th><th>Indirizzo</th><th>GPS</th><th>Hash</th></tr></thead><tbody id="hubs-list-body"></tbody></table>
             </div>
         </div>
 
@@ -201,8 +204,17 @@
                         <input type="number" id="nft-qty" placeholder="Quantità Unità" value="1">
                         <div class="checkbox-group"><input type="checkbox" id="use-escrow" onchange="toggleEscrow()"> <label>Attiva Pagamento Escrow</label></div>
                         <div id="escrow-fields" style="display:none; gap:10px;"><input type="number" id="nft-price" placeholder="Prezzo MATIC" style="flex:1;"><input type="text" id="nft-buyer" placeholder="Wallet Acquirente" style="flex:2;"></div>
-                        <div class="checkbox-group"><input type="checkbox" id="iot-temp"> <label>Obbligo Sensore Temperatura</label></div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="iot-temp" onchange="toggleTemp()"> <label>Obbligo Sensore Temperatura</label>
+                        </div>
+                        <div id="temp-fields" style="display:none; gap:10px; margin-left: 25px; margin-bottom: 10px;">
+                            <input type="number" id="temp-min" placeholder="Min °C" style="flex:1;">
+                            <input type="number" id="temp-max" placeholder="Max °C" style="flex:1;">
+                        </div>
+
                         <div class="checkbox-group"><input type="checkbox" id="iot-gps" checked> <label>Geofence Obbligatorio</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-shock" checked> <label>Sensore Urti Obbligatorio</label></div>
                     </div>
                 </div>
                 <button class="btn-neon" style="margin-top:20px;" onclick="buildAndMintNFT()">📦 CONIA LOTTO SULLA BLOCKCHAIN</button>
@@ -327,6 +339,7 @@
     function togglePass(id) { const i = document.getElementById(id); i.type = i.type === "password" ? "text" : "password"; }
     function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato.`); }
     function toggleEscrow() { document.getElementById('escrow-fields').style.display = document.getElementById('use-escrow').checked ? 'flex' : 'none'; }
+    function toggleTemp() { document.getElementById('temp-fields').style.display = document.getElementById('iot-temp').checked ? 'flex' : 'none'; }
     
     function resetDevice() {
         if(prompt("Scrivi RESET per formattare il Vault locale e ripartire da zero:") === "RESET") {
@@ -608,6 +621,7 @@
 
     async function registerHubBlind() {
         const name = document.getElementById('hub-name').value;
+        const addrText = document.getElementById('hub-address').value;
         const lat = document.getElementById('hub-lat').value;
         const lon = document.getElementById('hub-lon').value;
         const dec = document.getElementById('hub-tolerance').value;
@@ -622,7 +636,7 @@
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
             const tx = await c.registerHub(hash); await tx.wait();
-            myVaultData.hubs.push({ name: name, hash: hash, lat: latRound, lon: lonRound, dec: dec });
+            myVaultData.hubs.push({ name: name, address: addrText, hash: hash, lat: latRound, lon: lonRound, dec: dec });
             saveVault(await signer.getAddress()); renderHubs();
             log(`📍 Hub registrato con hash: ${hash}`);
         } catch(e) { log("❌ Errore Hub: " + e.message); }
@@ -631,7 +645,7 @@
     function renderHubs() {
         const b = document.getElementById('hubs-list-body'); b.innerHTML = "";
         myVaultData.hubs.forEach(h => {
-            b.innerHTML += `<tr><td>${h.name}</td><td>${h.lat}, ${h.lon}</td><td>${h.hash.substring(0,10)}...</td></tr>`;
+            b.innerHTML += `<tr><td>${h.name}</td><td>${h.address || 'N/D'}</td><td>${h.lat}, ${h.lon}</td><td>${h.hash.substring(0,10)}...</td></tr>`;
         });
     }
 
@@ -641,7 +655,16 @@
         const price = ethers.utils.parseEther(document.getElementById('nft-price').value || "0");
         const buyer = document.getElementById('nft-buyer').value || ethers.constants.AddressZero;
         const meta = "0x" + CryptoJS.SHA256(name + Date.now()).toString();
-        const rules = [document.getElementById('iot-temp').checked, 0, 0, document.getElementById('iot-gps').checked, true];
+        
+        // RECUPERA I DATI AGGIORNATI CON TEMP E URTI
+        const rules = [
+            document.getElementById('iot-temp').checked, 
+            parseInt(document.getElementById('temp-min').value) || 0, 
+            parseInt(document.getElementById('temp-max').value) || 0, 
+            document.getElementById('iot-gps').checked, 
+            document.getElementById('iot-shock').checked
+        ];
+
         try {
             const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
             const tx = await c.mintBatch(await signer.getAddress(), meta, qty, rules, price, buyer);
@@ -677,8 +700,13 @@
             try {
                 const s = await c.shipments(i);
                 if(s[1] === myAddr) {
-                    const info = myVaultData.shipments.find(x => x.id == i) || {name:"?", dest:"?"};
-                    b.innerHTML += `<tr><td>#${i}</td><td>${info.name}</td><td>${info.dest}</td><td>${statusMap[s[8]]}</td></tr>`;
+                    const info = myVaultData.shipments.find(x => x.id == i) || {name:"N/D", dest:"N/D"};
+                    b.innerHTML += `<tr>
+                        <td>#${i}</td>
+                        <td>${info.name}</td>
+                        <td>📍 ${info.dest}</td>
+                        <td style="font-weight:bold; color:var(--neon);">${statusMap[s[8]]}</td>
+                    </tr>`;
                 }
             } catch(e) {}
         }
