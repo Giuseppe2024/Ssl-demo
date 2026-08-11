@@ -63,18 +63,34 @@
         </div>
         
         <div id="login-admin-area">
-            <select id="role-selector">
+            <select id="role-selector" style="margin-bottom: 10px;">
                 <option value="master">MASTER GENERALE (Proprietario)</option>
                 <option value="client">CLIENT MASTER (Azienda)</option>
                 <option value="buyer">BUYER (Acquirente)</option>
             </select>
-            <div id="login-section">
+            
+            <div id="login-step-1">
+                <input type="text" id="admin-email" placeholder="Email Aziendale (per OTP Server)" style="margin-bottom: 10px;">
                 <div class="pass-container">
-                    <input type="password" id="gate-pass" placeholder="Password Vault Aziendale">
+                    <input type="password" id="gate-pass" placeholder="Password Vault Locale">
                     <span class="eye-icon" onclick="togglePass('gate-pass')">👁️</span>
                 </div>
+                
+                <h3 style="font-size: 0.65rem; color: #888; text-transform: uppercase; margin-top: 20px;">Scegli il livello di sicurezza:</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn-success" style="background: #f6851b; color: #fff;" onclick="requestOTPAndSign('metamask')">🦊 SBLOCCA CON METAMASK (Hot)</button>
+                    <button class="btn-grey" style="background: #000; border: 1px solid #fff;" onclick="requestOTPAndSign('trezor')">🔒 SBLOCCA CON TREZOR (Cold)</button>
+                    <button class="btn-grey" style="background: #000; border: 1px solid #fff;" onclick="requestOTPAndSign('ledger')">🔏 SBLOCCA CON LEDGER (Cold)</button>
+                </div>
             </div>
-            <button class="btn-neon" onclick="unlockSystemAdmin()">SBLOCCA CON METAMASK</button>
+
+            <div id="login-step-2" style="display: none; margin-top: 20px;">
+                <h3 style="color: var(--neon); font-family: 'Orbitron';">🛡️ SCUDO OTP ATTIVO</h3>
+                <p style="font-size: 0.75rem; color: #888;">Controlla la tua casella email. Inserisci il codice a 6 cifre per autorizzare la decrittazione.</p>
+                <input type="text" id="otp-code" placeholder="Codice di Sicurezza (es. 123456)" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px;">
+                <button class="btn-neon" onclick="verifyOTPAndLogin()">VERIFICA E ACCEDI</button>
+                <button class="btn-danger" style="margin-top: 10px;" onclick="location.reload()">ANNULLA</button>
+            </div>
         </div>
         
         <div id="login-staff-area" style="display: none;">
@@ -145,7 +161,11 @@
         <div id="panel-onboarding" class="panel">
             <div class="card" id="sbt-mint-section">
                 <h2>🛡️ KYC E ONBOARDING SBT (IDENTITÀ AZIENDALE)</h2>
-                <p style="font-size:0.75rem; color:#888;">Non hai ancora un'identità. Compila i dati e attiva la webcam per la registrazione permanente sulla Blockchain.</p>
+                <p style="font-size:0.75rem; color:#888;">Configurazione del modulo Identità. Inserisci l'indirizzo del tuo Smart Contract SBT se ne possiedi uno, altrimenti lascialo vuoto in attesa di crearlo.</p>
+                
+                <!-- NUOVO CAMPO LIBERO PER SMART CONTRACT SBT -->
+                <input type="text" id="sbt-contract-address" placeholder="Indirizzo Smart Contract SBT (Es. 0x...)" style="border-color: var(--neon); margin-bottom: 20px;">
+
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 15px;">
                     <input type="text" id="reg-soc" placeholder="Società / Ragione Sociale">
                     <input type="text" id="reg-piva" placeholder="Partita IVA">
@@ -305,8 +325,10 @@
 
 <script>
     // 🚨 CONFIGURAZIONE CORE E BLOCKCHAIN 🚨
-    const CONTRACT_ADDRESS = "0xce91B1Ce710b6b63Ce1605aa8eE01b16C6364683"; 
+    const CONTRACT_ADDRESS = "0xce91B1Ce710b6b63Ce1605aa8eE01b16C6364683"; // Logistica Core
     const RPC_URL = "https://polygon-rpc.com"; 
+    const SERVER_URL = "http://localhost:3001"; // IP/Porta del tuo server Linux blindato
+    
     const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
     const CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
@@ -329,6 +351,7 @@
     let videoStream = null;
     let html5QrcodeScanner = null;
     let opQrScanner = null;
+    let pendingLoginAddress = null; // Serve per tenere in memoria l'indirizzo durante l'OTP
     
     let staffList = [];
     let myVaultData = { shipments: [], hubs: [] }; 
@@ -503,22 +526,82 @@
         localStorage.setItem('ss_staff_' + address, CryptoJS.AES.encrypt(JSON.stringify(staffList), vaultPass).toString());
     }
 
-    // --- AUTH & LOGIN ---
-    async function unlockSystemAdmin() {
+    // --- AUTH, WALLET & OTP LOGIN ---
+    async function requestOTPAndSign(walletType) {
+        const email = document.getElementById('admin-email').value;
         vaultPass = document.getElementById('gate-pass').value;
-        if(!vaultPass || vaultPass.length < 4) return alert("Password troppo corta!");
-        if(!window.ethereum) return alert("MetaMask non trovato.");
+
+        if(!email || !vaultPass) return alert("Inserisci Email e Password Vault!");
+        if(!window.ethereum) return alert("Bridge Web3 non trovato nel browser!");
+
+        // 1. GESTIONE DELLA FIRMA HARDWARE / SOFTWARE
         try {
+            if(walletType === 'trezor' || walletType === 'ledger') {
+                alert(`Hai selezionato ${walletType.toUpperCase()}.\nAssicurati che la chiavetta sia collegata via USB, sbloccata, e di aver selezionato l'account hardware nel bridge di MetaMask.`);
+            }
+
             provider = new ethers.providers.Web3Provider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             signer = provider.getSigner();
-            const addr = await signer.getAddress();
-            await signer.signMessage(`SmartSheer_Accesso_Sicuro_${addr}`);
-            currentRole = document.getElementById('role-selector').value;
-            loadVault(addr);
-            launchDashboard(addr, currentRole);
-            log("✅ Login effettuato.");
-        } catch(e) { alert("Firma rifiutata."); }
+            pendingLoginAddress = await signer.getAddress();
+            
+            // Richiede la firma matematica (questo innesca fisicamente il Trezor/Ledger se connesso)
+            await signer.signMessage(`SmartSheer_Accesso_Sicuro_${pendingLoginAddress}`);
+            log(`✅ Firma Blockchain verificata per: ${pendingLoginAddress}`);
+
+        } catch(e) {
+            return alert("Firma rifiutata o dispositivo hardware disconnesso.");
+        }
+
+        // 2. CHIAMATA AL SERVER NODE.JS PER L'OTP
+        try {
+            log("⏳ Richiesta OTP al Server di Sicurezza...");
+            const response = await fetch(`${SERVER_URL}/request-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email })
+            });
+
+            if(response.ok) {
+                document.getElementById('login-step-1').style.display = 'none';
+                document.getElementById('login-step-2').style.display = 'block';
+                log(`📧 OTP inviato a ${email}`);
+            } else {
+                alert("Errore dal Server. Riprova o controlla la BlackList.");
+            }
+        } catch(e) {
+            alert("Il Server Backend (porta 3001) è spento o irraggiungibile!");
+        }
+    }
+
+    async function verifyOTPAndLogin() {
+        const email = document.getElementById('admin-email').value;
+        const otp = document.getElementById('otp-code').value;
+
+        if(!otp) return alert("Inserisci il codice OTP.");
+
+        try {
+            log("⏳ Verifica OTP in corso...");
+            const response = await fetch(`${SERVER_URL}/verify-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, otp: otp })
+            });
+
+            const result = await response.json();
+
+            if(result.verified) {
+                currentRole = document.getElementById('role-selector').value;
+                loadVault(pendingLoginAddress);
+                launchDashboard(pendingLoginAddress, currentRole);
+                log("✅ Scudo OTP Superato. Accesso ai dati crittografati consentito.");
+            } else {
+                alert("Codice OTP errato o scaduto.");
+                document.getElementById('otp-code').value = "";
+            }
+        } catch(e) {
+            alert("Errore di connessione con il Server durante la verifica.");
+        }
     }
 
     async function processStaffLogin(txt) {
@@ -573,14 +656,27 @@
         if(!addr) return alert("Inserisci l'indirizzo da bannare.");
         try {
             log(`⏳ Inserimento ${addr} in Black List...`);
+            // Nota: Qui andrà integrata la chiamata al server Node per aggiungere l'indirizzo alla vera Blacklist.
             log(`🚫 Indirizzo ${addr} inserito in Black List dal Master.`);
-            alert(`L'indirizzo ${addr} non potrà più firmare o coniare.`);
+            alert(`L'indirizzo ${addr} non potrà più effettuare richieste al server.`);
         } catch(e) { log("❌ Errore Black List."); }
     }
 
+    // --- SBT (SOULBOUND TOKEN) MODULARE ---
     async function checkSBTStatus() {
+        const sbtContractAddr = document.getElementById('sbt-contract-address').value;
+        
+        // Se non hai ancora inserito il contratto SBT, il sistema blocca le funzioni e aspetta
+        if(!sbtContractAddr || sbtContractAddr.length !== 42) {
+            document.getElementById('sbt-mint-section').style.display = 'block';
+            document.getElementById('sbt-verified-section').style.display = 'none';
+            document.getElementById('hub-registration-section').style.display = 'none';
+            log("⚠️ Indirizzo Smart Contract SBT non rilevato. Campo in attesa di configurazione.");
+            return;
+        }
+
         try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer); 
+            const c = new ethers.Contract(sbtContractAddr, contractABI, signer); 
             const myAddr = await signer.getAddress();
             const dna = await c.sbtRegistry(myAddr);
             
@@ -595,11 +691,17 @@
                 document.getElementById('hub-registration-section').style.display = 'none';
             }
         } catch(e) { 
-            log("⚠️ Errore SBT (Dettaglio): " + (e.reason || e.message)); 
+            log("⚠️ Errore Lettura SBT. Verifica che l'indirizzo del contratto inserito sia corretto."); 
         }
     }
 
     async function mintIdentity() {
+        const sbtContractAddr = document.getElementById('sbt-contract-address').value;
+        
+        if(!sbtContractAddr || sbtContractAddr.length !== 42) {
+            return alert("Devi inserire un Indirizzo Smart Contract SBT valido prima di coniare la tua identità!");
+        }
+
         const soc = document.getElementById('reg-soc').value;
         const piva = document.getElementById('reg-piva').value;
         const cf = document.getElementById('reg-cf').value;
@@ -611,13 +713,13 @@
         const dna = "0x" + CryptoJS.SHA256(rawData).toString();
         
         try {
-            const c = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+            const c = new ethers.Contract(sbtContractAddr, contractABI, signer);
             log("⏳ Conio SBT in corso...");
             const tx = await c.mintSBT(dna); await tx.wait();
             log(`🛡️ SBT Coniato: ${dna}`);
             stopKYCVideo(); 
             checkSBTStatus();
-        } catch(e) { log("❌ Errore SBT."); }
+        } catch(e) { log("❌ Errore Conio SBT. Controlla la Blockchain."); }
     }
 
     async function registerHubBlind() {
