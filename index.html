@@ -30,7 +30,7 @@
         .panel.active { display: block; }
         .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
         h2 { font-family: 'Orbitron'; font-size: 0.8rem; text-transform: uppercase; color: var(--neon); margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        input[type="text"], input[type="password"], input[type="number"], select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; }
+        input[type="text"], input[type="password"], input[type="number"], input[type="email"], select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
         .btn-neon { background: var(--neon); color: #000; }
         .btn-danger { background: var(--danger); color: #fff; }
@@ -49,7 +49,6 @@
         th { color: #888; text-transform: uppercase; font-size: 0.65rem; }
         .stat-card { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; }
         .stat-val { font-size: 1rem; color: var(--neon); font-weight: bold; font-family: 'Orbitron'; line-height: 1.6; }
-        .perm-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; margin-right: 4px; color: #000; }
     </style>
 </head>
 <body>
@@ -57,12 +56,34 @@
 <div id="gate-overlay">
     <div class="gate-card">
         <h1>SMARTSHEER</h1>
-        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn-grey" onclick="switchLoginMode('admin')" style="background: var(--border);">AMMINISTRAZIONE</button>
-            <button class="btn-staff" onclick="switchLoginMode('staff')">STAFF (SCAN QR)</button>
-        </div>
         
-        <div id="login-admin-area">
+        <!-- SCHERMATA INIZIALE DI SCELTA (LANDING) -->
+        <div id="landing-area">
+            <p style="color: #888; font-size: 0.8rem; margin-bottom: 20px;">Seleziona la modalità di accesso al sistema.</p>
+            <button class="btn-neon" onclick="showLogin()">🔑 ACCEDI (Ho già un Account)</button>
+            <button class="btn-success" style="margin-top: 15px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="showRegister()">✨ CREA ACCOUNT (Nuova Azienda)</button>
+            
+            <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <p style="color: #888; font-size: 0.7rem; margin-bottom: 10px;">Accesso Operativo Magazzino:</p>
+                <button class="btn-staff" onclick="startStaffLogin()">📷 STAFF LOGISTICS (SCAN QR)</button>
+            </div>
+        </div>
+
+        <!-- SCHERMATA REGISTRAZIONE -->
+        <div id="register-area" style="display: none;">
+            <h2 style="color: var(--success);">CREA NUOVO ACCOUNT</h2>
+            <p style="font-size: 0.75rem; color: #888;">Inizializza la tua cassaforte crittografata locale.</p>
+            <input type="email" id="new-email" placeholder="La tua Email (per sicurezza OTP)">
+            <div class="pass-container">
+                <input type="password" id="new-pass" placeholder="Crea Password Vault Locale">
+                <span class="eye-icon" onclick="togglePass('new-pass')">👁️</span>
+            </div>
+            <button class="btn-success" style="margin-top: 20px;" onclick="createNewAccount()">CONNETTI WALLET E CREA</button>
+            <button class="btn-grey" style="margin-top: 10px; background: transparent; border: 1px solid #555;" onclick="showLanding()">🔙 INDIETRO</button>
+        </div>
+
+        <!-- SCHERMATA LOGIN ESISTENTE -->
+        <div id="login-admin-area" style="display: none;">
             <select id="role-selector" style="margin-bottom: 10px;">
                 <option value="master">MASTER GENERALE (Proprietario)</option>
                 <option value="client">CLIENT MASTER (Azienda)</option>
@@ -70,7 +91,7 @@
             </select>
             
             <div id="login-step-1">
-                <input type="text" id="admin-email" placeholder="Email Aziendale (per OTP Server)" style="margin-bottom: 10px;">
+                <input type="email" id="admin-email" placeholder="Email Aziendale (per OTP Server)" style="margin-bottom: 10px;">
                 <div class="pass-container">
                     <input type="password" id="gate-pass" placeholder="Password Vault Locale">
                     <span class="eye-icon" onclick="togglePass('gate-pass')">👁️</span>
@@ -91,12 +112,16 @@
                 <button class="btn-neon" onclick="verifyOTPAndLogin()">VERIFICA E ACCEDI</button>
                 <button class="btn-danger" style="margin-top: 10px;" onclick="location.reload()">ANNULLA</button>
             </div>
+            
+            <button class="btn-grey" style="margin-top: 15px; background: transparent; border: 1px solid #555;" onclick="showLanding()">🔙 INDIETRO</button>
         </div>
         
+        <!-- SCHERMATA LOGIN STAFF -->
         <div id="login-staff-area" style="display: none;">
             <p style="font-size: 0.75rem; color: #888;">Inquadra il QR Code del tuo Badge Aziendale.</p>
             <div id="qr-reader" style="display:block; width: 100%; min-height: 250px;"></div>
             <button class="btn-danger" style="margin-top:15px;" onclick="stopQRScanner()">ANNULLA SCAN</button>
+            <button class="btn-grey" style="margin-top: 10px; background: transparent; border: 1px solid #555;" onclick="showLanding(); stopQRScanner();">🔙 INDIETRO</button>
         </div>
         
         <div id="gate-msg" style="margin-top:10px; font-size:0.7rem; color:var(--danger)"></div>
@@ -116,6 +141,7 @@
 
     <div class="content-area">
         
+        <!-- PANNELLO ADMIN/MASTER -->
         <div id="panel-admin" class="panel">
             <div class="card" style="border-color: var(--master);">
                 <h2 style="color: var(--master);">📡 REGISTRO HARDWARE IOT (ORACLE)</h2>
@@ -158,12 +184,12 @@
             </div>
         </div>
 
+        <!-- PANNELLO ONBOARDING CLIENT -->
         <div id="panel-onboarding" class="panel">
             <div class="card" id="sbt-mint-section">
                 <h2>🛡️ KYC E ONBOARDING SBT (IDENTITÀ AZIENDALE)</h2>
                 <p style="font-size:0.75rem; color:#888;">Configurazione del modulo Identità. Inserisci l'indirizzo del tuo Smart Contract SBT se ne possiedi uno, altrimenti lascialo vuoto in attesa di crearlo.</p>
                 
-                <!-- NUOVO CAMPO LIBERO PER SMART CONTRACT SBT -->
                 <input type="text" id="sbt-contract-address" placeholder="Indirizzo Smart Contract SBT (Es. 0x...)" style="border-color: var(--neon); margin-bottom: 20px;">
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 15px;">
@@ -207,6 +233,7 @@
             </div>
         </div>
 
+        <!-- PANNELLO FACTORY -->
         <div id="panel-factory" class="panel">
             <div class="card" style="border-color: var(--neon);">
                 <h2>🚀 FACTORY: CREAZIONE LOTTO (MINT NFT)</h2>
@@ -242,6 +269,7 @@
             </div>
         </div>
 
+        <!-- PANNELLO I MIEI LOTTI -->
         <div id="panel-my-shipments" class="panel">
             <div class="card" style="border-color: var(--success);">
                 <h2>📈 I MIEI LOTTI E REPORTISTICA</h2>
@@ -253,6 +281,7 @@
             </div>
         </div>
 
+        <!-- PANNELLO STAFF (ADMIN) -->
         <div id="panel-staff-manage" class="panel">
             <div class="card">
                 <h2>👥 GESTIONE BADGE & DELEGHE OPERATIVE</h2>
@@ -272,6 +301,7 @@
             </div>
         </div>
 
+        <!-- PANNELLO OPERAZIONI LOGISTICHE (STAFF) -->
         <div id="panel-operations" class="panel">
             <div class="card" style="border-color: var(--neon);">
                 <h2>📍 OPERAZIONI LOGISTICHE (BADGE STAFF)</h2>
@@ -308,6 +338,7 @@
             </div>
         </div>
 
+        <!-- PANNELLO BUYER -->
         <div id="panel-buyer" class="panel">
             <div class="card" style="border-color: var(--danger);">
                 <h2>🛒 BUYER PORTAL: ESCROW & DISPUTE</h2>
@@ -327,7 +358,7 @@
     // 🚨 CONFIGURAZIONE CORE E BLOCKCHAIN 🚨
     const CONTRACT_ADDRESS = "0xce91B1Ce710b6b63Ce1605aa8eE01b16C6364683"; // Logistica Core
     const RPC_URL = "https://polygon-rpc.com"; 
-    const SERVER_URL = "http://localhost:3001"; // IP/Porta del tuo server Linux blindato
+    const SERVER_URL = "http://192.168.1.200:3001"; // IP DEL TUO PORTATILE LINUX (SERVER)
     
     const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
     const CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -351,7 +382,7 @@
     let videoStream = null;
     let html5QrcodeScanner = null;
     let opQrScanner = null;
-    let pendingLoginAddress = null; // Serve per tenere in memoria l'indirizzo durante l'OTP
+    let pendingLoginAddress = null; // Serve per l'OTP
     
     let staffList = [];
     let myVaultData = { shipments: [], hubs: [] }; 
@@ -372,6 +403,148 @@
         }
     }
 
+    // --- NAVIGAZIONE SCHERMATA INIZIALE ---
+    function showLanding() {
+        document.getElementById('landing-area').style.display = 'block';
+        document.getElementById('register-area').style.display = 'none';
+        document.getElementById('login-admin-area').style.display = 'none';
+        document.getElementById('login-staff-area').style.display = 'none';
+    }
+
+    function showLogin() {
+        document.getElementById('landing-area').style.display = 'none';
+        document.getElementById('login-admin-area').style.display = 'block';
+    }
+
+    function showRegister() {
+        document.getElementById('landing-area').style.display = 'none';
+        document.getElementById('register-area').style.display = 'block';
+    }
+
+    function startStaffLogin() {
+        document.getElementById('landing-area').style.display = 'none';
+        document.getElementById('login-staff-area').style.display = 'block';
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+        html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            stopQRScanner(); 
+            processStaffLogin(txt);
+        });
+    }
+
+    // --- CREAZIONE NUOVO ACCOUNT ---
+    async function createNewAccount() {
+        const email = document.getElementById('new-email').value;
+        vaultPass = document.getElementById('new-pass').value;
+
+        if(!email || !vaultPass || vaultPass.length < 4) return alert("Inserisci un'email valida e una password di almeno 4 caratteri.");
+        if(!window.ethereum) return alert("Wallet Web3 non trovato nel browser!");
+
+        try {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            const addr = await signer.getAddress();
+            
+            await signer.signMessage(`SmartSheer_Inizializzazione_Nuovo_Vault_${addr}`);
+            
+            myVaultData = { shipments: [], hubs: [] };
+            staffList = [];
+            saveVault(addr);
+            
+            currentRole = 'client';
+            launchDashboard(addr, currentRole);
+            log("✨ Nuovo account creato con successo. Vault inizializzato.");
+        } catch(e) {
+            alert("Creazione annullata o firma rifiutata.");
+        }
+    }
+
+    // --- LOGIN AUTENTICATO (HW/SW WALLET + OTP) ---
+    async function requestOTPAndSign(walletType) {
+        const email = document.getElementById('admin-email').value;
+        vaultPass = document.getElementById('gate-pass').value;
+
+        if(!email || !vaultPass) return alert("Inserisci Email e Password Vault!");
+        if(!window.ethereum) return alert("Bridge Web3 non trovato nel browser!");
+
+        try {
+            if(walletType === 'trezor' || walletType === 'ledger') {
+                alert(`Hai selezionato ${walletType.toUpperCase()}.\nAssicurati che la chiavetta sia collegata via USB, sbloccata, e di aver selezionato l'account hardware nel bridge di MetaMask.`);
+            }
+
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            pendingLoginAddress = await signer.getAddress();
+            
+            await signer.signMessage(`SmartSheer_Accesso_Sicuro_${pendingLoginAddress}`);
+            log(`✅ Firma Blockchain verificata per: ${pendingLoginAddress}`);
+
+        } catch(e) {
+            return alert("Firma rifiutata o dispositivo hardware disconnesso.");
+        }
+
+        try {
+            log("⏳ Richiesta OTP al Server di Sicurezza...");
+            const response = await fetch(`${SERVER_URL}/request-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email })
+            });
+
+            if(response.ok) {
+                document.getElementById('login-step-1').style.display = 'none';
+                document.getElementById('login-step-2').style.display = 'block';
+                log(`📧 OTP inviato a ${email}`);
+            } else {
+                alert("Errore dal Server. Riprova o controlla la BlackList.");
+            }
+        } catch(e) {
+            alert("Il Server Backend Linux (192.168.1.200:3001) è spento o irraggiungibile!");
+        }
+    }
+
+    async function verifyOTPAndLogin() {
+        const email = document.getElementById('admin-email').value;
+        const otp = document.getElementById('otp-code').value;
+
+        if(!otp) return alert("Inserisci il codice OTP.");
+
+        try {
+            log("⏳ Verifica OTP in corso...");
+            const response = await fetch(`${SERVER_URL}/verify-otp`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, otp: otp })
+            });
+
+            const result = await response.json();
+
+            if(result.verified) {
+                currentRole = document.getElementById('role-selector').value;
+                loadVault(pendingLoginAddress);
+                launchDashboard(pendingLoginAddress, currentRole);
+                log("✅ Scudo OTP Superato. Accesso ai dati crittografati consentito.");
+            } else {
+                alert("Codice OTP errato o scaduto.");
+                document.getElementById('otp-code').value = "";
+            }
+        } catch(e) {
+            alert("Errore di connessione con il Server durante la verifica.");
+        }
+    }
+
+    async function processStaffLogin(txt) {
+        try {
+            const data = JSON.parse(txt);
+            const rpc = new ethers.providers.JsonRpcProvider(RPC_URL);
+            signer = new ethers.Wallet(data.pk, rpc);
+            currentRole = 'staff';
+            launchDashboard(signer.address, 'staff');
+            log(`🔓 Accesso Staff confermato: ${data.name}`);
+        } catch(e) { alert("QR Badge non valido."); }
+    }
+
     // --- QR E VIDEO KYC ---
     async function startKYCVideo() {
         try {
@@ -381,22 +554,10 @@
             log("📷 Ripresa Video attivata.");
         } catch(e) { log("❌ Errore Webcam: " + e.message); }
     }
+    
     function stopKYCVideo() {
         if(videoStream) { videoStream.getTracks().forEach(t => t.stop()); document.getElementById('webcam').srcObject = null; }
         document.getElementById('video-container').style.display = 'none';
-    }
-
-    // --- SCANNER DI LOGIN ---
-    function switchLoginMode(mode) {
-        document.getElementById('login-admin-area').style.display = mode === 'admin' ? 'block' : 'none';
-        document.getElementById('login-staff-area').style.display = mode === 'staff' ? 'block' : 'none';
-        if(mode === 'staff') {
-            html5QrcodeScanner = new Html5Qrcode("qr-reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-                stopQRScanner(); 
-                processStaffLogin(txt);
-            });
-        }
     }
 
     function stopQRScanner() { 
@@ -435,10 +596,7 @@
     async function connectBT() {
         log("📡 Connessione al Box in corso...");
         try {
-            const dev = await navigator.bluetooth.requestDevice({ 
-                filters: [{ namePrefix: 'SmartSheer_' }], 
-                optionalServices: [SERVICE_UUID] 
-            });
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] });
             const server = await dev.gatt.connect();
             const service = await server.getPrimaryService(SERVICE_UUID);
             const characteristic = await service.getCharacteristic(CHAR_UUID);
@@ -526,95 +684,6 @@
         localStorage.setItem('ss_staff_' + address, CryptoJS.AES.encrypt(JSON.stringify(staffList), vaultPass).toString());
     }
 
-    // --- AUTH, WALLET & OTP LOGIN ---
-    async function requestOTPAndSign(walletType) {
-        const email = document.getElementById('admin-email').value;
-        vaultPass = document.getElementById('gate-pass').value;
-
-        if(!email || !vaultPass) return alert("Inserisci Email e Password Vault!");
-        if(!window.ethereum) return alert("Bridge Web3 non trovato nel browser!");
-
-        // 1. GESTIONE DELLA FIRMA HARDWARE / SOFTWARE
-        try {
-            if(walletType === 'trezor' || walletType === 'ledger') {
-                alert(`Hai selezionato ${walletType.toUpperCase()}.\nAssicurati che la chiavetta sia collegata via USB, sbloccata, e di aver selezionato l'account hardware nel bridge di MetaMask.`);
-            }
-
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = provider.getSigner();
-            pendingLoginAddress = await signer.getAddress();
-            
-            // Richiede la firma matematica (questo innesca fisicamente il Trezor/Ledger se connesso)
-            await signer.signMessage(`SmartSheer_Accesso_Sicuro_${pendingLoginAddress}`);
-            log(`✅ Firma Blockchain verificata per: ${pendingLoginAddress}`);
-
-        } catch(e) {
-            return alert("Firma rifiutata o dispositivo hardware disconnesso.");
-        }
-
-        // 2. CHIAMATA AL SERVER NODE.JS PER L'OTP
-        try {
-            log("⏳ Richiesta OTP al Server di Sicurezza...");
-            const response = await fetch(`${SERVER_URL}/request-otp`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email })
-            });
-
-            if(response.ok) {
-                document.getElementById('login-step-1').style.display = 'none';
-                document.getElementById('login-step-2').style.display = 'block';
-                log(`📧 OTP inviato a ${email}`);
-            } else {
-                alert("Errore dal Server. Riprova o controlla la BlackList.");
-            }
-        } catch(e) {
-            alert("Il Server Backend (porta 3001) è spento o irraggiungibile!");
-        }
-    }
-
-    async function verifyOTPAndLogin() {
-        const email = document.getElementById('admin-email').value;
-        const otp = document.getElementById('otp-code').value;
-
-        if(!otp) return alert("Inserisci il codice OTP.");
-
-        try {
-            log("⏳ Verifica OTP in corso...");
-            const response = await fetch(`${SERVER_URL}/verify-otp`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email, otp: otp })
-            });
-
-            const result = await response.json();
-
-            if(result.verified) {
-                currentRole = document.getElementById('role-selector').value;
-                loadVault(pendingLoginAddress);
-                launchDashboard(pendingLoginAddress, currentRole);
-                log("✅ Scudo OTP Superato. Accesso ai dati crittografati consentito.");
-            } else {
-                alert("Codice OTP errato o scaduto.");
-                document.getElementById('otp-code').value = "";
-            }
-        } catch(e) {
-            alert("Errore di connessione con il Server durante la verifica.");
-        }
-    }
-
-    async function processStaffLogin(txt) {
-        try {
-            const data = JSON.parse(txt);
-            const rpc = new ethers.providers.JsonRpcProvider(RPC_URL);
-            signer = new ethers.Wallet(data.pk, rpc);
-            currentRole = 'staff';
-            launchDashboard(signer.address, 'staff');
-            log(`🔓 Accesso Staff confermato: ${data.name}`);
-        } catch(e) { alert("QR Badge non valido."); }
-    }
-
     // --- DASHBOARD ROUTING ---
     function launchDashboard(addr, role) {
         document.getElementById('gate-overlay').style.display = 'none';
@@ -656,7 +725,6 @@
         if(!addr) return alert("Inserisci l'indirizzo da bannare.");
         try {
             log(`⏳ Inserimento ${addr} in Black List...`);
-            // Nota: Qui andrà integrata la chiamata al server Node per aggiungere l'indirizzo alla vera Blacklist.
             log(`🚫 Indirizzo ${addr} inserito in Black List dal Master.`);
             alert(`L'indirizzo ${addr} non potrà più effettuare richieste al server.`);
         } catch(e) { log("❌ Errore Black List."); }
@@ -666,7 +734,6 @@
     async function checkSBTStatus() {
         const sbtContractAddr = document.getElementById('sbt-contract-address').value;
         
-        // Se non hai ancora inserito il contratto SBT, il sistema blocca le funzioni e aspetta
         if(!sbtContractAddr || sbtContractAddr.length !== 42) {
             document.getElementById('sbt-mint-section').style.display = 'block';
             document.getElementById('sbt-verified-section').style.display = 'none';
@@ -759,7 +826,6 @@
         const buyer = document.getElementById('nft-buyer').value || ethers.constants.AddressZero;
         const meta = "0x" + CryptoJS.SHA256(name + Date.now()).toString();
         
-        // RECUPERA I DATI AGGIORNATI CON TEMP E URTI
         const rules = [
             document.getElementById('iot-temp').checked, 
             parseInt(document.getElementById('temp-min').value) || 0, 
@@ -866,7 +932,7 @@
         document.getElementById('qr-display').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // --- GEOFENCE COMPLETO (COMPARA BOX CON VAULT) ---
+    // --- GEOFENCE COMPLETO ---
     async function executeCheckpointBlind() {
         const id = document.getElementById('op-id').value;
         if(!id || !lastSensorData) return alert("Sincronizza il Box prima di inviare dati!");
