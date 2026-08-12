@@ -13,14 +13,28 @@
     
     <style>
         :root { --neon: #00f2ff; --bg: #010409; --card: #0d1117; --border: #30363d; --text: #c9d1d9; --master: #fbbf24; --danger: #f85149; --grey: #8b949e; --success: #3fb950; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; font-size: 13px; overflow-x: hidden; overflow-y: auto; }
-        #gate-overlay { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 40px 20px; box-sizing: border-box; }
-        .gate-card { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); width: 100%; max-width: 480px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); }
+        
+        /* BLOCCATO LO SCORRIMENTO DEL BODY - NIENTE PIÙ LOOP DELLO SFONDO */
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; font-size: 13px; overflow: hidden; }
+        
+        /* IL GATE DIVENTA UN MODALE FISSO E SCORREVOLE INDIPENDENTE */
+        #gate-overlay { 
+            position: fixed; inset: 0; z-index: 9999; background: var(--bg); 
+            display: flex; align-items: flex-start; justify-content: center; 
+            overflow-y: auto; padding: 40px 20px; box-sizing: border-box;
+        }
+        
+        .gate-card { 
+            background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid var(--neon); 
+            width: 100%; max-width: 480px; text-align: center; box-shadow: 0 0 40px rgba(0,242,255,0.15); 
+            margin: auto; /* Centra verticalmente senza tagliare i bordi su schermi piccoli */
+        }
         
         h1 { font-family: 'Orbitron'; color: var(--neon); margin-bottom: 20px; letter-spacing: 2px; }
         .pass-container { position: relative; width: 100%; }
         .eye-icon { position: absolute; right: 12px; top: 18px; cursor: pointer; user-select: none; font-size: 1.2rem; }
-        #main-app { display: none; height: 100vh; flex-direction: column; }
+        
+        #main-app { display: none; height: 100vh; flex-direction: column; overflow: hidden; }
         nav { padding: 15px 30px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .brand { font-family: 'Orbitron'; font-weight: 700; color: var(--neon); }
         .tab-bar { display: flex; background: #161b22; padding: 10px 20px; gap: 10px; border-bottom: 1px solid var(--border); }
@@ -35,6 +49,779 @@
         input[type="text"], input[type="password"], input[type="email"], input[type="number"], select { width: 100%; padding: 12px; margin: 8px 0; background: #010409; border: 1px solid var(--border); color: #fff; border-radius: 6px; box-sizing: border-box; outline: none; transition: 0.3s; }
         button { width: 100%; padding: 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: 0.3s; }
         
+        .btn-neon { background: var(--neon); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-grey { background: var(--grey); color: #fff; }
+        .btn-staff { background: var(--master); color: #000; }
+        .btn-success { background: var(--success); color: #000; }
+        .addr-full { font-family: monospace; background: #000; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border); color: var(--neon); cursor: pointer; font-size: 0.75rem; word-break: break-all; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 0.8rem; }
+        .checkbox-group input { width: auto; }
+        #video-container, #qr-reader, #op-qr-reader { width: 100%; background: #000; border-radius: 8px; margin: 15px 0; overflow: hidden; border: 1px solid var(--border); min-height: 200px; display: none;}
+        #webcam { width: 100%; height: 100%; object-fit: cover; }
+        #terminal { background: #000; color: var(--success); font-family: monospace; padding: 15px; border-radius: 8px; height: 150px; overflow-y: auto; font-size: 0.75rem; border: 1px solid var(--border); line-height: 1.4; }
+        #qr-display, #lotto-qr-display { background: #fff; padding: 15px; border-radius: 8px; width: fit-content; margin: 20px auto; display: none; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
+        th { color: #888; text-transform: uppercase; font-size: 0.65rem; }
+        .stat-card { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; }
+        .stat-val { font-size: 1rem; color: var(--neon); font-weight: bold; font-family: 'Orbitron'; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<!-- SCHERMATA D'INGRESSO GLOBALE -->
+<div id="gate-overlay">
+    <div class="gate-card">
+        <h1>SMARTSHEER</h1>
+        
+        <!-- 1. LANDING PAGE -->
+        <div id="landing-area">
+            <p style="color: #888; font-size: 0.8rem; margin-bottom: 20px;">Scegli un'opzione per accedere al sistema.</p>
+            <button class="btn-neon" onclick="showLogin()">🔑 ACCEDI (Account Esistente)</button>
+            <button class="btn-success" style="margin-top: 15px; background: transparent; border: 1px solid var(--success); color: var(--success);" onclick="showRegister()">✨ CREA ACCOUNT (Nuova Azienda)</button>
+            
+            <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <p style="color: #888; font-size: 0.7rem; margin-bottom: 10px;">Accesso Operativo Magazzino:</p>
+                <button class="btn-staff" onclick="startStaffLogin()">📷 STAFF LOGISTICS (SCAN QR)</button>
+            </div>
+        </div>
+
+        <!-- 2. CREAZIONE ACCOUNT (Autenticazione Istituzionale SPID/CCIAA) -->
+        <div id="register-area" style="display: none;">
+            <h2 style="color: var(--success);">CREA NUOVO ACCOUNT</h2>
+            <p style="font-size: 0.7rem; color: #888; margin-bottom: 15px;">Modulo KYC/KYB. Compila i dati per la simulazione SPID e l'interrogazione CCIAA.</p>
+            
+            <select id="new-network-role" style="margin-bottom: 10px; border-color: var(--neon);">
+                <option value="master">Ruolo Network: MASTER GENERALE</option>
+                <option value="client">Ruolo Network: CLIENT MASTER</option>
+                <option value="buyer">Ruolo Network: BUYER</option>
+            </select>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input type="text" id="new-piva" placeholder="Partita IVA Azienda">
+                <input type="text" id="new-cf" placeholder="Codice Fiscale (SPID)">
+            </div>
+            
+            <select id="new-corporate-role" style="margin-bottom: 10px;">
+                <option value="amministratore">Carica: Amministratore Delegato</option>
+                <option value="presidente">Carica: Presidente CdA</option>
+                <option value="socio">Carica: Socio Amministratore</option>
+                <option value="titolare">Carica: Legale Rappresentante</option>
+            </select>
+
+            <input type="email" id="new-email" placeholder="Indirizzo PEC Aziendale (CCIAA)">
+            
+            <div style="background: #161b22; padding: 10px; border-radius: 6px; border: 1px solid var(--border); margin: 10px 0; text-align: left;">
+                <p style="font-size: 0.65rem; color: var(--neon); margin: 0 0 5px 0; text-transform: uppercase;">Regole Password Vault:</p>
+                <ul style="margin: 0; padding-left: 15px; font-size: 0.65rem; color: #888;">
+                    <li>Minimo 8 caratteri</li>
+                    <li>Almeno 1 numero e 1 carattere speciale (es. !@#$)</li>
+                </ul>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                <div class="pass-container">
+                    <input type="password" id="new-pass" placeholder="Password Vault" style="margin: 0;">
+                    <span class="eye-icon" style="top: 10px;" onclick="togglePass('new-pass')">👁️</span>
+                </div>
+                <div class="pass-container">
+                    <input type="password" id="new-pass-confirm" placeholder="Ripeti Password" style="margin: 0;">
+                    <span class="eye-icon" style="top: 10px;" onclick="togglePass('new-pass-confirm')">👁️</span>
+                </div>
+            </div>
+
+            <!-- CAPTCHA -->
+            <div style="margin-top: 15px; display: flex; align-items: center; gap: 10px; background: #161b22; padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+                <span style="font-size: 0.7rem; color: #fff;">Anti-Bot:</span>
+                <span id="captcha-question" style="font-size: 1.1rem; font-weight: bold; color: var(--success);">? + ? =</span>
+                <input type="number" id="captcha-answer" placeholder="Risultato" style="margin: 0; width: 80px;">
+            </div>
+
+            <!-- BOTTONI FIRMA -->
+            <h3 style="font-size: 0.65rem; color: #888; text-transform: uppercase; margin-top: 20px;">Firma la richiesta alla CCIAA:</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <button class="btn-success" style="background: #f6851b; color: #fff; padding: 10px 5px; font-size: 0.65rem;" onclick="startCreateAccount('metamask')">🦊 METAMASK</button>
+                <button class="btn-grey" style="background: #000; border: 1px solid #fff; padding: 10px 5px; font-size: 0.65rem;" onclick="startCreateAccount('trezor')">🔒 TREZOR</button>
+                <button class="btn-grey" style="background: #000; border: 1px solid #fff; padding: 10px 5px; font-size: 0.65rem;" onclick="startCreateAccount('ledger')">🔏 LEDGER</button>
+            </div>
+            
+            <button class="btn-grey" style="margin-top: 15px; background: transparent; border: 1px solid #555;" onclick="showLanding()">🔙 ANNULLA</button>
+        </div>
+
+        <!-- 2.5 VERIFICA OTP CREAZIONE -->
+        <div id="register-otp-area" style="display: none;">
+            <h2 style="color: var(--success);">VERIFICA PEC E SPID</h2>
+            <div id="spid-logs" style="background:#000; color:var(--success); font-family:monospace; font-size:0.65rem; padding:10px; border-radius:6px; margin-bottom:15px; text-align:left;">
+                > SPID Autenticato...<br>
+                > Interrogazione CCIAA in corso...<br>
+                > Dati societari confermati.
+            </div>
+            <p style="font-size: 0.75rem; color: #888;">Inserisci il codice di sicurezza ricevuto alla tua PEC per confermare definitivamente l'identità e creare il Vault Locale.</p>
+            <input type="text" id="register-otp-code" placeholder="Codice OTP (es. 123456)" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px;">
+            <button class="btn-neon" onclick="verifyPECAndCreateVault()">CONFERMA E INIZIALIZZA</button>
+            <button class="btn-danger" style="margin-top: 10px;" onclick="location.reload()">ANNULLA TUTTO</button>
+        </div>
+
+        <!-- 3. LOGIN ESISTENTE -->
+        <div id="login-admin-area" style="display: none;">
+            <select id="login-role" style="margin-bottom: 10px;">
+                <option value="master">MASTER GENERALE</option>
+                <option value="client">CLIENT MASTER</option>
+                <option value="buyer">BUYER</option>
+            </select>
+            
+            <div id="login-step-1">
+                <input type="email" id="login-email" placeholder="Email Aziendale (per 2FA Server)" style="margin-bottom: 10px;">
+                <div class="pass-container" style="margin-bottom: 15px;">
+                    <input type="password" id="gate-pass" placeholder="Password Vault Locale" style="margin: 0;">
+                    <span class="eye-icon" style="top: 10px;" onclick="togglePass('gate-pass')">👁️</span>
+                </div>
+                
+                <h3 style="font-size: 0.65rem; color: #888; text-transform: uppercase;">Scegli la Sicurezza (2FA):</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <button class="btn-success" style="background: #f6851b; color: #fff; padding: 10px 5px; font-size: 0.65rem;" onclick="requestLoginOTP('metamask')">🦊 METAMASK</button>
+                    <button class="btn-grey" style="background: #000; border: 1px solid #fff; padding: 10px 5px; font-size: 0.65rem;" onclick="requestLoginOTP('trezor')">🔒 TREZOR</button>
+                    <button class="btn-grey" style="background: #000; border: 1px solid #fff; padding: 10px 5px; font-size: 0.65rem;" onclick="requestLoginOTP('ledger')">🔏 LEDGER</button>
+                </div>
+            </div>
+
+            <div id="login-step-2" style="display: none; margin-top: 20px;">
+                <h3 style="color: var(--neon); font-family: 'Orbitron';">🛡️ SCUDO 2FA ATTIVO</h3>
+                <p style="font-size: 0.75rem; color: #888;">Controlla la tua casella email. Inserisci il codice per decrittare il Vault.</p>
+                <input type="text" id="login-otp-code" placeholder="Codice OTP (es. 123456)" style="text-align: center; font-size: 1.2rem; letter-spacing: 5px;">
+                <button class="btn-neon" onclick="verifyLoginOTPAndEnter()">SBLOCCA VAULT E ACCEDI</button>
+                <button class="btn-danger" style="margin-top: 10px;" onclick="location.reload()">ANNULLA</button>
+            </div>
+            
+            <button class="btn-grey" id="btn-back-login" style="margin-top: 15px; background: transparent; border: 1px solid #555;" onclick="showLanding()">🔙 INDIETRO</button>
+        </div>
+        
+        <!-- 4. LOGIN STAFF -->
+        <div id="login-staff-area" style="display: none;">
+            <p style="font-size: 0.75rem; color: #888;">Inquadra il QR Code del tuo Badge Aziendale.</p>
+            <div id="qr-reader" style="display:block; width: 100%; min-height: 250px;"></div>
+            <button class="btn-danger" style="margin-top:15px;" onclick="stopQRScanner()">ANNULLA SCAN</button>
+            <button class="btn-grey" style="margin-top: 10px; background: transparent; border: 1px solid #555;" onclick="showLanding(); stopQRScanner();">🔙 INDIETRO</button>
+        </div>
+        
+        <a style="cursor:pointer; font-size:0.6rem; color:#444; margin-top:20px; display:block;" onclick="resetDevice()">RIPRISTINA VAULT (Pulisci Dati)</a>
+    </div>
+</div>
+
+<!-- DASHBOARD GESTIONALE WEB3 -->
+<div id="main-app">
+    <nav>
+        <div class="brand">SMARTSHEER <span id="tag-ruolo" style="font-size:0.6rem; color:#888"></span></div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div id="eth-address" class="addr-full" onclick="copyToClipboard(this.innerText)">0x...</div>
+            <button class="btn-danger" style="width:auto; padding:5px 15px; margin:0;" onclick="location.reload()">🏠 LOGOUT</button>
+        </div>
+    </nav>
+    <div class="tab-bar" id="tab-nav"></div>
+
+    <div class="content-area">
+        
+        <!-- PANNELLO ADMIN/MASTER -->
+        <div id="panel-admin" class="panel">
+            <div class="card" style="border-color: var(--master);">
+                <h2 style="color: var(--master);">📡 REGISTRO HARDWARE IOT (ORACLE)</h2>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-staff" style="width:auto; padding:0 30px;" onclick="registerIoTBox()">🔍 1. AUTORIZZA BOX (BT)</button>
+                    <input type="text" id="iot-addr-manual" placeholder="Indirizzo Hardware (0x...)">
+                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="addHardwareManual()">2. SALVA</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🌐 GLOBAL LOGISTICS MONITOR</h2>
+                <button class="btn-grey" style="margin-bottom:15px; width:auto; padding:10px 20px;" onclick="syncGlobalShipments()">🔄 AGGIORNA RETE</button>
+                <div style="overflow-x: auto; max-height: 250px;">
+                    <table id="global-table">
+                        <thead><tr><th>ID Lotto</th><th>Azienda SBT</th><th>Stato Viaggio</th></tr></thead>
+                        <tbody id="global-log-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">🚨 SECURITY: BLACK LIST E TIMER BOX</h2>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <input type="text" id="ban-addr" placeholder="Indirizzo Wallet Malevolo (0x...)">
+                    <button class="btn-danger" style="width:auto; padding:0 20px;" onclick="applyBan(true)">BANNALO</button>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="box-interval" placeholder="Minuti di sonno Box (es. 60)">
+                    <button class="btn-neon" style="width:auto; padding:0 20px;" onclick="setBoxInterval()">⏱️ IMPOSTA TIMER</button>
+                </div>
+            </div>
+
+            <div class="card" style="border-color: var(--danger);">
+                <h2 style="color: var(--danger);">⚠️ MANUTENZIONE BOX</h2>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-danger" style="flex:1;" onclick="resetBoxWithSuperAlert()">💥 FORMATTA SCATOLA NERA</button>
+                    <button class="btn-grey" style="flex:1;" onclick="printLogToSerial()">📥 STAMPA LOG SU SERIALE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANNELLO ONBOARDING CLIENT -->
+        <div id="panel-onboarding" class="panel">
+            <div class="card" id="sbt-mint-section">
+                <h2>🛡️ RILASCIO SOULBOUND TOKEN (SBT)</h2>
+                <p style="font-size:0.75rem; color:#888;">L'identità SPID/CCIAA è stata verificata con successo. Clicca il bottone per coniare il tuo passaporto aziendale incensurabile sulla Blockchain.</p>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom: 15px;">
+                    <input type="text" id="reg-soc" placeholder="Conferma Ragione Sociale">
+                    <input type="text" id="reg-piva" placeholder="Conferma Partita IVA">
+                    <input type="text" id="reg-cf" placeholder="Conferma CF Legale Rapp.">
+                    <input type="text" id="reg-salt" placeholder="SALT (Extra Sicurezza Crittografica)">
+                </div>
+                <div id="video-container">
+                    <video id="webcam" autoplay playsinline></video>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn-grey" style="width:auto; padding:0 30px;" onclick="startKYCVideo()">📷 OPZIONALE: VIDEO KYC</button>
+                    <button class="btn-neon" onclick="mintIdentity()">CONIA IDENTITÀ SBT</button>
+                </div>
+            </div>
+            
+            <div class="card" id="sbt-verified-section" style="display:none; border-color: var(--success); background: #0a150f;">
+                <h2 style="color: var(--success); border-bottom: none; margin-bottom: 0;">✅ SOULBOUND TOKEN ATTIVO</h2>
+                <p style="font-size:0.75rem; color:#888; margin-top:5px;">Il tuo Passaporto Aziendale è registrato nello Smart Contract. Sei autorizzato a operare nel network SmartSheer.</p>
+            </div>
+
+            <div class="card" id="hub-registration-section" style="border-color: var(--neon); display:none;">
+                <h2>📍 REGISTRA HUB LOGISTICO (CRITTOGRAFATO)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 2fr auto; gap:15px; margin-bottom: 15px;">
+                    <input type="text" id="hub-name" placeholder="Nome Magazzino (es. Hub Roma)" style="padding: 15px;">
+                    <input type="text" id="hub-address" placeholder="Indirizzo (Via, Città, CAP)" style="padding: 15px;">
+                    <button class="btn-grey" style="margin: 0; height: 100%;" onclick="geocodeHub()">📍 TROVA GPS</button>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:15px;">
+                    <input type="text" id="hub-lat" placeholder="Latitudine" readonly style="padding: 15px; background:#161b22;">
+                    <input type="text" id="hub-lon" placeholder="Longitudine" readonly style="padding: 15px; background:#161b22;">
+                    <select id="hub-tolerance" style="padding: 15px;">
+                        <option value="3">Raggio Sicurezza ~100m</option>
+                        <option value="2">Raggio Sicurezza ~1km</option>
+                    </select>
+                    <button class="btn-neon" style="margin: 0; height: 100%; padding: 0 30px;" onclick="registerHubBlind()">➕ AGGIUNGI HUB</button>
+                </div>
+                <h3 style="margin-top:20px; font-size:0.7rem; color:var(--master);">I TUOI HUB REGISTRATI NEL VAULT:</h3>
+                <table id="hubs-table"><thead><tr><th>Nome</th><th>Indirizzo</th><th>GPS</th><th>Hash</th></tr></thead><tbody id="hubs-list-body"></tbody></table>
+            </div>
+        </div>
+
+        <div id="panel-factory" class="panel">
+            <div class="card" style="border-color: var(--neon);">
+                <h2>🚀 FACTORY: CREAZIONE LOTTO (MINT NFT)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                    <div>
+                        <input type="text" id="nft-name" placeholder="Nome Prodotto (es. Parmigiano)">
+                        <input type="text" id="dest-address" placeholder="Indirizzo Destinazione">
+                        <button class="btn-grey" onclick="geocodeAddress()">Trova GPS</button>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <input type="text" id="dest-lat" placeholder="Lat" readonly style="background:#161b22;">
+                            <input type="text" id="dest-lon" placeholder="Lon" readonly style="background:#161b22;">
+                        </div>
+                    </div>
+                    <div style="background:#000; padding:20px; border-radius:8px; border:1px solid var(--border);">
+                        <input type="number" id="nft-qty" placeholder="Quantità Unità" value="1">
+                        <div class="checkbox-group"><input type="checkbox" id="use-escrow" onchange="toggleEscrow()"> <label>Attiva Pagamento Escrow</label></div>
+                        <div id="escrow-fields" style="display:none; gap:10px;"><input type="number" id="nft-price" placeholder="Prezzo MATIC" style="flex:1;"><input type="text" id="nft-buyer" placeholder="Wallet Acquirente" style="flex:2;"></div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="iot-temp" onchange="toggleTemp()"> <label>Obbligo Sensore Temperatura</label>
+                        </div>
+                        <div id="temp-fields" style="display:none; gap:10px; margin-left: 25px; margin-bottom: 10px;">
+                            <input type="number" id="temp-min" placeholder="Min °C" style="flex:1;">
+                            <input type="number" id="temp-max" placeholder="Max °C" style="flex:1;">
+                        </div>
+
+                        <div class="checkbox-group"><input type="checkbox" id="iot-gps" checked> <label>Geofence Obbligatorio</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="iot-shock" checked> <label>Sensore Urti Obbligatorio</label></div>
+                    </div>
+                </div>
+                <button class="btn-neon" style="margin-top:20px;" onclick="buildAndMintNFT()">📦 CONIA LOTTO SULLA BLOCKCHAIN</button>
+                <div id="lotto-qr-display" style="margin-top:20px; text-align:center;"></div>
+            </div>
+        </div>
+
+        <div id="panel-my-shipments" class="panel">
+            <div class="card" style="border-color: var(--success);">
+                <h2>📈 I MIEI LOTTI E REPORTISTICA</h2>
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <button class="btn-grey" style="width:auto; padding:10px 20px;" onclick="syncMyShipments()">🔄 AGGIORNA DATI</button>
+                    <button class="btn-success" style="width:auto; padding:10px 20px;" onclick="exportShipmentsCSV()">📥 SCARICA EXCEL (.CSV)</button>
+                </div>
+                <table id="my-shipments-table"><thead><tr><th>ID</th><th>Prodotto</th><th>Destinazione</th><th>Stato</th></tr></thead><tbody id="my-shipments-body"></tbody></table>
+            </div>
+        </div>
+
+        <div id="panel-staff-manage" class="panel">
+            <div class="card">
+                <h2>👥 GESTIONE BADGE & DELEGHE OPERATIVE</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div>
+                        <input type="text" id="worker-name" placeholder="Nome Magazziniere">
+                        <button class="btn-staff" onclick="generateWorkerQR()">GENERA BADGE E DELEGA</button>
+                    </div>
+                    <div style="background:#000; padding:15px; border-radius:8px;">
+                        <div class="checkbox-group"><input type="checkbox" id="p-mint"> <label>Permesso Factory</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-in" checked> <label>Permesso Checkpoint</label></div>
+                        <div class="checkbox-group"><input type="checkbox" id="p-out" checked> <label>Permesso Handover</label></div>
+                    </div>
+                </div>
+                <div id="qr-display" style="margin-top:20px;"></div>
+                <table id="staff-table"><thead><tr><th>Nome</th><th>Wallet Assegnato</th><th>Azione</th></tr></thead><tbody id="staff-list-body"></tbody></table>
+            </div>
+        </div>
+
+        <div id="panel-operations" class="panel">
+            <div class="card" style="border-color: var(--neon);">
+                <h2>📍 OPERAZIONI LOGISTICHE (BADGE STAFF)</h2>
+                
+                <div class="stat-card">
+                    <p style="margin:0; font-size:0.6rem; color:#888;">DATI BOX ATTUALI:</p>
+                    <div id="live-box-data" class="stat-val">Nessun Box Sincronizzato</div>
+                </div>
+                <button class="btn-grey" onclick="connectBT()">📡 1. LEGGI IOT E SINCRONIZZA BOX</button>
+                
+                <div id="op-scanner-box" style="display:none; margin-top:20px;">
+                    <div id="op-qr-reader" style="display:block; min-height: 200px;"></div>
+                    <button class="btn-danger" onclick="stopOpScanner()">ANNULLA SCANSIONE</button>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px;">
+                    <div class="card">
+                        <h3>CHECKPOINT / POSIZIONE</h3>
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <input type="text" id="op-id" placeholder="ID Lotto" style="flex:2;">
+                            <button class="btn-success" style="flex:1; padding:0;" onclick="startOpScanner('op-id')">📷 SCAN QR</button>
+                        </div>
+                        <button class="btn-neon" onclick="executeCheckpointBlind()">2. REGISTRA POSIZIONE</button>
+                    </div>
+                    <div class="card">
+                        <h3>HANDOVER / CONSEGNA</h3>
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <input type="text" id="out-id" placeholder="ID Lotto" style="flex:2;">
+                            <button class="btn-success" style="flex:1; padding:0;" onclick="startOpScanner('out-id')">📷 SCAN QR</button>
+                        </div>
+                        <button class="btn-staff" onclick="executeHandoverBlind()">2. SBLOCCA CONSEGNA</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-buyer" class="panel">
+            <div class="card" style="border-color: var(--danger);">
+                <h2>🛒 BUYER PORTAL: ESCROW & DISPUTE</h2>
+                <input type="text" id="esc-id" placeholder="ID Lotto da pagare">
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn-success" onclick="fundEscrowAction()">💸 PAGA/CARICA ESCROW</button>
+                    <button class="btn-danger" style="background:transparent; border:1px solid var(--danger);" onclick="refundDispute()">❌ RICHIEDI RIMBORSO</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="terminal">> Sistema SmartSheer Pronto. In attesa di login...</div>
+    </div>
+</div>
+
+<script>
+    // 🚨 CONFIGURAZIONE SMART CONTRACT E SERVER 🚨
+    
+    // INDIRIZZI DEI FUTURI SMART CONTRACT (Da aggiornare dopo Remix)
+    const SBT_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; 
+    const LOGISTICS_CONTRACT_ADDRESS = "0xce91B1Ce710b6b63Ce1605aa8eE01b16C6364683"; 
+    
+    const RPC_URL = "https://polygon-rpc.com"; 
+    const SERVER_URL = "http://192.168.1.200:3001"; // IP DEL TUO SERVER LINUX
+    
+    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+    const CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+    // ABI Generica unificata
+    const contractABI = [
+        "function mintSBT(bytes32 _dnaHash) external",
+        "function sbtRegistry(address) view returns (bytes32)", 
+        "function registerHub(bytes32 _hubHash) external",
+        "function setStealthWorker(address _worker, bool _mint, bool _in, bool _out, bool _active) external",
+        "function mintBatch(address _m, bytes32 _meta, uint256 _qty, tuple(bool, int256, int256, bool, bool) _rules, uint256 _price, address _buyer) external",
+        "function recordCheckpoint(uint256 _id, bytes32 _hubHash) external",
+        "function executeHandover(uint256 _id, int256 _temp, bool _gps, bool _tamp) external",
+        "function fundEscrow(uint256 _id) external payable",
+        "function forceAcceptance(uint256 _id) external",
+        "function refundDispute(uint256 _id) external",
+        "function shipmentCounter() view returns(uint256)",
+        "function shipments(uint256) view returns(uint256, address, bytes32, uint256, tuple(bool, int256, int256, bool, bool), uint256, address, uint8, bool)"
+    ];
+
+    let provider, signer, vaultPass, currentRole, lastSensorData;
+    let videoStream = null;
+    let html5QrcodeScanner = null;
+    let opQrScanner = null;
+    
+    // Variabili per i flussi OTP
+    let pendingWalletAddress = null; 
+    let pendingRegisterEmail = null;
+    let currentCaptchaAnswer = 0;   
+    
+    let staffList = [];
+    let myVaultData = { shipments: [], hubs: [] }; 
+    const statusMap = ["In Magazzino", "In Viaggio", "In Disputa", "Consegnato", "Rimborsato"];
+
+    // --- UTILS ---
+    function log(m) { const l = document.getElementById('terminal'); l.innerHTML += `<br>> ${m}`; l.scrollTop = l.scrollHeight; }
+    function togglePass(id) { const i = document.getElementById(id); i.type = i.type === "password" ? "text" : "password"; }
+    function copyToClipboard(text) { navigator.clipboard.writeText(text); log(`📋 Copiato.`); }
+    function toggleEscrow() { document.getElementById('escrow-fields').style.display = document.getElementById('use-escrow').checked ? 'flex' : 'none'; }
+    function toggleTemp() { document.getElementById('temp-fields').style.display = document.getElementById('iot-temp').checked ? 'flex' : 'none'; }
+    
+    function resetDevice() {
+        if(prompt("Scrivi RESET per formattare il Vault:") === "RESET") {
+            localStorage.clear();
+            alert("Vault pulito!");
+            location.reload();
+        }
+    }
+
+    // --- NAVIGAZIONE SCHERMATA INIZIALE ---
+    function showLanding() {
+        document.getElementById('landing-area').style.display = 'block';
+        document.getElementById('register-area').style.display = 'none';
+        document.getElementById('register-otp-area').style.display = 'none';
+        document.getElementById('login-admin-area').style.display = 'none';
+        document.getElementById('login-staff-area').style.display = 'none';
+    }
+
+    function showLogin() {
+        document.getElementById('landing-area').style.display = 'none';
+        document.getElementById('login-admin-area').style.display = 'block';
+    }
+
+    function showRegister() {
+        document.getElementById('landing-area').style.display = 'none';
+        document.getElementById('register-area').style.display = 'block';
+        
+        let num1 = Math.floor(Math.random() * 9) + 1; 
+        let num2 = Math.floor(Math.random() * 9) + 1; 
+        currentCaptchaAnswer = num1 + num2;
+        
+        document.getElementById('captcha-question').innerText = `${num1} + ${num2} =`;
+        document.getElementById('captcha-answer').value = ""; 
+    }
+
+    function startStaffLogin() {
+        document.getElementById('landing-area').style.display = 'none';
+        document.getElementById('login-staff-area').style.display = 'block';
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+        html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            stopQRScanner(); processStaffLogin(txt);
+        });
+    }
+
+    // ==========================================
+    // FLUSSO 1: CREAZIONE ACCOUNT CON VERIFICA PEC E SPID
+    // ==========================================
+    async function startCreateAccount(walletType) {
+        const pivaInput = document.getElementById('new-piva');
+        const cfInput = document.getElementById('new-cf');
+        const roleInput = document.getElementById('new-network-role');
+        const emailInput = document.getElementById('new-email');
+        const passInput = document.getElementById('new-pass');
+        const confirmInput = document.getElementById('new-pass-confirm');
+        const captchaInputObj = document.getElementById('captcha-answer');
+
+        emailInput.style.borderColor = 'var(--border)'; passInput.style.borderColor = 'var(--border)'; confirmInput.style.borderColor = 'var(--border)'; captchaInputObj.style.borderColor = 'var(--border)'; pivaInput.style.borderColor = 'var(--border)'; cfInput.style.borderColor = 'var(--border)';
+
+        const piva = pivaInput.value;
+        const cf = cfInput.value;
+        pendingRegisterEmail = emailInput.value;
+        vaultPass = passInput.value;
+        const passConfirm = confirmInput.value;
+        const captchaInput = parseInt(captchaInputObj.value);
+        currentRole = roleInput.value;
+
+        if(isNaN(captchaInput) || captchaInput !== currentCaptchaAnswer) { captchaInputObj.style.borderColor = 'red'; return alert("❌ CAPTCHA errato!"); }
+        if(!piva || !cf) { pivaInput.style.borderColor = 'red'; cfInput.style.borderColor = 'red'; return alert("❌ Inserisci P.IVA e CF."); }
+        
+        const passRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*._-]).{8,}$/;
+        if(!passRegex.test(vaultPass)) { passInput.style.borderColor = 'red'; return alert("❌ Password debole."); }
+        if(vaultPass !== passConfirm) { confirmInput.style.borderColor = 'red'; return alert("❌ Password non coincidono."); }
+        if(!pendingRegisterEmail) { emailInput.style.borderColor = 'red'; return alert("❌ Inserisci la PEC."); }
+        if(!window.ethereum) return alert("❌ Wallet Web3 non trovato!");
+
+        try {
+            if(walletType === 'trezor' || walletType === 'ledger') { 
+                alert(`Hai selezionato ${walletType.toUpperCase()}.\n\nUsa MetaMask come ponte per far comunicare il sito con la chiavetta USB.`); 
+            }
+
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            pendingWalletAddress = await signer.getAddress();
+            
+            await signer.signMessage(`SmartSheer_Inizializzazione_Nuovo_Vault_${pendingWalletAddress}`);
+            
+            log("🛂 Autenticazione SPID in corso...");
+            
+            const response = await fetch(`${SERVER_URL}/request-otp`, { 
+                method: "POST", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ email: pendingRegisterEmail }) 
+            });
+
+            if(response.ok) {
+                document.getElementById('register-area').style.display = 'none';
+                document.getElementById('register-otp-area').style.display = 'block';
+                log(`📧 Codice inviato alla PEC.`);
+            } else { alert("Errore Server."); }
+        } catch(e) { alert("Creazione annullata."); }
+    }
+
+    async function verifyPECAndCreateVault() {
+        const otp = document.getElementById('register-otp-code').value;
+        if(!otp) return alert("Inserisci il codice OTP.");
+
+        try {
+            const response = await fetch(`${SERVER_URL}/verify-otp`, { 
+                method: "POST", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ email: pendingRegisterEmail, otp: otp }) 
+            });
+            const result = await response.json();
+
+            if(result.verified) {
+                myVaultData = { shipments: [], hubs: [] }; staffList = []; saveVault(pendingWalletAddress);
+                alert(`✅ PEC VERIFICATA!\nRuolo: ${currentRole.toUpperCase()}`);
+                
+                document.getElementById('new-email').value = ""; document.getElementById('new-pass').value = ""; document.getElementById('new-pass-confirm').value = ""; document.getElementById('captcha-answer').value = ""; document.getElementById('register-otp-code').value = ""; document.getElementById('new-piva').value = ""; document.getElementById('new-cf').value = "";
+                
+                launchDashboard(pendingWalletAddress, currentRole);
+            } else { alert("OTP errato."); }
+        } catch(e) { alert("Errore Server."); }
+    }
+
+    async function requestLoginOTP(walletType) {
+        const emailInput = document.getElementById('login-email'); const passInput = document.getElementById('gate-pass'); const roleInput = document.getElementById('login-role');
+        emailInput.style.borderColor = 'var(--border)'; passInput.style.borderColor = 'var(--border)';
+        const email = emailInput.value; vaultPass = passInput.value; currentRole = roleInput.value;
+
+        if(!email) { emailInput.style.borderColor = 'red'; return alert("Email mancante!"); }
+        if(!vaultPass) { passInput.style.borderColor = 'red'; return alert("Password mancante!"); }
+        if(!window.ethereum) return alert("Web3 assente!");
+
+        try {
+            if(walletType === 'trezor' || walletType === 'ledger') { alert(`Usa MetaMask come ponte per il tuo ${walletType.toUpperCase()}.`); }
+            
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            pendingWalletAddress = await signer.getAddress();
+            await signer.signMessage(`SmartSheer_Accesso_Sicuro_${pendingWalletAddress}`);
+        } catch(e) { return alert("Firma rifiutata."); }
+
+        try {
+            const response = await fetch(`${SERVER_URL}/request-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email }) });
+            if(response.ok) {
+                document.getElementById('login-step-1').style.display = 'none'; document.getElementById('btn-back-login').style.display = 'none'; document.getElementById('login-step-2').style.display = 'block';
+            } else { alert("Errore Server."); }
+        } catch(e) { alert("Server irraggiungibile!"); }
+    }
+
+    async function verifyLoginOTPAndEnter() {
+        const email = document.getElementById('login-email').value; const otp = document.getElementById('login-otp-code').value;
+        if(!otp) return alert("Inserisci OTP.");
+
+        try {
+            const response = await fetch(`${SERVER_URL}/verify-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email, otp: otp }) });
+            const result = await response.json();
+            if(result.verified) { loadVault(pendingWalletAddress); launchDashboard(pendingWalletAddress, currentRole); } else { alert("OTP errato."); }
+        } catch(e) { alert("Errore Server."); }
+    }
+
+    async function processStaffLogin(txt) {
+        try { const data = JSON.parse(txt); const rpc = new ethers.providers.JsonRpcProvider(RPC_URL); signer = new ethers.Wallet(data.pk, rpc); currentRole = 'staff'; launchDashboard(signer.address, 'staff'); } catch(e) { alert("Badge non valido."); }
+    }
+
+    async function startKYCVideo() {
+        try { document.getElementById('video-container').style.display = 'block'; videoStream = await navigator.mediaDevices.getUserMedia({ video: true }); document.getElementById('webcam').srcObject = videoStream; } catch(e) { log("❌ Errore Webcam."); }
+    }
+    
+    function stopKYCVideo() { if(videoStream) { videoStream.getTracks().forEach(t => t.stop()); document.getElementById('webcam').srcObject = null; } document.getElementById('video-container').style.display = 'none'; }
+    function stopQRScanner() { if(html5QrcodeScanner) { html5QrcodeScanner.clear(); } }
+
+    function startOpScanner(targetInputId) {
+        document.getElementById('op-scanner-box').style.display = "block";
+        opQrScanner = new Html5Qrcode("op-qr-reader");
+        opQrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => { stopOpScanner(); document.getElementById(targetInputId).value = txt.replace("SMARTSHEER_LOTTO:", ""); });
+    }
+
+    function stopOpScanner() { if(opQrScanner) { opQrScanner.clear(); } document.getElementById('op-scanner-box').style.display = 'none'; }
+    async function exportShipmentsCSV() { alert("Report in corso..."); }
+
+    async function registerIoTBox() { try { const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] }); document.getElementById('iot-addr-manual').value = "Connesso"; } catch(e) { log("❌ Errore BT."); } }
+
+    async function connectBT() {
+        try {
+            const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] });
+            const server = await dev.gatt.connect(); const service = await server.getPrimaryService(SERVICE_UUID); const characteristic = await service.getCharacteristic(CHAR_UUID);
+            const value = await characteristic.readValue(); const data = JSON.parse(new TextDecoder().decode(value));
+            lastSensorData = { temp: data.payload.tAvg, lat: data.payload.lat, lon: data.payload.lon, shock: data.payload.shock, hash: data.payload.lastHash };
+            document.getElementById('live-box-data').innerHTML = `📍 MAPPA (${data.payload.lat}, ${data.payload.lon})<br>🌡️ Temp: ${data.payload.tAvg}°C | ⚠️ Urti: ${data.payload.shock}`;
+            alert("Box Sincronizzato!");
+        } catch(e) { log("❌ Errore Bluetooth."); }
+    }
+
+    async function resetBoxWithSuperAlert() { if(prompt("DIGITA: CONFERMO") !== "CONFERMO") return; try { const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] }); const server = await dev.gatt.connect(); const char = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID); await char.writeValue(new TextEncoder().encode("RESET_ALL")); } catch(e) { log("❌ Errore Reset."); } }
+
+    async function printLogToSerial() { try { const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] }); const server = await dev.gatt.connect(); const char = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID); await char.writeValue(new TextEncoder().encode("GET_CSV")); } catch(e) { log("❌ Errore Seriale."); } }
+
+    async function setBoxInterval() { const minuti = document.getElementById('box-interval').value; if(!minuti) return; try { const dev = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'SmartSheer_' }], optionalServices: [SERVICE_UUID] }); const server = await dev.gatt.connect(); const char = await (await server.getPrimaryService(SERVICE_UUID)).getCharacteristic(CHAR_UUID); await char.writeValue(new TextEncoder().encode("SLEEP:" + minuti)); } catch(e) { log("❌ Errore Timer BT."); } }
+
+    function loadVault(address) {
+        try {
+            myVaultData = { shipments: [], hubs: [] }; staffList = [];
+            const enc = localStorage.getItem('ss_vault_' + address);
+            if(enc) { const bytes = CryptoJS.AES.decrypt(enc, vaultPass); myVaultData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8)); if(!myVaultData.hubs) myVaultData.hubs = []; if(!myVaultData.shipments) myVaultData.shipments = []; }
+            const encStaff = localStorage.getItem('ss_staff_' + address);
+            if(encStaff) { staffList = JSON.parse(CryptoJS.AES.decrypt(encStaff, vaultPass).toString(CryptoJS.enc.Utf8)); }
+        } catch(e) { log("⚠️ Errore Vault."); }
+    }
+    
+    function saveVault(address) { localStorage.setItem('ss_vault_' + address, CryptoJS.AES.encrypt(JSON.stringify(myVaultData), vaultPass).toString()); localStorage.setItem('ss_staff_' + address, CryptoJS.AES.encrypt(JSON.stringify(staffList), vaultPass).toString()); }
+
+    function launchDashboard(addr, role) {
+        document.getElementById('gate-overlay').style.display = 'none'; document.getElementById('main-app').style.display = 'flex'; document.getElementById('eth-address').innerText = addr; document.getElementById('tag-ruolo').innerText = role.toUpperCase();
+        const nav = document.getElementById('tab-nav'); nav.innerHTML = "";
+        
+        if(role === 'master') { addTab("MASTER CONTROL", "panel-admin"); syncGlobalShipments(); }
+        if(role === 'client') { addTab("IDENTITY & HUB", "panel-onboarding"); addTab("FACTORY", "panel-factory"); addTab("I MIEI LOTTI", "panel-my-shipments"); addTab("STAFF", "panel-staff-manage"); renderStaff(); syncMyShipments(); renderHubs(); checkSBTStatus(); }
+        if(role === 'staff') { addTab("OPERATIONS", "panel-operations"); }
+        if(role === 'buyer') { addTab("BUYER PORTAL", "panel-buyer"); }
+        
+        showPanel(nav.firstChild.getAttribute('data-panel'));
+    }
+
+    function addTab(l, p) { const t = document.createElement('div'); t.className = "tab"; t.innerText = l; t.setAttribute('data-panel', p); t.onclick = (e) => { document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); e.target.classList.add('active'); showPanel(p); }; document.getElementById('tab-nav').appendChild(t); }
+    function showPanel(id) { document.querySelectorAll('.panel').forEach(p=>p.style.display='none'); document.getElementById(id).style.display='block'; }
+
+    async function applyBan(isBanned) { const addr = document.getElementById('ban-addr').value; if(!addr) return; try { log(`🚫 Indirizzo ${addr} bannato.`); } catch(e) {} }
+
+    // --- COMUNICAZIONE CON IL CONTRATTO SBT ---
+    async function checkSBTStatus() {
+        if(SBT_CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") {
+            document.getElementById('sbt-mint-section').style.display = 'block'; document.getElementById('sbt-verified-section').style.display = 'none'; document.getElementById('hub-registration-section').style.display = 'none';
+            return;
+        }
+
+        try {
+            const c = new ethers.Contract(SBT_CONTRACT_ADDRESS, contractABI, signer); 
+            const dna = await c.sbtRegistry(await signer.getAddress());
+            
+            if(dna !== "0x0000000000000000000000000000000000000000000000000000000000000000") {
+                document.getElementById('sbt-mint-section').style.display = 'none'; document.getElementById('sbt-verified-section').style.display = 'block'; document.getElementById('hub-registration-section').style.display = 'block';
+            } else {
+                document.getElementById('sbt-mint-section').style.display = 'block'; document.getElementById('sbt-verified-section').style.display = 'none'; document.getElementById('hub-registration-section').style.display = 'none';
+            }
+        } catch(e) { log("⚠️ Errore Lettura SBT."); }
+    }
+
+    async function mintIdentity() {
+        if(SBT_CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") return alert("Il Master non ha ancora configurato l'indirizzo SBT nel codice!");
+
+        const soc = document.getElementById('reg-soc').value; const piva = document.getElementById('reg-piva').value; const cf = document.getElementById('reg-cf').value; const salt = document.getElementById('reg-salt').value;
+        if(!soc || !piva || !cf || !salt) return alert("Compila tutti i campi!");
+
+        const dna = "0x" + CryptoJS.SHA256(soc + piva + cf + salt + vaultPass).toString();
+        
+        try {
+            const c = new ethers.Contract(SBT_CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.mintSBT(dna); await tx.wait();
+            stopKYCVideo(); checkSBTStatus();
+        } catch(e) { log("❌ Errore Conio SBT."); }
+    }
+
+    async function registerHubBlind() {
+        const name = document.getElementById('hub-name').value; const addrText = document.getElementById('hub-address').value; const lat = document.getElementById('hub-lat').value; const lon = document.getElementById('hub-lon').value; const dec = document.getElementById('hub-tolerance').value;
+        if(!lat || !lon) return alert("Devi prima trovare il GPS!");
+        const latRound = parseFloat(lat).toFixed(dec); const lonRound = parseFloat(lon).toFixed(dec); const blindStr = latRound + "|" + lonRound + "|" + vaultPass; const hash = "0x" + CryptoJS.SHA256(blindStr).toString();
+        try {
+            const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.registerHub(hash); await tx.wait();
+            myVaultData.hubs.push({ name: name, address: addrText, hash: hash, lat: latRound, lon: lonRound, dec: dec }); saveVault(await signer.getAddress()); renderHubs();
+            log(`📍 Hub registrato.`);
+        } catch(e) { log("❌ Errore Hub."); }
+    }
+
+    function renderHubs() { const b = document.getElementById('hubs-list-body'); b.innerHTML = ""; myVaultData.hubs.forEach(h => { b.innerHTML += `<tr><td>${h.name}</td><td>${h.address || 'N/D'}</td><td>${h.lat}, ${h.lon}</td><td>${h.hash.substring(0,10)}...</td></tr>`; }); }
+
+    async function buildAndMintNFT() {
+        const name = document.getElementById('nft-name').value; const qty = document.getElementById('nft-qty').value; const price = ethers.utils.parseEther(document.getElementById('nft-price').value || "0"); const buyer = document.getElementById('nft-buyer').value || ethers.constants.AddressZero; const meta = "0x" + CryptoJS.SHA256(name + Date.now()).toString();
+        const rules = [document.getElementById('iot-temp').checked, parseInt(document.getElementById('temp-min').value) || 0, parseInt(document.getElementById('temp-max').value) || 0, document.getElementById('iot-gps').checked, document.getElementById('iot-shock').checked];
+
+        try {
+            const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.mintBatch(await signer.getAddress(), meta, qty, rules, price, buyer); await tx.wait();
+            const id = (await c.shipmentCounter()).toString();
+            myVaultData.shipments.push({ id: id, name: name, dest: document.getElementById('dest-address').value }); saveVault(await signer.getAddress());
+            document.getElementById('lotto-qr-display').innerHTML = ""; document.getElementById('lotto-qr-display').style.display = "block"; new QRCode(document.getElementById('lotto-qr-display'), { text: "SMARTSHEER_LOTTO:" + id, width: 200, height: 200 });
+        } catch(e) { log("❌ Errore Mint."); }
+    }
+
+    async function syncGlobalShipments() {
+        const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, provider);
+        const count = await c.shipmentCounter(); const b = document.getElementById('global-log-body'); b.innerHTML = "";
+        for(let i=1; i<=count; i++) { try { const s = await c.shipments(i); b.innerHTML += `<tr><td>#${i}</td><td class="addr-full">${s[1].substring(0,10)}...</td><td style="color:var(--master);">${statusMap[s[8]]}</td></tr>`; } catch(e) {} }
+    }
+
+    async function syncMyShipments() {
+        const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, provider);
+        const count = await c.shipmentCounter(); const myAddr = await signer.getAddress(); const b = document.getElementById('my-shipments-body'); b.innerHTML = "";
+        for(let i=1; i<=count; i++) {
+            try { const s = await c.shipments(i); if(s[1] === myAddr) { const info = myVaultData.shipments.find(x => x.id == i) || {name:"N/D", dest:"N/D"}; b.innerHTML += `<tr><td>#${i}</td><td>${info.name}</td><td>📍 ${info.dest}</td><td style="font-weight:bold; color:var(--neon);">${statusMap[s[8]]}</td></tr>`; } } catch(e) {}
+        }
+    }
+
+    async function generateWorkerQR() {
+        const name = document.getElementById('worker-name').value; if(!name) return alert("Inserisci il nome."); const wallet = ethers.Wallet.createRandom();
+        try {
+            const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer);
+            const tx = await c.setStealthWorker(wallet.address, document.getElementById('p-mint').checked, document.getElementById('p-in').checked, document.getElementById('p-out').checked, true); await tx.wait();
+            staffList.push({ name: name, addr: wallet.address, pk: wallet.privateKey }); saveVault(await signer.getAddress());
+            document.getElementById('qr-display').innerHTML = ""; document.getElementById('qr-display').style.display = "block"; new QRCode(document.getElementById('qr-display'), { text: JSON.stringify({pk: wallet.privateKey, name: name}), width: 256, height: 256 });
+            renderStaff(); document.getElementById('qr-display').scrollIntoView({ behavior: 'smooth' });
+        } catch(e) { log("❌ Delega fallita."); }
+    }
+
+    function renderStaff() { const b = document.getElementById('staff-list-body'); b.innerHTML = ""; staffList.forEach((s, index) => { b.innerHTML += `<tr><td>${s.name}</td><td>${s.addr.substring(0,10)}...</td><td><button class="btn-grey" onclick="reprintBadge(${index})">🖨️</button></td></tr>`; }); }
+
+    function reprintBadge(index) { const s = staffList[index]; document.getElementById('qr-display').innerHTML = ""; document.getElementById('qr-display').style.display = "block"; new QRCode(document.getElementById('qr-display'), { text: JSON.stringify({pk: s.pk, name: s.name}), width: 256, height: 256 }); document.getElementById('qr-display').scrollIntoView({ behavior: 'smooth' }); }
+
+    async function executeCheckpointBlind() {
+        const id = document.getElementById('op-id').value; if(!id || !lastSensorData) return alert("Sincronizza il Box!");
+        let foundHubHash = null;
+        for (let hub of myVaultData.hubs) { const latRound = parseFloat(lastSensorData.lat).toFixed(hub.dec); const lonRound = parseFloat(lastSensorData.lon).toFixed(hub.dec); const testHash = "0x" + CryptoJS.SHA256(latRound + "|" + lonRound + "|" + vaultPass).toString(); if (testHash === hub.hash) { foundHubHash = hub.hash; break; } }
+        if (!foundHubHash) return alert("❌ GEOFENCE FALLITO.");
+
+        try { const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer); const tx = await c.recordCheckpoint(id, foundHubHash); await tx.wait(); log("✅ CHECKPOINT REGISTRATO."); } catch(e) { log("❌ Errore Checkpoint."); }
+    }
+
+    async function executeHandoverBlind() {
+        const id = document.getElementById('out-id').value; if(!id || !lastSensorData) return alert("Sincronizza il Box!");
+        try { const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer); const isGpsValid = (lastSensorData.lat !== 0 && lastSensorData.lat !== "0.000000"); const tx = await c.executeHandover(id, Math.round(lastSensorData.temp), isGpsValid, (lastSensorData.shock > 0)); await tx.wait(); log("✅ CONSEGNA ESEGUITA."); } catch(e) { log("❌ Errore Consegna."); }
+    }
+
+    async function fundEscrowAction() { const id = document.getElementById('esc-id').value; const amt = prompt("Importo MATIC:"); if(!amt) return; try { const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer); const tx = await c.fundEscrow(id, { value: ethers.utils.parseEther(amt) }); await tx.wait(); log("💸 Escrow pagato."); } catch(e) { log("❌ Errore."); } }
+
+    async function refundDispute() { const id = document.getElementById('esc-id').value; try { const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer); const tx = await c.refundDispute(id); await tx.wait(); log("🔙 Rimborso in lavorazione."); } catch(e) { log("❌ Errore."); } }
+
+    async function geocodeHub() { const addr = document.getElementById('hub-address').value; const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}`); const d = await res.json(); if(d[0]) { document.getElementById('hub-lat').value = d[0].lat; document.getElementById('hub-lon').value = d[0].lon; } }
+    async function geocodeAddress() { const addr = document.getElementById('dest-address').value; const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${addr}`); const d = await res.json(); if(d[0]) { document.getElementById('dest-lat').value = d[0].lat; document.getElementById('dest-lon').value = d[0].lon; } }
+</script>
+</body>
+</html>        
         .btn-neon { background: var(--neon); color: #000; }
         .btn-danger { background: var(--danger); color: #fff; }
         .btn-grey { background: var(--grey); color: #fff; }
