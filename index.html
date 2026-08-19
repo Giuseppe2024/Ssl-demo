@@ -437,7 +437,7 @@
     // 🚨 CONFIGURAZIONE SMART CONTRACT E SERVER 🚨
     
     const SBT_CONTRACT_ADDRESS = "0xEEA193d46A553C0E85894938EF60910B8b554D5c"; 
-    const LOGISTICS_CONTRACT_ADDRESS = "0xce91B1Ce710b6b63Ce1605aa8eE01b16C6364683"; 
+    const LOGISTICS_CONTRACT_ADDRESS = "0x4c6E177abb2F8339e92010646e7Ebf9D6AE12153"; 
     const INSURANCE_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; 
     
     const RPC_URL = "https://polygon-rpc.com"; 
@@ -454,7 +454,7 @@
         "function isSBTValid(address _target) external view returns (bool)",
         "function registerHub(bytes32 _hubHash) external",
         "function setStealthWorker(address _worker, bool _mint, bool _in, bool _out, bool _active) external",
-        "function mintBatch(address _m, bytes32 _meta, uint256 _qty, tuple(bool, int256, int256, bool, bool) _rules, uint256 _price, address _buyer) external",
+        "function mintBatch(bytes32 _metaHash, uint256 _qty) external returns (uint256)",
         "function recordCheckpoint(uint256 _id, bytes32 _hubHash) external",
         "function executeHandover(uint256 _id, int256 _temp, bool _gps, bool _tamp) external",
         "function fundEscrow(uint256 _id) external payable",
@@ -837,7 +837,7 @@
 
         try {
             const c = new ethers.Contract(LOGISTICS_CONTRACT_ADDRESS, contractABI, signer);
-            const tx = await c.mintBatch(await signer.getAddress(), meta, qty, rules, price, buyer); await tx.wait();
+            const tx = await c.mintBatch(meta, qty); await tx.wait();
             const id = (await c.shipmentCounter()).toString();
             myVaultData.shipments.push({ id: id, name: name, dest: document.getElementById('dest-address').value }); saveVault(await signer.getAddress());
             document.getElementById('lotto-qr-display').innerHTML = ""; document.getElementById('lotto-qr-display').style.display = "block"; new QRCode(document.getElementById('lotto-qr-display'), { text: "SMARTSHEER_LOTTO:" + id, width: 200, height: 200 });
